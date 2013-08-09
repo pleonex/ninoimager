@@ -38,7 +38,7 @@ namespace Ninoimager.Format
 		private ushort version;
 		private BlockCollection blocks;
 
-		private NitroFile(params Type[] blockTypes)
+		public NitroFile(params Type[] blockTypes)
 		{
 			// Check that all types heredites from NitroBlock
 			foreach (Type t in blockTypes) {
@@ -78,11 +78,20 @@ namespace Ninoimager.Format
 
 			// Nitro header
 			this.magicStamp = new string(br.ReadChars(4).Reverse().ToArray());
+
 			if (br.ReadUInt16() != BomLittleEndiannes)	// Byte Order Mark
 				throw new InvalidDataException("The data is not little endiannes.");
+
 			this.version = br.ReadUInt16();
-			if (br.ReadUInt32() != size)
-				throw new FormatException("File size doesn't match.");
+
+			uint fileSize = br.ReadUInt32();
+			if (fileSize > size)
+				throw new FormatException("File size doesn't match (smaller).");
+			else if (fileSize + 4 < size)	// It could be padding bytes.
+				throw new FormatException("File size doesn't match (bigger).");
+			else if (fileSize < size)
+				Console.WriteLine("##WARNING## File field is smaller than specified. {0}", size - fileSize);
+
 			ushort blocksStart = br.ReadUInt16();
 			ushort numBlocks = br.ReadUInt16();
 
@@ -230,6 +239,11 @@ namespace Ninoimager.Format
 
 			yield break;
 
+		}
+
+		public bool ContainsType(string type)
+		{
+			return (this.FindIndex(b => b.Name == type) != -1) ? true : false;
 		}
 	}
 

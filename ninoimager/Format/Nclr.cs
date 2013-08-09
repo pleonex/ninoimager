@@ -32,7 +32,7 @@ namespace Ninoimager.Format
 
 	public class Nclr : Palette
 	{
-		private static Type[] BlockTypes = { typeof(Pltt) };
+		private static Type[] BlockTypes = { typeof(Pltt), typeof(Pcmp) };
 		private NitroFile nitro;
 
 		public Nclr(string file)
@@ -47,12 +47,13 @@ namespace Ninoimager.Format
 			this.SetInfo();
 		}
 
+		public NitroFile NitroData {
+			get { return this.nitro; }
+		}
+
 		private void SetInfo()
 		{
-			// UNDONE
 			this.SetPalette(this.nitro.GetBlock<Pltt>(0).PaletteColors);
-
-			throw new NotImplementedException();
 		}
 
 		private class Pltt : NitroBlock
@@ -80,11 +81,6 @@ namespace Ninoimager.Format
 				private set;
 			}
 
-			public uint PaletteSize {
-				get;
-				private set;
-			}
-
 			public uint Unknown3 {
 				get;
 				private set;
@@ -101,15 +97,22 @@ namespace Ninoimager.Format
 				this.Depth         = (ColorFormat)br.ReadUInt16();
 				this.Unknown1      = br.ReadUInt16();
 				this.Unknown2      = br.ReadUInt32();
-				this.PaletteSize   = br.ReadUInt32();
+				int paletteSize    = br.ReadInt32();
 				this.Unknown3      = br.ReadUInt32();
-				this.PaletteColors = Palette.FromBGR555(br.ReadBytes((int)this.PaletteSize));
+				this.PaletteColors = Palette.FromBGR555(br.ReadBytes(paletteSize));
 			}
 
 			protected override void WriteData(Stream strOut)
 			{
-				// UNDONE
-				throw new NotImplementedException();
+				byte[] paletteBytes = Palette.ToBGR555(this.PaletteColors);
+
+				BinaryWriter bw = new BinaryWriter(strOut);
+				bw.Write((ushort)this.Depth);
+				bw.Write(this.Unknown1);
+				bw.Write(this.Unknown2);
+				bw.Write(paletteBytes.Length);
+				bw.Write(this.Unknown3);
+				bw.Write(paletteBytes);
 			}
 
 			public override bool Check()
@@ -119,26 +122,56 @@ namespace Ninoimager.Format
 			}
 		}
 
-		private class Pmcp : NitroBlock
+		private class Pcmp : NitroBlock
 		{
-			public Pmcp(NitroFile file) : base(file)
+			public Pcmp(NitroFile file) : base(file)
 			{
 			}
 
 			public override string Name {
-				get { return "PMCP"; }
+				get { return "PCMP"; }
+			}
+
+			public ushort Unknown1 {
+				get;
+				set;
+			}
+
+			public ushort Unknown2 {
+				get;
+				set;
+			}
+
+			public uint Unknown3 {
+				get;
+				set;
+			}
+
+			public ushort Unknown4 {
+				get;
+				set;
 			}
 
 			protected override void ReadData(Stream strIn)
 			{
-				// UNDONE
-				throw new NotImplementedException();
+				BinaryReader br = new BinaryReader(strIn);
+				this.Unknown1 = br.ReadUInt16();
+				this.Unknown2 = br.ReadUInt16();
+				this.Unknown3 = br.ReadUInt32();
+
+				if (this.Size == 0x12)
+					this.Unknown4 = br.ReadUInt16();
 			}
 
 			protected override void WriteData(Stream strOut)
 			{
-				// UNDONE
-				throw new NotImplementedException();
+				BinaryWriter bw = new BinaryWriter(strOut);
+				bw.Write(this.Unknown1);
+				bw.Write(this.Unknown2);
+				bw.Write(this.Unknown3);
+
+				if (this.Size == 0x12)
+					bw.Write(this.Unknown4);
 			}
 
 			public override bool Check()

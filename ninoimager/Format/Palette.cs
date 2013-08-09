@@ -133,8 +133,8 @@ namespace Ninoimager.Format
 				throw new ArgumentException("Length must be even.");
 
 			Color[] colors = new Color[values.Length / 2];
-			for (int i = 0; i < values.Length; i += 2) {
-				colors[i] = FromBGR555(BitConverter.ToUInt16(values, i));
+			for (int i = 0; i < colors.Length; i++) {
+				colors[i] = FromBGR555(BitConverter.ToUInt16(values, i*2));
 			}
 
 			return colors;
