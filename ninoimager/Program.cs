@@ -39,8 +39,40 @@ namespace Ninoimager
 
 			if (args[0] == "-t1")
 				PaletteInfo(args[1], args[2]);
+			else if (args[0] == "-c1")
+				TestReadWriteFormat(args[1], args[2]);
 			else if (args[0] == "-s1")
 				SearchVersion(args[1], args[2]);
+		}
+
+		private static void TestReadWriteFormat(string dir, string format)
+		{
+			Type type = Type.GetType(format, true, false);
+			MethodInfo writeMethod = type.GetMethod("Write", new Type[] { typeof(Stream) });
+			if (writeMethod == null)
+				throw new Exception("Invalid test");
+
+			foreach (string file in Directory.GetFiles(dir, "*.*", SearchOption.AllDirectories)) {
+				FileStream fs = new FileStream(file, FileMode.Open);
+				MemoryStream ms = new MemoryStream();
+				Object obj = null;
+				try {
+					obj = Activator.CreateInstance(type, fs);		// Constructor -> Read
+					writeMethod.Invoke(obj, new object[] { ms });	// Write
+
+					if (!Compare(fs, ms)) {
+						Console.WriteLine("Different files! -> {0}", file);
+					}
+
+				} catch (Exception ex) {
+					Console.WriteLine("ERROR on file: {0}", file);
+					Console.WriteLine("{0}", ex.ToString());
+					Console.ReadKey(true);
+				} finally {
+					fs.Close();
+					ms.Close();
+				}
+			}
 		}
 
 		private static void PaletteInfo(string file, string outputDir)
@@ -81,6 +113,20 @@ namespace Ninoimager
 					Console.WriteLine();
 				}
 			}
+		}
+
+		private static bool Compare(Stream str1, Stream str2)
+		{
+			if (str1.Length != str2.Length)
+				return false;
+
+			str1.Position = str2.Position = 0;
+			while (str1.Position != str1.Length) {
+				if (str1.ReadByte() != str2.ReadByte())
+					return false;
+			}
+
+			return true;
 		}
 	}
 }

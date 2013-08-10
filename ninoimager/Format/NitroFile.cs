@@ -161,7 +161,7 @@ namespace Ninoimager.Format
 
 				// Checks size
 				if (strOut.Length < blockPos + block.Size)
-					throw new InvalidDataException("Size does not match.");
+					throw new InvalidDataException(block.Name + " block size does not match.");
 
 				strOut.Position = blockPos + block.Size;
 			}

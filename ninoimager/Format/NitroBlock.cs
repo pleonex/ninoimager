@@ -65,8 +65,8 @@ namespace Ninoimager.Format
 
 		public void Write(Stream strOut)
 		{
-			if (this.Size % 4 != 0)
-				this.Size += 4 - (this.Size % 4);
+			//if (this.Size % 4 != 0)
+			//	this.Size += 4 - (this.Size % 4);
 
 			BinaryWriter bw = new BinaryWriter(strOut);
 			long startPos = strOut.Position;
@@ -80,8 +80,8 @@ namespace Ninoimager.Format
 			if (strOut.Position > strOut.Length)
 				strOut.Position = strOut.Length;
 
-			while (strOut.Position % 0x04 != 0)
-				strOut.WriteByte(0x00);
+			//while (strOut.Position % 0x04 != 0)
+			//	strOut.WriteByte(0x00);
 		}
 
 		protected abstract void WriteData(Stream strOut);

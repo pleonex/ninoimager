@@ -35,6 +35,11 @@ namespace Ninoimager.Format
 		private static Type[] BlockTypes = { typeof(Pltt), typeof(Pcmp) };
 		private NitroFile nitro;
 
+		public Nclr()
+		{
+			this.nitro = new NitroFile(BlockTypes);
+		}
+
 		public Nclr(string file)
 		{
 			this.nitro = new NitroFile(file, BlockTypes);
@@ -49,6 +54,16 @@ namespace Ninoimager.Format
 
 		public NitroFile NitroData {
 			get { return this.nitro; }
+		}
+
+		public void Write(string fileOut)
+		{
+			this.nitro.Write(fileOut);
+		}
+
+		public void Write(Stream strOut)
+		{
+			this.nitro.Write(strOut);
 		}
 
 		private void SetInfo()
@@ -97,7 +112,9 @@ namespace Ninoimager.Format
 				this.Depth         = (ColorFormat)br.ReadUInt16();
 				this.Unknown1      = br.ReadUInt16();
 				this.Unknown2      = br.ReadUInt32();
-				int paletteSize    = br.ReadInt32();
+				int paletteSize    = br.ReadInt32();	// CHECK: Not very sure
+				if (paletteSize == 0)
+					paletteSize = 512;
 				this.Unknown3      = br.ReadUInt32();
 				this.PaletteColors = Palette.FromBGR555(br.ReadBytes(paletteSize));
 			}
@@ -110,7 +127,7 @@ namespace Ninoimager.Format
 				bw.Write((ushort)this.Depth);
 				bw.Write(this.Unknown1);
 				bw.Write(this.Unknown2);
-				bw.Write(paletteBytes.Length);
+				bw.Write((paletteBytes.Length != 512) ? paletteBytes.Length : 0); // CHECK: Not very sure
 				bw.Write(this.Unknown3);
 				bw.Write(paletteBytes);
 			}
@@ -142,12 +159,7 @@ namespace Ninoimager.Format
 				set;
 			}
 
-			public uint Unknown3 {
-				get;
-				set;
-			}
-
-			public ushort Unknown4 {
+			public byte[] Unknown3 {
 				get;
 				set;
 			}
@@ -157,10 +169,8 @@ namespace Ninoimager.Format
 				BinaryReader br = new BinaryReader(strIn);
 				this.Unknown1 = br.ReadUInt16();
 				this.Unknown2 = br.ReadUInt16();
-				this.Unknown3 = br.ReadUInt32();
-
-				if (this.Size == 0x12)
-					this.Unknown4 = br.ReadUInt16();
+				this.Unknown3 = new byte[this.Size - 12];
+				this.Unknown3 = br.ReadBytes(this.Unknown3.Length);
 			}
 
 			protected override void WriteData(Stream strOut)
@@ -169,9 +179,6 @@ namespace Ninoimager.Format
 				bw.Write(this.Unknown1);
 				bw.Write(this.Unknown2);
 				bw.Write(this.Unknown3);
-
-				if (this.Size == 0x12)
-					bw.Write(this.Unknown4);
 			}
 
 			public override bool Check()
