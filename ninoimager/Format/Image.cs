@@ -48,6 +48,7 @@ namespace Ninoimager.Format
 		private ColorFormat format;
 		private PixelEncoding pixelEnc;
 
+		private Size tileSize = new Size(8, 8);
 		private int width;
 		private int height;
 
@@ -75,18 +76,35 @@ namespace Ninoimager.Format
 
 		public int Width {
 			get { return this.width; }
+			set {
+				this.width = value;
+				if (this.data != null)
+					this.ChangeDimension();
+			}
 		}
 
 		public int Height {
 			get { return this.height; }
+			set {
+				this.height = value;
+				if (this.data != null)
+					this.ChangeDimension();
+			}
 		}
 
 		public ColorFormat Format {
 			get { return this.format; }
+			set { this.format = value; }
 		}
 
 		public PixelEncoding PixelEncoding {
 			get { return pixelEnc; }
+			set { this.pixelEnc = value; }
+		}
+
+		public Size TileSize {
+			get { return this.tileSize; }
+			set { this.tileSize = value; }
 		}
 
 		public Bitmap CreateBitmap()
@@ -131,6 +149,9 @@ namespace Ninoimager.Format
 
 		public void SetData(byte[] rawData, PixelEncoding pixelEnc, ColorFormat format)
 		{
+			if (this.width == 0 || this.height == 0)
+				throw new ArgumentOutOfRangeException("Width and Height have not been specified.");
+
 			this.pixelEnc = pixelEnc;
 			this.format   = format;
 
@@ -141,6 +162,14 @@ namespace Ninoimager.Format
 		public byte[] GetData()
 		{
 			// UNDONE: Convert data
+			throw new NotImplementedException();
+		}
+
+		/// <summary>
+		/// Update data variable to new dimension.
+		/// </summary>
+		private void ChangeDimension()
+		{
 			throw new NotImplementedException();
 		}
 	}
