@@ -27,12 +27,6 @@ using System.Linq;
 
 namespace Ninoimager.Format
 {
-	public enum ColorFormat {
-		Unknown,
-		BGR555_4bpp = 3,
-		BGR555_8bpp = 4
-	}
-
 	public class Nclr : Palette
 	{
 		private static Type[] BlockTypes = { typeof(Pltt), typeof(Pcmp) };
