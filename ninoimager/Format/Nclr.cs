@@ -197,12 +197,6 @@ namespace Ninoimager.Format
 				bw.Write((uint)0x10);
 				bw.Write(paletteBytes);
 			}
-
-			public override bool Check()
-			{
-				// UNDONE
-				throw new NotImplementedException();
-			}
 		}
 
 		private class Pcmp : NitroBlock
@@ -260,12 +254,6 @@ namespace Ninoimager.Format
 				bw.Write((uint)0x08);
 				for (int i = 0; i < this.NumPalettes; i++)
 					bw.Write(this.PaletteIndex[i]);
-			}
-
-			public override bool Check()
-			{
-				// UNDONE
-				throw new NotImplementedException();
 			}
 		}
 	}

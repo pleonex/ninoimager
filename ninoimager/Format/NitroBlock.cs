@@ -85,11 +85,6 @@ namespace Ninoimager.Format
 		}
 
 		protected abstract void WriteData(Stream strOut);
-
-		/// <summary>
-		/// Checks the block content.
-		/// </summary>
-		public abstract bool Check();
 	}
 }
 
