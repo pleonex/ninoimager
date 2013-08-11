@@ -71,7 +71,7 @@ namespace Ninoimager.Format
 		{
 			this.pltt = this.nitro.GetBlock<Pltt>(0);
 
-			int numColors = (this.pltt.Depth == ColorFormat.BGR555_8bpp) ? 0x100 : 0x10;
+			int numColors = (this.pltt.Depth == ColorFormat.Indexed_8bpp) ? 0x100 : 0x10;
 			int numPalettes = 0;
 			ushort[] index = null;
 
@@ -93,7 +93,7 @@ namespace Ninoimager.Format
 			foreach (Color[] subpal in this.Palettes)
 				palette.AddRange(subpal);
 
-			this.pltt.Depth = (this.GetPalette(0).Length > 0x10) ? ColorFormat.BGR555_8bpp : ColorFormat.BGR555_4bpp;
+			this.pltt.Depth = (this.GetPalette(0).Length > 0x10) ? ColorFormat.Indexed_8bpp : ColorFormat.Indexed_4bpp;
 			this.pltt.PaletteColors = palette.ToArray();
 
 			// Disabled until know the meaning of PaletteInfo in that block
@@ -180,7 +180,7 @@ namespace Ninoimager.Format
 					Console.WriteLine("\tPLTT: Palette offset different to 0x10");
 				if (depth != 3 && depth != 4)
 					Console.WriteLine("\tPLTT: Unknown color format");
-				if (this.IsMultiPalette8bpp == 1 && this.Depth != ColorFormat.BGR555_8bpp &&
+				if (this.IsMultiPalette8bpp == 1 && this.Depth != ColorFormat.Indexed_8bpp && 
 				    this.PaletteColors.Length < 256)
 					Console.WriteLine("\tPLTT: IsMultiPalette8bpp meaning is different!");
 #endif
