@@ -88,7 +88,7 @@ namespace Ninoimager.Format
 			if (fileSize > size)
 				throw new FormatException("File size doesn't match (smaller).");
 			else if (fileSize + 4 < size)	// It could be padding bytes.
-				throw new FormatException("File size doesn't match (bigger).");
+				Console.WriteLine("##ERROR?##  File size doesn't match (bigger).");
 			else if (fileSize < size)
 				Console.WriteLine("##WARNING## File field is smaller than specified. {0}", size - fileSize);
 

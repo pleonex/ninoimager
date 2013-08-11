@@ -22,6 +22,7 @@
 using System;
 using System.IO;
 using System.Reflection;
+using System.Text;
 using Ninoimager.Format;
 
 namespace Ninoimager
@@ -43,6 +44,31 @@ namespace Ninoimager
 				TestReadWriteFormat(args[1], args[2]);
 			else if (args[0] == "-s1")
 				SearchVersion(args[1], args[2]);
+			else if (args[0] == "-ss")
+				SpecificSearch(args[1], args[2]);
+		}
+
+		private static void SpecificSearch(string dir, string format)
+		{
+			Type type = Type.GetType(format, true, false);
+
+			// Log into a file
+			StreamWriter writer = File.CreateText("log.txt");
+			writer.AutoFlush = true;
+
+			StringBuilder sb = new StringBuilder();
+			TextWriter tw = new StringWriter(sb);
+			Console.SetOut(tw);
+
+			foreach (string file in Directory.GetFiles(dir, "*.*", SearchOption.AllDirectories)) {
+				Activator.CreateInstance(type, file);	// Read file
+				writer.WriteLine("# {0}:", file);
+				writer.WriteLine(sb.ToString());
+				sb.Clear();
+			}
+
+			writer.Flush();
+			writer.Close();
 		}
 
 		private static void TestReadWriteFormat(string dir, string format)
