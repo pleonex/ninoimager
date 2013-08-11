@@ -23,6 +23,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Drawing;
+using System.Linq;
 
 namespace Ninoimager.Format
 {
@@ -74,16 +75,22 @@ namespace Ninoimager.Format
 
 		private void GetInfo()
 		{
-			this.pcmp = this.nitro.GetBlock<Pcmp>(0);
 			this.pltt = this.nitro.GetBlock<Pltt>(0);
 
+			int numColors = (this.pltt.Depth == ColorFormat.BGR555_8bpp) ? 0x100 : 0x10;
+			int numPalettes = 0;
+			ushort[] index = null;
+
 			if (this.nitro.Blocks.ContainsType("PCMP")) {
-				int numColors   = (this.pltt.Depth == ColorFormat.BGR555_8bpp) ? 0x100 : 0x10;
-				int numPalettes = this.pcmp.NumPalettes;
-				this.SetPalette(DividePalette(numColors, numPalettes, this.pltt.PaletteColors));
+				this.pcmp = this.nitro.GetBlock<Pcmp>(0);
+				index = this.pcmp.PaletteIndex;
+				numPalettes = this.pcmp.NumPalettes;
 			} else {
-				this.SetPalette(this.pltt.PaletteColors);
+				numPalettes = this.pltt.PaletteColors.Length / numColors;
+				if (this.pltt.PaletteColors.Length % numColors != 0) numPalettes++;
 			}
+
+			this.SetPalette(DividePalette(numColors, numPalettes, this.pltt.PaletteColors, index));
 		}
 
 		private void SetInfo()
@@ -94,18 +101,32 @@ namespace Ninoimager.Format
 
 			this.pltt.Depth = (this.GetPalette(0).Length > 0x10) ? ColorFormat.BGR555_8bpp : ColorFormat.BGR555_4bpp;
 			this.pltt.PaletteColors = palette.ToArray();
-			this.pcmp.NumPalettes   = (ushort)this.NumPalettes;
+
+			// Disabled until know the meaning of PaletteInfo in that block
+			//if (this.pcmp != null)
+			//	this.pcmp.NumPalettes   = (ushort)this.NumPalettes;
 		}
 
-		private static Color[][] DividePalette(int numColors, int numPalettes, Color[] palette)
+		private static Color[][] DividePalette(int numColors, int numPalettes, Color[] palette, ushort[] index = null)
 		{
-			int totalColors = palette.Length;
+			if (index != null && index.Length != numPalettes)
+				throw new ArgumentOutOfRangeException();
 
-			Color[][] newPalettes = new Color[numPalettes][];
+			Color[][] newPalettes;
+			if (index != null && index.Length > 0)
+			    newPalettes = new Color[index.Max() + 1][];
+			else
+			    newPalettes = new Color[numPalettes][];	
+			for (int i = 0; i < newPalettes.Length; i++)
+				newPalettes[i] = new Color[0];
+
+			// Set the right palette
+		      int totalColors = palette.Length;
 			for (int i = 0; i < numPalettes; i++) {
+				int idx = (index != null) ? index[i] : i;
 				int copyColors = ((i + 1) * numColors < totalColors) ? numColors : totalColors - i * numColors;
-				newPalettes[i] = new Color[copyColors];
-				Array.Copy(palette, i * numColors, newPalettes, 0, copyColors);
+				newPalettes[idx] = new Color[copyColors];
+				Array.Copy(palette, i * numColors, newPalettes[idx], 0, copyColors);
 			}
 
 			return newPalettes;
@@ -126,7 +147,12 @@ namespace Ninoimager.Format
 				set;
 			}
 
-			public uint Unknown2 {
+			/// <summary>
+			/// Gets a value indicating whether this instance contains more than one palette of 8bpp depth.
+			/// The value isn't read in game.
+			/// </summary>
+			/// <value><c>true</c> if this instance is multipalette 8bpp; otherwise, <c>false</c>.</value>
+			public uint IsMultiPalette8bpp {
 				get;
 				private set;
 			}
@@ -143,7 +169,7 @@ namespace Ninoimager.Format
 
 				uint depth    = br.ReadUInt32();
 				this.Depth    = (ColorFormat)depth;
-				this.Unknown2 = br.ReadUInt32();
+				this.IsMultiPalette8bpp = br.ReadUInt32();
 
 				int palSize        = br.ReadInt32();
 				// Since if the file contains a PCMP block the palette size may be wrong and unused, I'll obtain
@@ -155,13 +181,14 @@ namespace Ninoimager.Format
 
 #if DEBUG
 				if (palSize != actualSize)
-					Console.WriteLine("\t* Palette size is different to actual size");
+					Console.WriteLine("\tPLTT: Palette size is different to actual size");
 				if (palOffset != 0x10)
-					Console.WriteLine("\t* Palette offset different to 0x10");
+					Console.WriteLine("\tPLTT: Palette offset different to 0x10");
 				if (depth != 3 && depth != 4)
-					Console.WriteLine("\t* Unknown color format");
-				if (this.Unknown2 != 0)
-					Console.WriteLine("\t* Reserved 2 different to 0");
+					Console.WriteLine("\tPLTT: Unknown color format");
+				if (this.IsMultiPalette8bpp == 1 && this.Depth != ColorFormat.BGR555_8bpp &&
+				    this.PaletteColors.Length < 256)
+					Console.WriteLine("\tPLTT: IsMultiPalette8bpp meaning is different!");
 #endif
 			}
 
@@ -171,7 +198,7 @@ namespace Ninoimager.Format
 
 				BinaryWriter bw = new BinaryWriter(strOut);
 				bw.Write((uint)this.Depth);
-				bw.Write(this.Unknown2);
+				bw.Write(this.IsMultiPalette8bpp);
 				bw.Write(paletteBytes.Length);
 				bw.Write((uint)0x10);
 				bw.Write(paletteBytes);
@@ -199,12 +226,12 @@ namespace Ninoimager.Format
 				set;
 			}
 
-			public ushort Unknown2 {
+			public ushort Constant {
 				get;
 				set;
 			}
 
-			public byte[] Unknown3 {
+			public ushort[] PaletteIndex {
 				get;
 				set;
 			}
@@ -212,24 +239,33 @@ namespace Ninoimager.Format
 			protected override void ReadData(Stream strIn)
 			{
 				BinaryReader br  = new BinaryReader(strIn);
-				long blockOffset = strIn.Length;
+				long blockOffset = strIn.Position;
 
 				this.NumPalettes = br.ReadUInt16();
-				this.Unknown2    = br.ReadUInt16();
+				this.Constant    = br.ReadUInt16();
 
-				uint dataOffset = br.ReadUInt32();
-				strIn.Position  = blockOffset + dataOffset;
-				this.Unknown3   = new byte[this.Size - 10];
-				this.Unknown3   = br.ReadBytes(this.Unknown3.Length);
+				uint dataOffset  = br.ReadUInt32();
+				strIn.Position   = blockOffset + dataOffset;
+				this.PaletteIndex = new ushort[this.NumPalettes];
+				for (int i = 0; i < this.NumPalettes; i++)
+					this.PaletteIndex[i] = br.ReadUInt16();
+
+#if DEBUG
+				if (this.NumPalettes == 0)
+					Console.WriteLine("\tPCMP: 0 palettes?");
+				if (this.Constant != 0xBEEF)
+					Console.WriteLine("\tPCMP: Constant is different");
+#endif
 			}
 
 			protected override void WriteData(Stream strOut)
 			{
 				BinaryWriter bw = new BinaryWriter(strOut);
 				bw.Write(this.NumPalettes);
-				bw.Write(this.Unknown2);
+				bw.Write(this.Constant);
 				bw.Write((uint)0x08);
-				bw.Write(this.Unknown3);
+				for (int i = 0; i < this.NumPalettes; i++)
+					bw.Write(this.PaletteIndex[i]);
 			}
 
 			public override bool Check()

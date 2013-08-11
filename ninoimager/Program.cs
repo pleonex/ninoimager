@@ -61,7 +61,13 @@ namespace Ninoimager
 			Console.SetOut(tw);
 
 			foreach (string file in Directory.GetFiles(dir, "*.*", SearchOption.AllDirectories)) {
-				Activator.CreateInstance(type, file);	// Read file
+				try {
+					Activator.CreateInstance(type, file);	// Read file
+				} catch (Exception ex) {
+					Console.WriteLine("ERROR on file: {0}", file);
+					Console.WriteLine(ex.ToString());
+				}
+
 				writer.WriteLine("# {0}:", file);
 				writer.WriteLine(sb.ToString());
 				sb.Clear();
