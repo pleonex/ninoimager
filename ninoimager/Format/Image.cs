@@ -55,6 +55,7 @@ namespace Ninoimager.Format
 		// Doing so, operations and transformations will be easier to implement since there will be only two formats to
 		// work. The conversion will take place at the initialization and when the data is required (still to do).
 		private uint[,] data;
+		private uint[,] originalData;	// Copy used when updating dimensions
 
 		private ColorFormat format;
 		private PixelEncoding pixelEnc;
@@ -214,7 +215,8 @@ namespace Ninoimager.Format
 
 			// Then convert to lineal pixel encoding
 			this.data = new uint[this.width, this.height];
-			LinearizePixels(normalizedData, this.data, this.pixelEnc, this.tileSize);
+			LinealCodec(normalizedData, true);
+			this.originalData = (uint[,])this.data.Clone();
 		}
 
 		public byte[] GetData()
@@ -276,36 +278,46 @@ namespace Ninoimager.Format
 
 		}
 
-		private static void LinearizePixels(uint[] inData, uint[,] outData, PixelEncoding pixelEnc, Size tileSize)
+		/// <summary>
+		/// Encode and decode "pixel encoding"
+		/// </summary>
+		/// <param name="linealData">lineal data after or before conversion. Must be initialize.</param>
+		/// <param name="decoding">True if the method must decode, false if encode.</param> 
+		private void LinealCodec(uint[] linealData, bool decoding)
 		{
-			if (pixelEnc != PixelEncoding.Lineal && pixelEnc != PixelEncoding.HorizontalTiles &&
-			    pixelEnc != PixelEncoding.VerticalTiles)
+			if (this.pixelEnc != PixelEncoding.Lineal && this.pixelEnc != PixelEncoding.HorizontalTiles &&
+			    this.pixelEnc != PixelEncoding.VerticalTiles)
 				throw new NotSupportedException();
 
+			if (linealData == null || linealData.Length != this.width * this.height)
+				throw new ArgumentNullException();
+
 			// Little trick to use the same equations
-			if (pixelEnc == PixelEncoding.Lineal)
-				tileSize = new Size(1, 1);
+			if (this.pixelEnc == PixelEncoding.Lineal)
+				this.tileSize = new Size(1, 1);	// Or with the same dimension of the image
 
-			int width  = outData.GetLength(0);
-			int height = outData.GetLength(1);
-			int tileLength = tileSize.Width * tileSize.Height;
-			int numTilesX = width / tileSize.Width;
-			int numTilesY = height / tileSize.Height;
+			int tileLength = this.tileSize.Width * this.tileSize.Height;
+			int numTilesX = this.width / this.tileSize.Width;
+			int numTilesY = this.height / this.tileSize.Height;
 
-			for (int h = 0; h < height; h++) {
-				for (int w = 0; w < width; w++) {
-					Point pixelPos = new Point(w % tileSize.Width, h % tileSize.Height); // Pos. pixel inside tile
-					Point tilePos  = new Point(w / tileSize.Width, h / tileSize.Height); // Pos. tile in image
+			for (int h = 0; h < this.height; h++) {
+				for (int w = 0; w < this.width; w++) {
+					// Get lineal index
+					Point pixelPos = new Point(w % this.tileSize.Width, h % this.tileSize.Height); // Pos. pixel in tile
+					Point tilePos  = new Point(w / this.tileSize.Width, h / this.tileSize.Height); // Pos. tile in image
 					int index = 0;
 
-					if (pixelEnc == PixelEncoding.HorizontalTiles) {
+					if (this.pixelEnc == PixelEncoding.HorizontalTiles)
 						index = tilePos.Y * numTilesX * tileLength + tilePos.X * tileLength;	// Absolute tile pos.
-					} else if (pixelEnc == PixelEncoding.VerticalTiles) {
+					else if (this.pixelEnc == PixelEncoding.VerticalTiles)
 						index = tilePos.X * numTilesY * tileLength + tilePos.Y * tileLength;	// Absolute tile pos.
-					}
 
-					index += pixelPos.Y * tileSize.Width + pixelPos.X;	// Add pos. of pixel inside tile
-					outData[w, h] = inData[index];
+					index += pixelPos.Y * this.tileSize.Width + pixelPos.X;	// Add pos. of pixel inside tile
+
+					if (decoding)
+						this.data[w, h] = linealData[index];
+					else
+						linealData[index] = this.data[w, h];
 				}
 			}
 		}
@@ -315,7 +327,19 @@ namespace Ninoimager.Format
 		/// </summary>
 		private void ChangeDimension()
 		{
-			throw new NotImplementedException();
+			int originalWidth  = this.originalData.GetLength(0);
+			int originalHeight = this.originalData.GetLength(1);
+
+			this.data = new uint[this.height, this.width];
+			for (int h = 0; h < this.height; h++) {
+				for (int w = 0; w < this.width; w++) {
+
+					if (w < originalWidth && h < originalHeight)
+						this.data[w, h] = this.originalData[w, h];
+					else
+						this.data[w, h] = 0;	// If new pixel is outside of the original img -> transparent color
+				}
+			}
 		}
 	}
 }
