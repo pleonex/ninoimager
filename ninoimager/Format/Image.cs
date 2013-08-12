@@ -210,18 +210,33 @@ namespace Ninoimager.Format
 			int rawPos = 0;
 			for (int i = 0; i < normalizedData.Length; i++) {
 				uint info = GetValue(rawData, ref rawPos, this.Bpp);	// Get pixel info from raw data
-				normalizedData[i] = GetColor(info, this.format);		// Get color from pixel info
+				normalizedData[i] = UnpackColor(info, this.format);		// Get color from pixel info (unpack info)
 			}
 
 			// Then convert to lineal pixel encoding
 			this.data = new uint[this.width, this.height];
-			LinealCodec(normalizedData, true);
+			this.LinealCodec(normalizedData, true);
 			this.originalData = (uint[,])this.data.Clone();
 		}
 
 		public byte[] GetData()
 		{
-			throw new NotImplementedException();
+			// Inverse operation of SetData
+
+			// First convert to one-dimension array (encode pixels)
+			uint[] normalizedData = new uint[this.width * this.height];
+			this.LinealCodec(normalizedData, false);
+
+			// Then code normalized data to its format and write to final buffer
+			byte[] buffer = new byte[normalizedData.Length * this.Bpp / 8];
+			int bufferPos = 0;
+
+			for (int i = 0; i < normalizedData.Length; i++) {
+				uint info = PackColor(normalizedData[i], this.format);
+				SetValue(buffer, ref bufferPos, this.Bpp, info);
+			}
+
+			return buffer;
 		}
 
 		private static uint GetValue(byte[] data, ref int bitPos, int size)
@@ -244,7 +259,24 @@ namespace Ninoimager.Format
 			return value;
 		}
 
-		private static uint GetColor(uint info, ColorFormat format)
+		private static void SetValue(byte[] data, ref int bitPos, int size, uint value)
+		{
+			if (size < 0 || size > 32)
+				throw new ArgumentOutOfRangeException("Size is too big");
+
+			if (bitPos + size >= data.Length)
+				throw new IndexOutOfRangeException();
+
+			for (int s = size - 1; s >= 0; s--, bitPos++) {
+				uint bit = (value >> s) & 1;
+
+				uint dByte = data[bitPos / 8];
+				dByte |= bit << (7 - (bitPos % 8));
+				data[bitPos / 8] = (byte)dByte;
+			}
+		}
+
+		private static uint UnpackColor(uint info, ColorFormat format)
 		{
 			switch (format) {
 			// 100% alpha, no transparency
@@ -255,11 +287,11 @@ namespace Ninoimager.Format
 				return (0xFFu << 24) | info;
 
 			case ColorFormat.Indexed_A3I5:
-				return (((info >> 5) * 0xFF / 0x1F) << 24) | (info & 0x1F);
+				return (((info >> 5) * 0xFF / 0x07) << 24) | (info & 0x1F);
 			case ColorFormat.Indexed_A4I4:
 				return (((info >> 4) * 0xFF / 0x0F) << 24) | (info & 0x0F);
 			case ColorFormat.Indexed_A5I3:
-				return (((info >> 3) * 0xFF / 0x07) << 24) | (info & 0x07);
+				return (((info >> 3) * 0xFF / 0x1F) << 24) | (info & 0x07);
 
 			case ColorFormat.ABGR555_16bpp:
 				return 
@@ -275,7 +307,39 @@ namespace Ninoimager.Format
 			default:
 				throw new NotSupportedException();
 			}
+		}
 
+		private static uint PackColor(uint pxInfo, ColorFormat format)
+		{
+			switch (format) {
+				// No transparency
+			case ColorFormat.Indexed_1bpp:
+			case ColorFormat.Indexed_2bpp:
+			case ColorFormat.Indexed_4bpp:
+			case ColorFormat.Indexed_8bpp:
+				return pxInfo & 0x00FFFFFF;
+
+			case ColorFormat.Indexed_A3I5:
+				return (((pxInfo >> 24) * 0x07 / 0xFF) << 5) | (pxInfo & 0x1F);
+			case ColorFormat.Indexed_A4I4:
+				return (((pxInfo >> 24) * 0x0F / 0xFF) << 4) | (pxInfo & 0x0F);
+			case ColorFormat.Indexed_A5I3:
+				return (((pxInfo >> 24) * 0x1F / 0xFF) << 3) | (pxInfo & 0x07);
+
+			case ColorFormat.ABGR555_16bpp:
+				return
+					((((pxInfo >> 24) & 0xFF) * 0x01 / 0xFF) << 15) |	// alpha, 1 bit
+					((((pxInfo >> 16) & 0xFF) * 0x1F / 0xFF) << 10) |	// blue,  5 bits
+					((((pxInfo >> 08) & 0xFF) * 0x1F / 0xFF) << 05) |	// green, 5 bits
+					((((pxInfo >> 00) & 0xFF) * 0x1F / 0xFF) << 00);	// red,   5 bits
+			case ColorFormat.ABGR_32bpp:
+				return pxInfo;
+			case ColorFormat.BGRA_32bpp:
+				return ((pxInfo >> 24) & 0xFF) | (pxInfo << 8);
+
+			default:
+				throw new NotImplementedException();
+			}
 		}
 
 		/// <summary>
