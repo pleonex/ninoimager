@@ -65,9 +65,11 @@ namespace Ninoimager.Format
 		private void GetInfo()
 		{
 			this.charBlock = this.nitro.GetBlock<CharBlock>(0);
-			this.sopc = this.nitro.GetBlock<Sopc>(0);
+			this.sopc      = this.nitro.GetBlock<Sopc>(0);
 
-			throw new NotImplementedException();
+			this.Width  = this.charBlock.Width;
+			this.Height = this.charBlock.Height;
+			this.SetData(this.charBlock.ImageData, PixelEncoding.Lineal, this.charBlock.Format);
 		}
 
 		private void SetInfo()
@@ -132,6 +134,21 @@ namespace Ninoimager.Format
 				uint dataOffset = br.ReadUInt32();
 				strIn.Position  = blockPos + dataOffset;
 				this.ImageData  = br.ReadBytes((int)dataLength);
+
+#if DEBUG
+				if (this.Height == 0 || this.Height == 0xFFFF)
+					Console.WriteLine("\t* Invalid height value.");
+				if (this.Width == 0 || this.Width == 0xFFFF)
+					Console.WriteLine("\t* Invalid width value.");
+				if (format != 3 && format != 4)
+					Console.WriteLine("\t* Uncommon format.");
+				if (this.Unknown1 != 0)
+					Console.WriteLine("\t* Unknown1 different to 0.");
+				if (this.Unknown2 != 0)
+					Console.WriteLine("\t* Unknown2 different to 0.");
+				if (this.ImageData.Length == 0)
+					Console.WriteLine("\t* Image data null.");
+#endif
 			}
 
 			protected override void WriteData(Stream strOut)
@@ -160,14 +177,35 @@ namespace Ninoimager.Format
 				get { return "SOPC"; }
 			}
 
+			public uint Unknown1 {
+				get;
+				set;
+			}
+
+			public ushort Unknown2 {
+				get;
+				set;
+			}
+
+			public ushort Unknown3 {
+				get;
+				set;
+			}
+			
 			protected override void ReadData(Stream strIn)
 			{
-				throw new NotImplementedException();
+				BinaryReader br = new BinaryReader(strIn);
+				this.Unknown1 = br.ReadUInt32();
+				this.Unknown2 = br.ReadUInt16();
+				this.Unknown3 = br.ReadUInt16();
 			}
 
 			protected override void WriteData(Stream strOut)
 			{
-				throw new NotImplementedException();
+				BinaryWriter bw = new BinaryWriter(strOut);
+				bw.Write(this.Unknown1);
+				bw.Write(this.Unknown2);
+				bw.Write(this.Unknown3);
 			}
 		}
 	}
