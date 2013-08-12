@@ -43,6 +43,7 @@
     <Compile Include="Format\NitroBlock.cs" />
     <Compile Include="Format\Nclr.cs" />
     <Compile Include="Format\Image.cs" />
+    <Compile Include="Format\Ncgr.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
