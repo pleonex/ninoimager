@@ -35,15 +35,17 @@ namespace Ninoimager
 			Console.WriteLine("V {0} ~~ by pleoNeX ~~", Assembly.GetExecutingAssembly().GetName().Version);
 			Console.WriteLine();
 
-			if (args.Length != 3)
+			if (args.Length < 3)
 				return;
 
 			if (args[0] == "-t1")
 				PaletteInfo(args[1], args[2]);
+			else if (args[0] == "-t2" && args.Length == 4)
+				ImageInfo(args[1], args[2], args[3]);
 			else if (args[0] == "-c1")
 				TestReadWriteFormat(args[1], args[2]);
-			else if (args[0] == "-s1")
-				SearchVersion(args[1], args[2]);
+			else if (args[0] == "-s1" && args.Length == 4)
+				SearchVersion(args[1], args[2], args[3]);
 			else if (args[0] == "-ss")
 				SpecificSearch(args[1], args[2]);
 		}
@@ -107,6 +109,40 @@ namespace Ninoimager
 			}
 		}
 
+		private static void SearchVersion(string dir, string format, string version)
+		{
+			Type type = Type.GetType(format, true, false);
+			PropertyInfo nitroProp = type.GetProperty("NitroData");
+
+			foreach (string file in Directory.GetFiles(dir, "*.*", SearchOption.AllDirectories)) {
+				try {
+					Object obj = Activator.CreateInstance(type);
+					string objVersion = ((NitroFile)nitroProp.GetValue(obj, null)).VersionS;
+					if (objVersion != version)
+						Console.WriteLine("* {0} -> {1}", objVersion, file);
+				} catch (Exception ex) {
+					Console.WriteLine("ERROR at {0}", file);
+					Console.WriteLine(ex.ToString());
+					Console.ReadKey(true);
+					Console.WriteLine();
+				}
+			}
+		}
+
+		private static bool Compare(Stream str1, Stream str2)
+		{
+			if (str1.Length != str2.Length)
+				return false;
+
+			str1.Position = str2.Position = 0;
+			while (str1.Position != str1.Length) {
+				if (str1.ReadByte() != str2.ReadByte())
+					return false;
+			}
+
+			return true;
+		}
+	
 		private static void PaletteInfo(string file, string outputDir)
 		{
 			Console.WriteLine("Reading {0} as NCLR palette...", file);
@@ -130,35 +166,22 @@ namespace Ninoimager
 			}
 		}
 
-		private static void SearchVersion(string dir, string version)
+		private static void ImageInfo(string imgFile, string palFile, string outputFile)
 		{
-			foreach (string file in Directory.GetFiles(dir, "*.*", SearchOption.AllDirectories)) {
-				try {
-				Nclr palette = new Nclr(file);
-				if (palette.NitroData.VersionS != version)
-					Console.WriteLine("* {0} -> {1}", palette.NitroData.VersionS, file);
-				} catch (Exception ex) {
-					Console.WriteLine("ERROR at {0}", file);
-					Console.WriteLine(ex.Message);
-					Console.WriteLine(ex.StackTrace);
-					Console.ReadKey(true);
-					Console.WriteLine();
-				}
-			}
-		}
+			Console.WriteLine("Reading {0} as NCLR palette...", palFile);
+			Nclr palette = new Nclr(palFile);
 
-		private static bool Compare(Stream str1, Stream str2)
-		{
-			if (str1.Length != str2.Length)
-				return false;
+			Console.WriteLine("Reading {0} as NCGR image...", imgFile);
+			Ncgr image = new Ncgr(imgFile);
 
-			str1.Position = str2.Position = 0;
-			while (str1.Position != str1.Length) {
-				if (str1.ReadByte() != str2.ReadByte())
-					return false;
-			}
+			Console.WriteLine("\t* Version:               {0}", image.NitroData.VersionS);
+			Console.WriteLine("\t* Contains CPOS section: {0}", image.NitroData.Blocks.ContainsType("CPOS"));
+			Console.WriteLine("\t* Height:                {0}", image.Height);
+			Console.WriteLine("\t* Width:                 {0}", image.Width);
+			Console.WriteLine("\t* Format:                {0}", image.Format);
+			Console.WriteLine("\t* Pixel encoding:        {0}", image.PixelEncoding);
 
-			return true;
+			image.CreateBitmap(palette, 0).Save(outputFile);
 		}
 	}
 }

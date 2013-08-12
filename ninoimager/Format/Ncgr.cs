@@ -26,10 +26,10 @@ namespace Ninoimager.Format
 {
 	public class Ncgr : Image
 	{
-		private static Type[] BlockTypes = { typeof(Ncgr.CharBlock), typeof(Ncgr.Sopc) };
+		private static Type[] BlockTypes = { typeof(Ncgr.CHAR), typeof(Ncgr.Cpos) };
 		private NitroFile nitro;
-		private CharBlock charBlock;
-		private Sopc sopc;
+		private CHAR charBlock;
+		private Cpos cpos;
 
 		public Ncgr()
 		{
@@ -64,12 +64,14 @@ namespace Ninoimager.Format
 
 		private void GetInfo()
 		{
-			this.charBlock = this.nitro.GetBlock<CharBlock>(0);
-			this.sopc      = this.nitro.GetBlock<Sopc>(0);
+			this.charBlock = this.nitro.GetBlock<CHAR>(0);
+			if (this.nitro.Blocks.ContainsType("CPOS"))
+				this.cpos = this.nitro.GetBlock<Cpos>(0);
 
 			this.Width  = this.charBlock.Width;
 			this.Height = this.charBlock.Height;
-			this.SetData(this.charBlock.ImageData, PixelEncoding.Lineal, this.charBlock.Format);
+			// HACK: Determine PixelEncoding
+			this.SetData(this.charBlock.ImageData, PixelEncoding.HorizontalTiles, this.charBlock.Format);
 		}
 
 		private void SetInfo()
@@ -77,9 +79,9 @@ namespace Ninoimager.Format
 			throw new NotImplementedException();
 		}
 
-		private class CharBlock : NitroBlock
+		private class CHAR : NitroBlock
 		{
-			public CharBlock(NitroFile nitro)
+			public CHAR(NitroFile nitro)
 				: base(nitro)
 			{
 			}
@@ -132,8 +134,6 @@ namespace Ninoimager.Format
 
 				uint dataLength = br.ReadUInt32();
 				uint dataOffset = br.ReadUInt32();
-				strIn.Position  = blockPos + dataOffset;
-				this.ImageData  = br.ReadBytes((int)dataLength);
 
 #if DEBUG
 				if (this.Height == 0 || this.Height == 0xFFFF)
@@ -146,9 +146,26 @@ namespace Ninoimager.Format
 					Console.WriteLine("\t* Unknown1 different to 0.");
 				if (this.Unknown2 != 0)
 					Console.WriteLine("\t* Unknown2 different to 0.");
-				if (this.ImageData.Length == 0)
+				if (dataLength == 0)
 					Console.WriteLine("\t* Image data null.");
+				if (dataOffset != 0x18)
+					Console.WriteLine("\t* Different data offset.");
 #endif
+				// Try to fix values
+				if (dataLength == 0)
+					dataLength = (uint)(this.Size - 0x18);
+				if (this.Height == 0xFFFF && this.Width == 0xFFFF) {
+					// HACK: Determine dimensions
+					this.Width = 32 / 8;
+					this.Height = 288 / 8;
+				}
+
+				// Finally read data
+				strIn.Position  = blockPos + dataOffset;
+				this.ImageData  = br.ReadBytes((int)dataLength);
+
+				this.Height *= 8;
+				this.Width  *= 8;
 			}
 
 			protected override void WriteData(Stream strOut)
@@ -166,15 +183,15 @@ namespace Ninoimager.Format
 			}
 		}
 
-		private class Sopc : NitroBlock
+		private class Cpos : NitroBlock
 		{
-			public Sopc(NitroFile nitro)
+			public Cpos(NitroFile nitro)
 				: base(nitro)
 			{
 			}
 
 			public override string Name {
-				get { return "SOPC"; }
+				get { return "CPOS"; }
 			}
 
 			public uint Unknown1 {

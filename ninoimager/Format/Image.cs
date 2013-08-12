@@ -66,7 +66,7 @@ namespace Ninoimager.Format
 
 		public Image()
 		{
-			this.data     = new uint[0, 0];
+			this.data     = null;
 			this.format   = ColorFormat.Unknown;
 			this.pixelEnc = PixelEncoding.Unknown;
 			this.width    = 0;
@@ -244,13 +244,13 @@ namespace Ninoimager.Format
 			if (size < 0 || size > 32)
 				throw new ArgumentOutOfRangeException("Size is too big");
 
-			if (bitPos + size >= data.Length * 8)
+			if (bitPos + size > data.Length * 8)
 				throw new IndexOutOfRangeException();
 
 			uint value = 0;
-			for (int s = size - 1; s >= 0; s--, bitPos++) {
+			for (int s = 0; s < size; s++, bitPos++) {
 				uint bit = data[bitPos / 8];
-				bit >>= 7 - (bitPos % 8);
+				bit >>= (bitPos % 8);
 				bit &= 1;
 
 				value |= bit << s;
@@ -264,14 +264,14 @@ namespace Ninoimager.Format
 			if (size < 0 || size > 32)
 				throw new ArgumentOutOfRangeException("Size is too big");
 
-			if (bitPos + size >= data.Length)
+			if (bitPos + size > data.Length)
 				throw new IndexOutOfRangeException();
 
-			for (int s = size - 1; s >= 0; s--, bitPos++) {
+			for (int s = 0; s < size; s++, bitPos++) {
 				uint bit = (value >> s) & 1;
 
 				uint dByte = data[bitPos / 8];
-				dByte |= bit << (7 - (bitPos % 8));
+				dByte |= bit << (bitPos % 8);
 				data[bitPos / 8] = (byte)dByte;
 			}
 		}
@@ -338,7 +338,7 @@ namespace Ninoimager.Format
 				return ((pxInfo >> 24) & 0xFF) | (pxInfo << 8);
 
 			default:
-				throw new NotImplementedException();
+				throw new NotSupportedException();
 			}
 		}
 
@@ -358,7 +358,7 @@ namespace Ninoimager.Format
 
 			// Little trick to use the same equations
 			if (this.pixelEnc == PixelEncoding.Lineal)
-				this.tileSize = new Size(1, 1);	// Or with the same dimension of the image
+				this.tileSize = new Size(this.width, this.height);
 
 			int tileLength = this.tileSize.Width * this.tileSize.Height;
 			int numTilesX = this.width / this.tileSize.Width;

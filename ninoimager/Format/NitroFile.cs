@@ -109,7 +109,7 @@ namespace Ninoimager.Format
 				Type blockType = Array.Find<Type>( 
 					this.blockTypes, b => b.Name.ToLower() == blockName.ToLower());
 				if (blockType == null)
-					throw new FormatException("Unknown block");
+					throw new FormatException("Unknown block --> " + blockName);
 
 				NitroBlock block = (NitroBlock)Activator.CreateInstance(blockType, this);
 				block.Read(strIn);
