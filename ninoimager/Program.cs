@@ -19,7 +19,9 @@
 // <email>benito356@gmail.com</email>
 // <date>29/07/2013</date>
 // -----------------------------------------------------------------------
+#define VERBOSE
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -48,6 +50,8 @@ namespace Ninoimager
 				SearchVersion(args[1], args[2], args[3]);
 			else if (args[0] == "-ss")
 				SpecificSearch(args[1], args[2]);
+			else if (args[0] == "-p1")
+				SelectImagesFiles(args[1], args[2]);
 		}
 
 		private static void SpecificSearch(string dir, string format)
@@ -116,15 +120,86 @@ namespace Ninoimager
 
 			foreach (string file in Directory.GetFiles(dir, "*.*", SearchOption.AllDirectories)) {
 				try {
-					Object obj = Activator.CreateInstance(type);
+					Object obj = Activator.CreateInstance(type, file);
 					string objVersion = ((NitroFile)nitroProp.GetValue(obj, null)).VersionS;
-					if (objVersion != version)
+					if (objVersion == version)
 						Console.WriteLine("* {0} -> {1}", objVersion, file);
 				} catch (Exception ex) {
 					Console.WriteLine("ERROR at {0}", file);
 					Console.WriteLine(ex.ToString());
 					Console.ReadKey(true);
 					Console.WriteLine();
+				}
+			}
+		}
+
+		private static void SelectImagesFiles(string indir, string outDir)
+		{
+			const int FilesPerType = 10;
+			Dictionary<string, List<string>> types = new Dictionary<string, List<string>>();
+			types.Add("Error", new List<string>());
+			types.Add("Unknown1", new List<string>());
+			types.Add("Unknown2", new List<string>());
+			//types.Add("Format", new List<string>());
+
+			// Log into a file
+			StreamWriter writer = File.CreateText(Path.Combine(outDir, "log.txt"));
+			writer.AutoFlush = true;
+
+			foreach (string file in Directory.GetFiles(indir, "*.*", SearchOption.AllDirectories)) {
+				Ncgr ncgr = null;
+
+				// Check for error
+				try { ncgr = new Ncgr(file); }
+				catch (Exception ex) {
+					if (types["Error"].Count < FilesPerType) {
+						writer.WriteLine("Error: " + file);
+						writer.WriteLine(ex.ToString());
+						types["Error"].Add(file);
+					}
+					continue;
+				}
+
+				// Check for unknown1
+				if (ncgr.Unknown1 != 0 && ncgr.Unknown1 != 1) {
+					if (types["Unknown1"].Count < FilesPerType) {
+						writer.WriteLine("Unknown1: " + file);
+						types["Unknown1"].Add(file);
+					}
+				}
+
+				// Check for unknown2
+				if (ncgr.Unknown2 != 0) {
+					if (types["Unknown2"].Count < FilesPerType) {
+						writer.WriteLine("Unknown2: " + file);
+						types["Unknown2"].Add(file);
+					}
+				}
+
+				// Have we got all the files already?
+				bool finished = true;
+				foreach (string key in types.Keys) {
+					if (types[key].Count < FilesPerType)
+						finished = false;
+				}
+				if (finished)
+					break;
+			}
+
+			writer.Flush();
+			writer.Close();
+
+			// Copy selected files
+			foreach (string key in types.Keys) {
+				string dir = Path.Combine(outDir, key);
+				if (!Directory.Exists(dir))
+					Directory.CreateDirectory(dir);
+
+				foreach (string file in types[key]) {
+					string copyFile = Path.Combine(dir, Path.GetFileName(file));
+					if (File.Exists(copyFile))
+						copyFile += Path.GetRandomFileName();
+					File.Copy(file, copyFile);
 				}
 			}
 		}

@@ -52,6 +52,14 @@ namespace Ninoimager.Format
 			get { return this.nitro; }
 		}
 
+		public uint Unknown1 {
+			get { return this.charBlock.Unknown1; }
+		}
+
+		public uint Unknown2 {
+			get { return this.charBlock.Unknown2; }
+		}
+
 		public void Write(string fileOut)
 		{
 			this.nitro.Write(fileOut);
@@ -68,15 +76,20 @@ namespace Ninoimager.Format
 			if (this.nitro.Blocks.ContainsType("CPOS"))
 				this.cpos = this.nitro.GetBlock<Cpos>(0);
 
-			this.Width  = this.charBlock.Width;
-			this.Height = this.charBlock.Height;
+			this.Format = this.charBlock.Format;	// To get BPP
+			if (this.charBlock.Width == 0xFFFF && this.charBlock.Height == 0xFFFF) {
+				int numPixels = this.charBlock.ImageData.Length * 8 / this.Bpp;
+				// HACK: The objetive is to get "Width * Height = numPixels"
+				// Meanwhile the method is created, set trivial solution
+				this.Width = 1;
+				this.Height = numPixels;
+			} else {
+				this.Width = this.charBlock.Width * 8;
+				this.Height = this.charBlock.Height * 8;
+			}
+
 			// HACK: Determine PixelEncoding
 			this.SetData(this.charBlock.ImageData, PixelEncoding.HorizontalTiles, this.charBlock.Format);
-		}
-
-		private void SetInfo()
-		{
-			throw new NotImplementedException();
 		}
 
 		private class CHAR : NitroBlock
@@ -135,17 +148,17 @@ namespace Ninoimager.Format
 				uint dataLength = br.ReadUInt32();
 				uint dataOffset = br.ReadUInt32();
 
-#if DEBUG
+#if VERBOSE
 				if (this.Height == 0 || this.Height == 0xFFFF)
 					Console.WriteLine("\t* Invalid height value.");
 				if (this.Width == 0 || this.Width == 0xFFFF)
 					Console.WriteLine("\t* Invalid width value.");
 				if (format != 3 && format != 4)
-					Console.WriteLine("\t* Uncommon format.");
-				if (this.Unknown1 != 0)
-					Console.WriteLine("\t* Unknown1 different to 0.");
+					Console.WriteLine("\t* Uncommon format -> {0:X}", format);
+				if (this.Unknown1 != 0 && this.Unknown1 != 1)
+					Console.WriteLine("\t* Unknown1 different to 0 or 1 -> {0:X}", this.Unknown1);
 				if (this.Unknown2 != 0)
-					Console.WriteLine("\t* Unknown2 different to 0.");
+					Console.WriteLine("\t* Unknown2 different to 0 -> {0:X}", this.Unknown2);
 				if (dataLength == 0)
 					Console.WriteLine("\t* Image data null.");
 				if (dataOffset != 0x18)
@@ -154,18 +167,10 @@ namespace Ninoimager.Format
 				// Try to fix values
 				if (dataLength == 0)
 					dataLength = (uint)(this.Size - 0x18);
-				if (this.Height == 0xFFFF && this.Width == 0xFFFF) {
-					// HACK: Determine dimensions
-					this.Width = 32 / 8;
-					this.Height = 288 / 8;
-				}
 
 				// Finally read data
 				strIn.Position  = blockPos + dataOffset;
 				this.ImageData  = br.ReadBytes((int)dataLength);
-
-				this.Height *= 8;
-				this.Width  *= 8;
 			}
 
 			protected override void WriteData(Stream strOut)

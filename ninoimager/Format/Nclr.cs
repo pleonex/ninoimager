@@ -173,7 +173,7 @@ namespace Ninoimager.Format
 				strIn.Position     = blockPos + palOffset;
 				this.PaletteColors = Palette.FromBGR555(br.ReadBytes(actualSize));
 
-#if DEBUG
+#if VERBOSE
 				if (palSize != actualSize)
 					Console.WriteLine("\tPLTT: Palette size is different to actual size");
 				if (palOffset != 0x10)
