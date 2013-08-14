@@ -59,7 +59,7 @@ namespace Ninoimager.Format
 		}
 
 		public uint Unknown2 {
-			get { return this.charBlock.Unknown2; }
+			get { return this.charBlock.Unknown; }
 		}
 
 		public void Write(string fileOut)
@@ -78,31 +78,37 @@ namespace Ninoimager.Format
 			if (this.nitro.Blocks.ContainsType("CPOS"))
 				this.cpos = this.nitro.GetBlock<Cpos>(0);
 
+			this.TileSize = new System.Drawing.Size(8, 8);
+
 			this.Format = this.charBlock.Format;	// To get BPP
 			int numPixels = this.charBlock.ImageData.Length * 8 / this.Bpp;
+			int defaultWidth = this.TileSize.Width;
+			int defaultHeight = numPixels / defaultWidth;
 
 			if (this.charBlock.Width == 0xFFFF && this.charBlock.Height == 0xFFFF) {
-				// HACK: The objetive is to get "Width * Height = numPixels"
-				// Meanwhile the method is created, set trivial solution
-				this.Width = 1;
-				this.Height = numPixels;
+				// Since these images can be tiled used with OAMs or MAPs files, the width must be a multiple of 
+				// tile size to do correctly the lineal transformation.
+				this.Width = defaultWidth;
+				this.Height = defaultHeight;
 			} else {
-				this.Width = this.charBlock.Width * 8;
-				this.Height = this.charBlock.Height * 8;
+				this.Width = this.charBlock.Width * 8;		// It indicates the number of tiles in X axis
+				this.Height = this.charBlock.Height * 8;	// It indicates the number of tiles in Y axis
 			}
 
 			// It's "Digimon" game developper fault
 			if (this.Width * this.Height != numPixels) {
-				this.Width = 1;
-				this.Height = numPixels;
+				this.Width = defaultWidth;
+				this.Height = defaultHeight;
 			}
 
 			// It's "Donkey Kong - Jungle Climber" game developper fault (and its damn dummy files)
+			// I will left it to throw the error since there is no image and a bitmap with width or height
+			// 0 can not be created.
 			if (this.Width == 0 || this.Height == 0)
-				this.Width = this.Height = 1;
+				this.Width = this.Height = 0;
 
 			// HACK: Determine PixelEncoding
-			this.SetData(this.charBlock.ImageData, PixelEncoding.HorizontalTiles, this.charBlock.Format);
+			this.SetData(this.charBlock.ImageData, this.charBlock.PixelEncoding, this.charBlock.Format);
 		}
 
 		private class CHAR : NitroBlock
@@ -141,7 +147,12 @@ namespace Ninoimager.Format
 				private set;
 			}
 
-			public uint Unknown2 {
+			public PixelEncoding PixelEncoding {
+				get;
+				private set;
+			}
+
+			public uint Unknown {
 				get;
 				private set;
 			}
@@ -156,12 +167,16 @@ namespace Ninoimager.Format
 				BinaryReader br = new BinaryReader(strIn);
 				long blockPos   = strIn.Position;
 
-				this.Height   = br.ReadUInt16();
-				this.Width    = br.ReadUInt16();
-				uint format   = br.ReadUInt32();
-				this.Format   = (ColorFormat)format;
+				this.Height     = br.ReadUInt16();
+				this.Width      = br.ReadUInt16();
+				uint format     = br.ReadUInt32();
+				this.Format     = (ColorFormat)format;
 				this.RegDispcnt = br.ReadUInt32();
-				this.Unknown2 = br.ReadUInt32();
+
+				// It seems to be something like this
+				uint unknown       = br.ReadUInt32();
+				this.PixelEncoding = (PixelEncoding)(unknown & 0xFF);
+				this.Unknown       = (unknown >> 8);
 
 				uint dataLength = br.ReadUInt32();
 				uint dataOffset = br.ReadUInt32();
@@ -171,13 +186,14 @@ namespace Ninoimager.Format
 					Console.WriteLine("\t* Invalid height value.");
 				if (this.Width == 0 || this.Width == 0xFFFF)
 					Console.WriteLine("\t* Invalid width value.");
-				if (this.Unknown2 != 0 && this.Unknown2 != 1)
-					Console.WriteLine("\t* Unknown2 different to 0 or 1 -> {0:X}", this.Unknown2);
+				if (this.Unknown == 1)
+					Console.WriteLine("\t* Unknown set to 1.");
 				if (dataLength == 0)
 					Console.WriteLine("\t* Image data null.");
 				if (dataOffset != 0x18)
 					Console.WriteLine("\t* Different data offset.");
 #endif
+
 				// Try to fix values
 				if (dataLength == 0)
 					dataLength = (uint)(this.Size - 0x18);
@@ -191,11 +207,13 @@ namespace Ninoimager.Format
 			{
 				BinaryWriter bw = new BinaryWriter(strOut);
 
+				uint unknown = (uint)this.PixelEncoding | (this.Unknown << 8);
+
 				bw.Write(this.Height);
 				bw.Write(this.Width);
 				bw.Write((uint)this.Format);
 				bw.Write(this.RegDispcnt);
-				bw.Write(this.Unknown2);
+				bw.Write(unknown);
 				bw.Write((uint)this.ImageData.Length);
 				bw.Write(0x18);
 				bw.Write(this.ImageData);

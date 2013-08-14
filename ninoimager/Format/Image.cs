@@ -43,8 +43,8 @@ namespace Ninoimager.Format
 
 	public enum PixelEncoding {
 		Unknown,
-		Lineal,
-		HorizontalTiles,
+		Lineal = 1,
+		HorizontalTiles = 0,
 		VerticalTiles
 	}
 
@@ -360,30 +360,38 @@ namespace Ninoimager.Format
 			if (this.pixelEnc == PixelEncoding.Lineal)
 				this.tileSize = new Size(this.width, this.height);
 
+
+			for (int y = 0; y < this.height; y++) {
+				for (int x = 0; x < this.width; x++) {
+					int index = this.CalculateLinealIndex(x, y);
+
+					if (decoding)
+						this.data[x, y] = linealData[index];
+					else
+						linealData[index] = this.data[x, y];
+				}
+			}
+		}
+
+		private int CalculateLinealIndex(int x, int y)
+		{
 			int tileLength = this.tileSize.Width * this.tileSize.Height;
 			int numTilesX = this.width / this.tileSize.Width;
 			int numTilesY = this.height / this.tileSize.Height;
 
-			for (int h = 0; h < this.height; h++) {
-				for (int w = 0; w < this.width; w++) {
-					// Get lineal index
-					Point pixelPos = new Point(w % this.tileSize.Width, h % this.tileSize.Height); // Pos. pixel in tile
-					Point tilePos  = new Point(w / this.tileSize.Width, h / this.tileSize.Height); // Pos. tile in image
-					int index = 0;
+			// Get lineal index
+			Point pixelPos = new Point(x % this.tileSize.Width, y % this.tileSize.Height); // Pos. pixel in tile
+			Point tilePos  = new Point(x / this.tileSize.Width, y / this.tileSize.Height); // Pos. tile in image
+			int index = 0;
 
-					if (this.pixelEnc == PixelEncoding.HorizontalTiles)
-						index = tilePos.Y * numTilesX * tileLength + tilePos.X * tileLength;	// Absolute tile pos.
-					else if (this.pixelEnc == PixelEncoding.VerticalTiles)
-						index = tilePos.X * numTilesY * tileLength + tilePos.Y * tileLength;	// Absolute tile pos.
+			if (this.pixelEnc == PixelEncoding.HorizontalTiles)
+				index = tilePos.Y * numTilesX * tileLength + tilePos.X * tileLength;	// Absolute tile pos.
+			else if (this.pixelEnc == PixelEncoding.VerticalTiles)
+				index = tilePos.X * numTilesY * tileLength + tilePos.Y * tileLength;	// Absolute tile pos.
 
-					index += pixelPos.Y * this.tileSize.Width + pixelPos.X;	// Add pos. of pixel inside tile
+			index += pixelPos.Y * this.tileSize.Width + pixelPos.X;	// Add pos. of pixel inside tile
 
-					if (decoding)
-						this.data[w, h] = linealData[index];
-					else
-						linealData[index] = this.data[w, h];
-				}
-			}
+			return index;
 		}
 
 		/// <summary>
