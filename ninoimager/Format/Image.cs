@@ -83,9 +83,9 @@ namespace Ninoimager.Format
 				case ColorFormat.Indexed_A3I5:
 				case ColorFormat.Indexed_A4I4:
 				case ColorFormat.Indexed_A5I3:
+				case ColorFormat.Texeled_4x4:
 					return true;
 
-				case ColorFormat.Texeled_4x4:
 				case ColorFormat.ABGR555_16bpp:
 				case ColorFormat.BGRA_32bpp:
 				case ColorFormat.ABGR_32bpp:

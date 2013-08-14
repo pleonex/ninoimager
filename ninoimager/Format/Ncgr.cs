@@ -19,6 +19,8 @@
 // <email>benito356@gmail.com</email>
 // <date>12/08/2013</date>
 // -----------------------------------------------------------------------
+
+//#define VERBOSE
 using System;
 using System.IO;
 
@@ -52,8 +54,8 @@ namespace Ninoimager.Format
 			get { return this.nitro; }
 		}
 
-		public uint Unknown1 {
-			get { return this.charBlock.Unknown1; }
+		public uint RegDispcnt {
+			get { return this.charBlock.RegDispcnt; }
 		}
 
 		public uint Unknown2 {
@@ -77,8 +79,9 @@ namespace Ninoimager.Format
 				this.cpos = this.nitro.GetBlock<Cpos>(0);
 
 			this.Format = this.charBlock.Format;	// To get BPP
+			int numPixels = this.charBlock.ImageData.Length * 8 / this.Bpp;
+
 			if (this.charBlock.Width == 0xFFFF && this.charBlock.Height == 0xFFFF) {
-				int numPixels = this.charBlock.ImageData.Length * 8 / this.Bpp;
 				// HACK: The objetive is to get "Width * Height = numPixels"
 				// Meanwhile the method is created, set trivial solution
 				this.Width = 1;
@@ -87,6 +90,16 @@ namespace Ninoimager.Format
 				this.Width = this.charBlock.Width * 8;
 				this.Height = this.charBlock.Height * 8;
 			}
+
+			// It's "Digimon" game developper fault
+			if (this.Width * this.Height != numPixels) {
+				this.Width = 1;
+				this.Height = numPixels;
+			}
+
+			// It's "Donkey Kong - Jungle Climber" game developper fault (and its damn dummy files)
+			if (this.Width == 0 || this.Height == 0)
+				this.Width = this.Height = 1;
 
 			// HACK: Determine PixelEncoding
 			this.SetData(this.charBlock.ImageData, PixelEncoding.HorizontalTiles, this.charBlock.Format);
@@ -105,32 +118,37 @@ namespace Ninoimager.Format
 
 			public ushort Height {
 				get;
-				set;
+				private set;
 			}
 
 			public ushort Width {
 				get;
-				set;
+				private set;
 			}
 
 			public ColorFormat Format {
 				get;
-				set;
+				private set;
 			}
 
-			public uint Unknown1 {
+			/// <summary>
+			/// Video register 4000000h, it can set only bits: 4, 20 and 21.
+			/// More info at: <seealso cref="http://nocash.emubase.de/gbatek.htm#dsvideobgmodescontrol"/>
+			/// </summary>
+			/// <value>The register DISPCNT</value>
+			public uint RegDispcnt {
 				get;
-				set;
+				private set;
 			}
 
 			public uint Unknown2 {
 				get;
-				set;
+				private set;
 			}
 
 			public byte[] ImageData {
 				get;
-				set;
+				private set;
 			}
 
 			protected override void ReadData(Stream strIn)
@@ -142,7 +160,7 @@ namespace Ninoimager.Format
 				this.Width    = br.ReadUInt16();
 				uint format   = br.ReadUInt32();
 				this.Format   = (ColorFormat)format;
-				this.Unknown1 = br.ReadUInt32();
+				this.RegDispcnt = br.ReadUInt32();
 				this.Unknown2 = br.ReadUInt32();
 
 				uint dataLength = br.ReadUInt32();
@@ -153,12 +171,8 @@ namespace Ninoimager.Format
 					Console.WriteLine("\t* Invalid height value.");
 				if (this.Width == 0 || this.Width == 0xFFFF)
 					Console.WriteLine("\t* Invalid width value.");
-				if (format != 3 && format != 4)
-					Console.WriteLine("\t* Uncommon format -> {0:X}", format);
-				if (this.Unknown1 != 0 && this.Unknown1 != 1)
-					Console.WriteLine("\t* Unknown1 different to 0 or 1 -> {0:X}", this.Unknown1);
-				if (this.Unknown2 != 0)
-					Console.WriteLine("\t* Unknown2 different to 0 -> {0:X}", this.Unknown2);
+				if (this.Unknown2 != 0 && this.Unknown2 != 1)
+					Console.WriteLine("\t* Unknown2 different to 0 or 1 -> {0:X}", this.Unknown2);
 				if (dataLength == 0)
 					Console.WriteLine("\t* Image data null.");
 				if (dataOffset != 0x18)
@@ -180,7 +194,7 @@ namespace Ninoimager.Format
 				bw.Write(this.Height);
 				bw.Write(this.Width);
 				bw.Write((uint)this.Format);
-				bw.Write(this.Unknown1);
+				bw.Write(this.RegDispcnt);
 				bw.Write(this.Unknown2);
 				bw.Write((uint)this.ImageData.Length);
 				bw.Write(0x18);

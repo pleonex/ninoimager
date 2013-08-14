@@ -19,6 +19,8 @@
 // <email>benito356@gmail.com</email>
 // <date>07/08/2013</date>
 // -----------------------------------------------------------------------
+
+//#define VERBOSE
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -142,11 +144,12 @@ namespace Ninoimager.Format
 			}
 
 			/// <summary>
-			/// Gets a value indicating whether this instance contains more than one palette of 8bpp depth.
-			/// The value isn't read in game.
+			/// Gets a value indicating whether this instance contains more than one palette of 256 colors.
+			/// The value isn't actually read in game.
+			/// More info at <seealso cref="http://nocash.emubase.de/gbatek.htm#dsvideoextendedpalettes"/>
 			/// </summary>
-			/// <value><c>true</c> if this instance is multipalette 8bpp; otherwise, <c>false</c>.</value>
-			public uint IsMultiPalette8bpp {
+			/// <value><c>true</c> if this instance is multipalette of 256 colors; otherwise, <c>false</c>.</value>
+			public uint ExtendedPalette {
 				get;
 				private set;
 			}
@@ -163,7 +166,7 @@ namespace Ninoimager.Format
 
 				uint depth    = br.ReadUInt32();
 				this.Depth    = (ColorFormat)depth;
-				this.IsMultiPalette8bpp = br.ReadUInt32();
+				this.ExtendedPalette = br.ReadUInt32();
 
 				int palSize        = br.ReadInt32();
 				// Since if the file contains a PCMP block the palette size may be wrong and unused, I'll obtain
@@ -180,7 +183,7 @@ namespace Ninoimager.Format
 					Console.WriteLine("\tPLTT: Palette offset different to 0x10");
 				if (depth != 3 && depth != 4)
 					Console.WriteLine("\tPLTT: Unknown color format");
-				if (this.IsMultiPalette8bpp == 1 && this.Depth != ColorFormat.Indexed_8bpp && 
+				if (this.ExtendedPalette == 1 && this.Depth != ColorFormat.Indexed_8bpp && 
 				    this.PaletteColors.Length < 256)
 					Console.WriteLine("\tPLTT: IsMultiPalette8bpp meaning is different!");
 #endif
@@ -192,7 +195,7 @@ namespace Ninoimager.Format
 
 				BinaryWriter bw = new BinaryWriter(strOut);
 				bw.Write((uint)this.Depth);
-				bw.Write(this.IsMultiPalette8bpp);
+				bw.Write(this.ExtendedPalette);
 				bw.Write(paletteBytes.Length);
 				bw.Write((uint)0x10);
 				bw.Write(paletteBytes);

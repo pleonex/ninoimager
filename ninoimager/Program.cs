@@ -19,7 +19,6 @@
 // <email>benito356@gmail.com</email>
 // <date>29/07/2013</date>
 // -----------------------------------------------------------------------
-#define VERBOSE
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -135,12 +134,11 @@ namespace Ninoimager
 
 		private static void SelectImagesFiles(string indir, string outDir)
 		{
-			const int FilesPerType = 10;
+			const int FilesPerType = 10000;
 			Dictionary<string, List<string>> types = new Dictionary<string, List<string>>();
 			types.Add("Error", new List<string>());
 			types.Add("Unknown1", new List<string>());
-			types.Add("Unknown2", new List<string>());
-			//types.Add("Format", new List<string>());
+			types.Add("Unknown22", new List<string>());
 
 			// Log into a file
 			StreamWriter writer = File.CreateText(Path.Combine(outDir, "log.txt"));
@@ -161,20 +159,20 @@ namespace Ninoimager
 				}
 
 				// Check for unknown1
-				if (ncgr.Unknown1 != 0 && ncgr.Unknown1 != 1) {
+				if (ncgr.RegDispcnt != 0) {
 					if (types["Unknown1"].Count < FilesPerType) {
 						writer.WriteLine("Unknown1: " + file);
 						types["Unknown1"].Add(file);
 					}
 				}
 
-				// Check for unknown2
-				if (ncgr.Unknown2 != 0) {
-					if (types["Unknown2"].Count < FilesPerType) {
-						writer.WriteLine("Unknown2: " + file);
-						types["Unknown2"].Add(file);
+				if ((ncgr.Unknown2 & 0x0000FF00) != 0) {
+					if (types["Unknown22"].Count < FilesPerType) {
+						writer.WriteLine("Unknown22: " + file);
+						types["Unknown22"].Add(file);
 					}
 				}
+
 
 				// Have we got all the files already?
 				bool finished = true;

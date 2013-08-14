@@ -79,8 +79,13 @@ namespace Ninoimager.Format
 			// Nitro header
 			this.magicStamp = new string(br.ReadChars(4).Reverse().ToArray());
 
-			if (br.ReadUInt16() != BomLittleEndiannes)	// Byte Order Mark
-				throw new InvalidDataException("The data is not little endiannes.");
+			ushort bom = br.ReadUInt16();
+			if (bom != BomLittleEndiannes) {	// Byte Order Mark
+				if (bom == 0)
+					Console.WriteLine("##ERROR?## There is no BOM value.");
+				else
+					throw new InvalidDataException("The data is not little endiannes.");
+			}
 
 			this.version = br.ReadUInt16();
 
