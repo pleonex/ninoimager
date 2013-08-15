@@ -45,6 +45,7 @@
     <Compile Include="Format\Image.cs" />
     <Compile Include="Format\Ncgr.cs" />
     <Compile Include="Format\Map.cs" />
+    <Compile Include="Format\Nscr.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

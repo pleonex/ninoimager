@@ -99,7 +99,7 @@ namespace Ninoimager.Format
 			this.data     = null;
 			this.format   = ColorFormat.Unknown;
 			this.pixelEnc = PixelEncoding.Unknown;
-			this.tileSize = new Size(0, 0);
+			this.tileSize = new Size(8, 8);
 			this.width    = 0;
 			this.height   = 0;
 		}
@@ -184,20 +184,12 @@ namespace Ninoimager.Format
 
 		public int Width {
 			get { return this.width; }
-			set {
-				if (this.IsTiled && (value % this.tileSize.Width) != 0)
-					throw new ArgumentException("Width must be a multiple of the tile width");
-				this.width = value;
-			}
+			set { this.width = value; }
 		}
 
 		public int Height {
 			get { return this.height; }
-			set {
-				if (this.IsTiled && (value % this.tileSize.Height) != 0)
-					throw new ArgumentException("Height must be a multiple of the tile height.");
-				this.height = value;
-			}
+			set { this.height = value; }
 		}
 
 		public ColorFormat Format {
