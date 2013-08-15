@@ -45,7 +45,7 @@ namespace Ninoimager.Format
 		Unknown,
 		Lineal = 1,
 		HorizontalTiles = 0,
-		VerticalTiles
+		VerticalTiles = 2
 	}
 
 	public struct Pixel
@@ -85,8 +85,7 @@ namespace Ninoimager.Format
 		// Doing so, operations and transformations will be easier to implement since there will be only two formats to
 		// work. The conversion will take place at the initialization and when the data is required.
 		// CHECK: What about changing the type to Pixel?
-		private uint[,] data;
-		private uint[,] originalData;	// Copy used when updating dimensions
+		private uint[] data;
 
 		private ColorFormat format;
 		private PixelEncoding pixelEnc;
@@ -112,10 +111,9 @@ namespace Ninoimager.Format
 			this.SetData(pixels, pxEnc, format, tileSize);
 		}
 
-		private Image(Image img, uint[,] data, int width, int height)
+		private Image(Image img, uint[] data, int width, int height)
 		{
 			this.data = data;
-			this.originalData = data;
 			this.width = width;
 			this.height = height;
 			this.format = img.Format;
@@ -139,6 +137,22 @@ namespace Ninoimager.Format
 				case ColorFormat.ABGR555_16bpp:
 				case ColorFormat.BGRA_32bpp:
 				case ColorFormat.ABGR_32bpp:
+					return false;
+
+				default:
+					throw new FormatException();
+				}
+			}
+		}
+
+		public bool IsTiled {
+			get {
+				switch (this.pixelEnc) {
+				case PixelEncoding.HorizontalTiles:
+				case PixelEncoding.VerticalTiles:
+					return true;
+
+				case PixelEncoding.Lineal:
 					return false;
 
 				default:
@@ -171,18 +185,18 @@ namespace Ninoimager.Format
 		public int Width {
 			get { return this.width; }
 			set {
+				if (this.IsTiled && (value % this.tileSize.Width) != 0)
+					throw new ArgumentException("Width must be a multiple of the tile width");
 				this.width = value;
-				if (this.data != null)
-					this.ChangeDimension();
 			}
 		}
 
 		public int Height {
 			get { return this.height; }
 			set {
+				if (this.IsTiled && (value % this.tileSize.Height) != 0)
+					throw new ArgumentException("Height must be a multiple of the tile height.");
 				this.height = value;
-				if (this.data != null)
-					this.ChangeDimension();
 			}
 		}
 
@@ -208,11 +222,9 @@ namespace Ninoimager.Format
 
 			Bitmap bmp = new Bitmap(this.width, this.height);
 
-			for (int h = 0; h < this.height; h++) {
-				for (int w = 0; w < this.width; w++) {
-					Color color = Color.FromArgb((int)this.data[w, h]);
-					bmp.SetPixel(w, h, color);
-				}
+			for (int i = 0; i < this.data.Length; i++) {
+				Color color = Color.FromArgb((int)this.data[i]);
+				bmp.SetPixel(i % this.width, i / this.width, color);
 			}
 
 			return bmp;
@@ -228,27 +240,39 @@ namespace Ninoimager.Format
 			Bitmap bmp = new Bitmap(this.width, this.height);
 			Color[] imgColors = palette.GetPalette(paletteIndex);
 
-			for (int h = 0; h < this.height; h++) {
-				for (int w = 0; w < this.width; w++) {
+			for (int i = 0; i < this.data.Length; i++) {
+				uint alpha      = this.data[i] >> 24;
+				uint colorIndex = this.data[i] & 0x00FFFFFF;
+				if (colorIndex >= imgColors.Length)
+					throw new IndexOutOfRangeException("Color index out of range");
 
-					uint alpha      = this.data[w, h] >> 24;
-					uint colorIndex = this.data[w, h] & 0x00FFFFFF;
-					if (colorIndex >= imgColors.Length)
-						throw new IndexOutOfRangeException("Color index out of range");
-
-					Color color = imgColors[colorIndex];
-					color = Color.FromArgb((int)alpha, color);
-					bmp.SetPixel(w, h, color);
-				}
+				Color color = imgColors[colorIndex];
+				color = Color.FromArgb((int)alpha, color);
+				bmp.SetPixel(i % this.width, i / this.width, color);
 			}
 
 			return bmp;
 		}
 
-		public Bitmap CreateBitmap(Palette palette, int[] paletteIndex)
+		public Bitmap CreateBitmap(Palette palette, uint[] paletteIndex)
 		{
-			// paletteIndex contains an index per pixel, used by Map images
-			throw new NotImplementedException();
+			if (!this.IsIndexed) {
+				Console.WriteLine("##WARNING## The palette is not required.");
+				return this.CreateBitmap();
+			}
+
+			Bitmap bmp = new Bitmap(this.width, this.height);
+
+			for (int i = 0; i < this.data.Length; i++) {
+				uint alpha = this.data[i] >> 24;
+				uint colorIndex = this.data[i] & 0x00FFFFFF;
+
+				Color color = palette.GetColor((int)paletteIndex[i], (int)colorIndex);
+				color = Color.FromArgb((int)alpha, color);
+				bmp.SetPixel(i % this.width, i / this.width, color);
+			}
+
+			return bmp;
 		}
 
 		public Image CreateSubImage(int x, int y, int width, int height)
@@ -267,7 +291,7 @@ namespace Ninoimager.Format
 
 			for (int y = 0; y < this.tileSize.Height; y++) {
 				for (int x = 0; x < this.tileSize.Width; x++) {
-					uint px = this.data[tilePos.X + x, tilePos.Y + y];
+					uint px = this.data[(y + tilePos.Y) * this.Width + (x + tilePos.X)];
 					tile[y * this.tileSize.Width + x] = new Pixel(
 						px & 0x00FFFFFF,
 						(px >> 24) & 0xFF,
@@ -303,9 +327,8 @@ namespace Ninoimager.Format
 			}
 
 			// Then convert to lineal pixel encoding
-			this.data = new uint[this.width, this.height];
-			this.LinealCodec(normalizedData, true);
-			this.originalData = (uint[,])this.data.Clone();
+			this.data = new uint[this.width * this.height];
+			LinealCodec(normalizedData, this.data, true, this.pixelEnc, this.width, this.height, this.tileSize);
 		}
 
 		public void SetData(Pixel[] pixels, PixelEncoding pixelEnc, ColorFormat format, Size tileSize)
@@ -321,9 +344,8 @@ namespace Ninoimager.Format
 			for (int i = 0; i < pixels.Length; i++)
 				normalizedData[i] = (uint)(pixels[i].Alpha << 24) | (uint)pixels[i].Info;
 
-			this.data = new uint[this.width, this.height];
-			this.LinealCodec(normalizedData, true);
-			this.originalData = (uint[,])this.data;
+			this.data = new uint[this.width * this.height];
+			LinealCodec(normalizedData, this.data, true, this.pixelEnc, this.width, this.height, this.tileSize);
 		}
 
 		public byte[] GetData()
@@ -332,7 +354,7 @@ namespace Ninoimager.Format
 
 			// First convert to one-dimension array (encode pixels)
 			uint[] normalizedData = new uint[this.width * this.height];
-			this.LinealCodec(normalizedData, false);
+			LinealCodec(this.data, normalizedData, false, this.pixelEnc, this.width, this.height, this.tileSize);
 
 			// Then code normalized data to its format and write to final buffer
 			byte[] buffer = new byte[normalizedData.Length * this.Bpp / 8];
@@ -344,6 +366,57 @@ namespace Ninoimager.Format
 			}
 
 			return buffer;
+		}
+
+		public static void LinealCodec(uint[] dataIn, uint[] dataOut, bool decoding, PixelEncoding pxEnc,
+		                               int width, int height, Size tileSize)
+		{
+			if (pxEnc != PixelEncoding.Lineal && pxEnc != PixelEncoding.HorizontalTiles && 
+			    pxEnc != PixelEncoding.VerticalTiles)
+				throw new NotSupportedException();
+
+			if (dataIn == null || dataOut == null || dataIn.Length != dataOut.Length)
+				throw new ArgumentNullException();
+
+			if ((width % tileSize.Width != 0) && 
+			    (pxEnc == PixelEncoding.HorizontalTiles || pxEnc == PixelEncoding.VerticalTiles))
+				throw new FormatException("Width must be a multiple of tile width to use Tiled pixel encoding.");
+
+			// Little trick to use the same equations
+			if (pxEnc == PixelEncoding.Lineal)
+				tileSize = new Size(width, height);
+
+			for (int linealIndex = 0; linealIndex < dataOut.Length; linealIndex++) {
+				int tiledIndex = CalculateTiledIndex(
+					linealIndex % width, linealIndex / width,
+					pxEnc, width, height, tileSize);
+
+				if (decoding)
+					dataOut[linealIndex] = dataIn[tiledIndex];
+				else
+					dataOut[tiledIndex] = dataIn[linealIndex];
+			}
+		}
+
+		private static int CalculateTiledIndex(int x, int y, PixelEncoding pxEnc, int width, int height, Size tileSize)
+		{
+			int tileLength = tileSize.Width * tileSize.Height;
+			int numTilesX = width / tileSize.Width;
+			int numTilesY = height / tileSize.Height;
+
+			// Get lineal index
+			Point pixelPos = new Point(x % tileSize.Width, y % tileSize.Height); // Pos. pixel in tile
+			Point tilePos  = new Point(x / tileSize.Width, y / tileSize.Height); // Pos. tile in image
+			int index = 0;
+
+			if (pxEnc == PixelEncoding.HorizontalTiles)
+				index = tilePos.Y * numTilesX * tileLength + tilePos.X * tileLength;	// Absolute tile pos.
+			else if (pxEnc == PixelEncoding.VerticalTiles)
+				index = tilePos.X * numTilesY * tileLength + tilePos.Y * tileLength;	// Absolute tile pos.
+
+			index += pixelPos.Y * tileSize.Width + pixelPos.X;	// Add pos. of pixel inside tile
+
+			return index;
 		}
 
 		private static uint GetValue(byte[] data, ref int bitPos, int size)
@@ -446,81 +519,6 @@ namespace Ninoimager.Format
 
 			default:
 				throw new NotSupportedException();
-			}
-		}
-
-		/// <summary>
-		/// Encode and decode "pixel encoding"
-		/// </summary>
-		/// <param name="dataIn">lineal data after or before conversion. Must be initialize.</param>
-		/// <param name="decoding">True if the method must decode, false if encode.</param> 
-		private void LinealCodec(uint[] dataIn, bool decoding)
-		{
-			if (this.pixelEnc != PixelEncoding.Lineal && this.pixelEnc != PixelEncoding.HorizontalTiles &&
-			    this.pixelEnc != PixelEncoding.VerticalTiles)
-				throw new NotSupportedException();
-
-			if (dataIn == null || dataIn.Length != this.width * this.height)
-				throw new ArgumentNullException();
-
-			if ((this.width % this.tileSize.Width != 0) && 
-				(this.pixelEnc == PixelEncoding.HorizontalTiles || this.pixelEnc == PixelEncoding.VerticalTiles))
-				throw new FormatException("Width must be a multiple of tile width to use Tiled pixel encoding.");
-
-			// Little trick to use the same equations
-			if (this.pixelEnc == PixelEncoding.Lineal)
-				this.tileSize = new Size(this.width, this.height);
-
-			for (int y = 0; y < this.height; y++) {
-				for (int x = 0; x < this.width; x++) {
-					int index = this.CalculateLinealIndex(x, y);
-
-					if (decoding)
-						this.data[x, y] = dataIn[index];
-					else
-						dataIn[index] = this.data[x, y];
-				}
-			}
-		}
-
-		private int CalculateLinealIndex(int x, int y)
-		{
-			int tileLength = this.tileSize.Width * this.tileSize.Height;
-			int numTilesX = this.width / this.tileSize.Width;
-			int numTilesY = this.height / this.tileSize.Height;
-
-			// Get lineal index
-			Point pixelPos = new Point(x % this.tileSize.Width, y % this.tileSize.Height); // Pos. pixel in tile
-			Point tilePos  = new Point(x / this.tileSize.Width, y / this.tileSize.Height); // Pos. tile in image
-			int index = 0;
-
-			if (this.pixelEnc == PixelEncoding.HorizontalTiles)
-				index = tilePos.Y * numTilesX * tileLength + tilePos.X * tileLength;	// Absolute tile pos.
-			else if (this.pixelEnc == PixelEncoding.VerticalTiles)
-				index = tilePos.X * numTilesY * tileLength + tilePos.Y * tileLength;	// Absolute tile pos.
-
-			index += pixelPos.Y * this.tileSize.Width + pixelPos.X;	// Add pos. of pixel inside tile
-
-			return index;
-		}
-
-		/// <summary>
-		/// Update data variable to new dimension.
-		/// </summary>
-		private void ChangeDimension()
-		{
-			int originalWidth  = this.originalData.GetLength(0);
-			int originalHeight = this.originalData.GetLength(1);
-
-			this.data = new uint[this.height, this.width];
-			for (int h = 0; h < this.height; h++) {
-				for (int w = 0; w < this.width; w++) {
-
-					if (w < originalWidth && h < originalHeight)
-						this.data[w, h] = this.originalData[w, h];
-					else
-						this.data[w, h] = 0;	// If new pixel is outside of the original img -> transparent color
-				}
 			}
 		}
 	}

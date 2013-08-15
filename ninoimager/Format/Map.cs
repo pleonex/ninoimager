@@ -94,30 +94,31 @@ namespace Ninoimager.Format
 				throw new FormatException("Image with different tile size");
 
 			// TODO: Try to convert image to tiled
-			if (image.PixelEncoding != PixelEncoding.HorizontalTiles &&
-				image.PixelEncoding != PixelEncoding.VerticalTiles)
+			if (!image.IsTiled)
 				throw new FormatException("Image not tiled.");
 
 			Pixel[] mapImage = new Pixel[this.width * this.height];
-			int[] paletteIndex = new int[this.width * this.height];
+			uint[] tmpIndex = new uint[this.width * this.height];
 
 			int count = 0;
 			foreach (MapInfo info in this.info) {
 				Pixel[] tile = image.GetTile(info.TileIndex);
 				if (info.FlipX)
-					FlipX(tile, this.tileSize);	// UNDONE: Flip tile X
+					FlipX(tile, this.tileSize);
 				if (info.FlipY)
-					FlipY(tile, this.tileSize);	// UNDONE: Flip tile Y
+					FlipY(tile, this.tileSize);
 
 				tile.CopyTo(mapImage, count);
 
 				for (int i = 0; i < tile.Length; i++)
-					paletteIndex[count + i] = info.PaletteIndex;
+					tmpIndex[count + i] = (uint)info.PaletteIndex;
 
 				count += tile.Length;
 			}
 
-			// UNDONE: Palette Index must be lineal but it's tiled, convert it.
+			// Palette Index must be lineal but it's tiled, convert it.
+			uint[] palIndex = new uint[this.width * this.height];
+			Image.LinealCodec(tmpIndex, palIndex, true, image.PixelEncoding, this.width, this.height, image.TileSize);
 
 			Image finalImg = new Image(
 				mapImage,
@@ -126,7 +127,7 @@ namespace Ninoimager.Format
 			    image.PixelEncoding,
 			    image.Format,
 			    image.TileSize);
-			return finalImg.CreateBitmap(palette, paletteIndex);
+			return finalImg.CreateBitmap(palette, palIndex);
 		}
 
 		public void SetMapInfo(MapInfo[] mapInfo)

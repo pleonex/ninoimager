@@ -58,6 +58,15 @@ namespace Ninoimager.Format
 			}
 		}
 
+		public Color GetColor(int paletteIndex, int colorIndex)
+		{
+			if ((paletteIndex < 0 || paletteIndex >= this.palette.Length) ||
+			    (colorIndex < 0 || colorIndex >= this.palette[paletteIndex].Length))
+			    throw new IndexOutOfRangeException();
+
+			return this.palette[paletteIndex][colorIndex];
+		}
+
 		public Color[] GetPalette(int index)
 		{
 			if (index < 0 || index >= this.palette.Length)
