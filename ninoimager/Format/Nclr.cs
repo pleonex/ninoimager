@@ -168,7 +168,7 @@ namespace Ninoimager.Format
 				this.Depth    = (ColorFormat)depth;
 				this.ExtendedPalette = br.ReadUInt32();
 
-				int palSize        = br.ReadInt32();
+				br.ReadInt32();		// palSize
 				// Since if the file contains a PCMP block the palette size may be wrong and unused, I'll obtain
 				// the size from the block size
 				int actualSize     = this.Size - 0x8 - 0x10;

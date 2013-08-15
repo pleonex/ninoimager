@@ -137,8 +137,8 @@ namespace Ninoimager
 			const int FilesPerType = 10000;
 			Dictionary<string, List<string>> types = new Dictionary<string, List<string>>();
 			types.Add("Error", new List<string>());
-			types.Add("Unknown1", new List<string>());
-			types.Add("Unknown22", new List<string>());
+			types.Add("Register", new List<string>());
+			types.Add("Unknown", new List<string>());
 
 			// Log into a file
 			StreamWriter writer = File.CreateText(Path.Combine(outDir, "log.txt"));
@@ -160,16 +160,16 @@ namespace Ninoimager
 
 				// Check for unknown1
 				if (ncgr.RegDispcnt != 0) {
-					if (types["Unknown1"].Count < FilesPerType) {
-						writer.WriteLine("Unknown1: " + file);
-						types["Unknown1"].Add(file);
+					if (types["Register"].Count < FilesPerType) {
+						writer.WriteLine("Register: " + file);
+						types["Register"].Add(file);
 					}
 				}
 
-				if ((ncgr.Unknown2 & 0x0000FF00) != 0) {
-					if (types["Unknown22"].Count < FilesPerType) {
-						writer.WriteLine("Unknown22: " + file);
-						types["Unknown22"].Add(file);
+				if ((ncgr.Unknown >> 8) != 0) {
+					if (types["Unknown"].Count < FilesPerType) {
+						writer.WriteLine("Unknown: " + file);
+						types["Unknown"].Add(file);
 					}
 				}
 

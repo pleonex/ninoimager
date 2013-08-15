@@ -58,7 +58,7 @@ namespace Ninoimager.Format
 			get { return this.charBlock.RegDispcnt; }
 		}
 
-		public uint Unknown2 {
+		public uint Unknown {
 			get { return this.charBlock.Unknown; }
 		}
 
@@ -77,8 +77,6 @@ namespace Ninoimager.Format
 			this.charBlock = this.nitro.GetBlock<CHAR>(0);
 			if (this.nitro.Blocks.ContainsType("CPOS"))
 				this.cpos = this.nitro.GetBlock<Cpos>(0);
-
-			this.TileSize = new System.Drawing.Size(8, 8);
 
 			this.Format = this.charBlock.Format;	// To get BPP
 			int numPixels = this.charBlock.ImageData.Length * 8 / this.Bpp;
@@ -107,7 +105,6 @@ namespace Ninoimager.Format
 			if (this.Width == 0 || this.Height == 0)
 				this.Width = this.Height = 0;
 
-			// HACK: Determine PixelEncoding
 			this.SetData(this.charBlock.ImageData, this.charBlock.PixelEncoding, this.charBlock.Format);
 		}
 

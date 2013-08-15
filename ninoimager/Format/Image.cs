@@ -48,6 +48,36 @@ namespace Ninoimager.Format
 		VerticalTiles
 	}
 
+	public struct Pixel
+	{
+		public Pixel(uint info, uint alpha, bool isIndexed) : this()
+		{
+			this.IsIndexed = isIndexed;
+			this.Info = info;
+			this.Alpha = (byte)alpha;
+		}
+
+		public bool IsIndexed {
+			get;
+			private set;
+		}
+
+		/// <summary>
+		/// Gets the pixel info.
+		/// If it's indexed it returns the color index otherwise, it returns a 32bit BGR value.
+		/// </summary>
+		/// <value>The pixel info.</value>
+		public uint Info {
+			get;
+			private set;
+		}
+
+		public byte Alpha {
+			get;
+			private set;
+		}
+	}
+
 	public class Image
 	{
 		// Image data will be independent of the value of "format" and "pixelEnc" doing a conversion to lineal pixel
@@ -60,7 +90,7 @@ namespace Ninoimager.Format
 		private ColorFormat format;
 		private PixelEncoding pixelEnc;
 
-		private Size tileSize = new Size(8, 8);
+		private Size tileSize;
 		private int width;
 		private int height;
 
@@ -71,6 +101,17 @@ namespace Ninoimager.Format
 			this.pixelEnc = PixelEncoding.Unknown;
 			this.width    = 0;
 			this.height   = 0;
+		}
+
+		private Image(Image img, uint[,] data, int width, int height)
+		{
+			this.data = data;
+			this.originalData = data;
+			this.width = width;
+			this.height = height;
+			this.format = img.Format;
+			this.pixelEnc = img.PixelEncoding;
+			this.tileSize = img.TileSize;
 		}
 
 		public bool IsIndexed {
@@ -143,12 +184,12 @@ namespace Ninoimager.Format
 
 		public PixelEncoding PixelEncoding {
 			get { return pixelEnc; }
-			set { this.pixelEnc = value; }
+			private set { this.pixelEnc = value; }
 		}
 
 		public Size TileSize {
 			get { return this.tileSize; }
-			set { this.tileSize = value; }
+			private set { this.tileSize = value; }
 		}
 
 		public Bitmap CreateBitmap()
@@ -195,13 +236,52 @@ namespace Ninoimager.Format
 			return bmp;
 		}
 
+		public Bitmap CreateBitmap(Palette palette, int[] paletteIndex)
+		{
+			// paletteIndex contains an index per pixel, used by Map images
+			throw new NotImplementedException();
+		}
+
+		public Image CreateSubImage(int x, int y, int width, int height)
+		{
+			// Get pixel of subimage and create using private constructor to pass internal data
+			throw new NotImplementedException();
+		}
+
+		public Pixel[] GetTile(int index)
+		{
+			Pixel[] tile = new Pixel[this.tileSize.Width * this.tileSize.Height];
+
+			bool isIndexed = this.IsIndexed;
+			int numTilesX = this.width / this.tileSize.Width;
+			Point tilePos = new Point(index % numTilesX, index / numTilesX);
+
+			for (int y = 0; y < this.tileSize.Height; y++) {
+				for (int x = 0; x < this.tileSize.Width; x++) {
+					uint px = this.data[tilePos.X + x, tilePos.Y + y];
+					tile[y * this.tileSize.Width + x] = new Pixel(
+						px & 0x00FFFFFF,
+						(px >> 24) & 0xFF,
+						isIndexed);
+				}
+			}
+
+			return tile;
+		}
+
 		public void SetData(byte[] rawData, PixelEncoding pixelEnc, ColorFormat format)
+		{
+			this.SetData(rawData, pixelEnc, format, new Size(8, 8));
+		}
+
+		public void SetData(byte[] rawData, PixelEncoding pixelEnc, ColorFormat format, Size tileSize)
 		{
 			if (this.width == 0 || this.height == 0)
 				throw new ArgumentOutOfRangeException("Width and Height have not been specified.");
 
 			this.pixelEnc = pixelEnc;
 			this.format   = format;
+			this.tileSize = tileSize;
 
 			// First convert to 24bpp index + 8 bits alpha if it's indexed or ARGB32 otherwise.
 			// normalizeData contains information about 1 pixel (index or color)
@@ -356,6 +436,10 @@ namespace Ninoimager.Format
 			if (linealData == null || linealData.Length != this.width * this.height)
 				throw new ArgumentNullException();
 
+			if ((this.width % this.tileSize.Width != 0) && 
+				(this.pixelEnc == PixelEncoding.HorizontalTiles || this.pixelEnc == PixelEncoding.VerticalTiles))
+				throw new FormatException("Width must be a multiple of tile width to use Tiled pixel encoding.");
+
 			// Little trick to use the same equations
 			if (this.pixelEnc == PixelEncoding.Lineal)
 				this.tileSize = new Size(this.width, this.height);
@@ -415,4 +499,3 @@ namespace Ninoimager.Format
 		}
 	}
 }
-
