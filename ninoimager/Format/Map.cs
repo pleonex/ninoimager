@@ -74,12 +74,22 @@ namespace Ninoimager.Format
 
 		public int Width {
 			get { return this.width; }
-			set { this.width = value; }
+			set {
+				if ((value % this.tileSize.Width) != 0)
+					throw new ArgumentException("Width must be a multiple of the tile width");
+
+				this.width = value;
+			}
 		}
 
 		public int Height {
 			get { return this.height; }
-			set { this.height = value; }
+			set {
+				if ((value % this.tileSize.Height) != 0)
+					throw new ArgumentException("Height must be a multiple of the tile height.");
+
+				this.height = value;
+			}
 		}
 
 		public Size TileSize {
@@ -142,12 +152,31 @@ namespace Ninoimager.Format
 
 		private static void FlipX(Pixel[] tile, Size tileSize)
 		{
-			throw new NotImplementedException();
+			for (int y = 0; y < tileSize.Height; y++) {
+				for (int x = 0; x < tileSize.Width / 2; x++) {
+					int t1 = y * tileSize.Width + x;
+					int t2 = y * tileSize.Width + (tileSize.Width - 1 - x);
+
+					Pixel swap = tile[t1];
+					tile[t1] = tile[t2];
+					tile[t2] = swap;
+				}
+			}
 		}
 
 		private static void FlipY(Pixel[] tile, Size tileSize)
 		{
-			throw new NotImplementedException();
+			for (int x = 0; x < tileSize.Width; x++) {
+				for (int y = 0; y < tileSize.Height / 2; y++) {
+					int t1 = x + tileSize.Width * y;
+					int t2 = x + tileSize.Width * (tileSize.Height - 1 - y);
+
+					Pixel swap = tile[t1];
+					tile[t1] = tile[t2];
+					tile[t2] = swap;
+				}
+			}
+
 		}
 	}
 }
