@@ -83,7 +83,8 @@ namespace Ninoimager.Format
 		// Image data will be independent of the value of "format" and "pixelEnc" doing a conversion to lineal pixel
 		// encoding and to 24BPP index + 8 bits of alpha component if the image is indexed and to ABGR32 otherwise.
 		// Doing so, operations and transformations will be easier to implement since there will be only two formats to
-		// work. The conversion will take place at the initialization and when the data is required (still to do).
+		// work. The conversion will take place at the initialization and when the data is required.
+		// CHECK: What about changing the type to Pixel?
 		private uint[,] data;
 		private uint[,] originalData;	// Copy used when updating dimensions
 
@@ -99,8 +100,16 @@ namespace Ninoimager.Format
 			this.data     = null;
 			this.format   = ColorFormat.Unknown;
 			this.pixelEnc = PixelEncoding.Unknown;
+			this.tileSize = new Size(0, 0);
 			this.width    = 0;
 			this.height   = 0;
+		}
+
+		public Image(Pixel[] pixels, int width, int height, PixelEncoding pxEnc, ColorFormat format, Size tileSize)
+		{
+			this.width = width;
+			this.height = height;
+			this.SetData(pixels, pxEnc, format, tileSize);
 		}
 
 		private Image(Image img, uint[,] data, int width, int height)
@@ -299,6 +308,24 @@ namespace Ninoimager.Format
 			this.originalData = (uint[,])this.data.Clone();
 		}
 
+		public void SetData(Pixel[] pixels, PixelEncoding pixelEnc, ColorFormat format, Size tileSize)
+		{
+			if (this.width == 0 || this.height == 0)
+				throw new ArgumentOutOfRangeException("Width and Height have not been specified.");
+
+			this.pixelEnc = pixelEnc;
+			this.format   = format;
+			this.tileSize = tileSize;
+
+			uint[] normalizedData = new uint[pixels.Length];
+			for (int i = 0; i < pixels.Length; i++)
+				normalizedData[i] = (uint)(pixels[i].Alpha << 24) | (uint)pixels[i].Info;
+
+			this.data = new uint[this.width, this.height];
+			this.LinealCodec(normalizedData, true);
+			this.originalData = (uint[,])this.data;
+		}
+
 		public byte[] GetData()
 		{
 			// Inverse operation of SetData
@@ -425,15 +452,15 @@ namespace Ninoimager.Format
 		/// <summary>
 		/// Encode and decode "pixel encoding"
 		/// </summary>
-		/// <param name="linealData">lineal data after or before conversion. Must be initialize.</param>
+		/// <param name="dataIn">lineal data after or before conversion. Must be initialize.</param>
 		/// <param name="decoding">True if the method must decode, false if encode.</param> 
-		private void LinealCodec(uint[] linealData, bool decoding)
+		private void LinealCodec(uint[] dataIn, bool decoding)
 		{
 			if (this.pixelEnc != PixelEncoding.Lineal && this.pixelEnc != PixelEncoding.HorizontalTiles &&
 			    this.pixelEnc != PixelEncoding.VerticalTiles)
 				throw new NotSupportedException();
 
-			if (linealData == null || linealData.Length != this.width * this.height)
+			if (dataIn == null || dataIn.Length != this.width * this.height)
 				throw new ArgumentNullException();
 
 			if ((this.width % this.tileSize.Width != 0) && 
@@ -444,15 +471,14 @@ namespace Ninoimager.Format
 			if (this.pixelEnc == PixelEncoding.Lineal)
 				this.tileSize = new Size(this.width, this.height);
 
-
 			for (int y = 0; y < this.height; y++) {
 				for (int x = 0; x < this.width; x++) {
 					int index = this.CalculateLinealIndex(x, y);
 
 					if (decoding)
-						this.data[x, y] = linealData[index];
+						this.data[x, y] = dataIn[index];
 					else
-						linealData[index] = this.data[x, y];
+						dataIn[index] = this.data[x, y];
 				}
 			}
 		}
