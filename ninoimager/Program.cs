@@ -43,6 +43,8 @@ namespace Ninoimager
 				PaletteInfo(args[1], args[2]);
 			else if (args[0] == "-t2" && args.Length == 4)
 				ImageInfo(args[1], args[2], args[3]);
+			else if (args[0] == "-t3" && args.Length == 5)
+				MapInfo(args[1], args[2], args[3], args[4]);
 			else if (args[0] == "-c1")
 				TestReadWriteFormat(args[1], args[2]);
 			else if (args[0] == "-s1" && args.Length == 4)
@@ -255,6 +257,25 @@ namespace Ninoimager
 			Console.WriteLine("\t* Pixel encoding:        {0}", image.PixelEncoding);
 
 			image.CreateBitmap(palette, 0).Save(outputFile);
+		}
+
+		private static void MapInfo(string mapFile, string imgFile, string palFile, string outputFile)
+		{
+			Console.WriteLine("Reading {0} as NCLR palette...", palFile);
+			Nclr palette = new Nclr(palFile);
+
+			Console.WriteLine("Reading {0} as NCGR image...", imgFile);
+			Ncgr image = new Ncgr(imgFile);
+
+			Console.WriteLine("Reading {0} as NSCR map...", mapFile);
+			Nscr map = new Nscr(mapFile);
+
+			Console.WriteLine("\t* Version: {0}", map.NitroData.VersionS);
+			Console.WriteLine("\t* Height:  {0}", map.Height);
+			Console.WriteLine("\t* Width:   {0}", map.Width);
+			Console.WriteLine("\t* Unknown: {0}", map.Unknown);
+
+			map.CreateBitmap(image, palette).Save(outputFile);
 		}
 	}
 }

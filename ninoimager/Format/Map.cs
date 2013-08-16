@@ -35,6 +35,16 @@ namespace Ninoimager.Format
 			this.FlipY = flipY;
 		}
 
+		public MapInfo(ushort value)
+			: this()
+		{
+			this.TileIndex    = (value >> 00) & 0x3FF;
+			this.PaletteIndex = (value >> 12) & 0x0F;
+			this.FlipX        = ((value >> 10) & 0x01) == 1;
+			this.FlipY        = ((value >> 11) & 0x01) == 1;
+
+		}
+
 		public int TileIndex {
 			get;
 			private set;
@@ -53,6 +63,15 @@ namespace Ninoimager.Format
 		public bool FlipY {
 			get;
 			private set;
+		}
+
+		public ushort ToUInt16()
+		{
+			return (ushort)(
+				(this.TileIndex << 00) |
+				(this.PaletteIndex << 12) |
+				((this.FlipX ? 1 : 0) << 10) |
+				((this.FlipY ? 1 : 0) << 11));
 		}
 	}
 

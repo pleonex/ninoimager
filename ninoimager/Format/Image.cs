@@ -283,7 +283,7 @@ namespace Ninoimager.Format
 
 			for (int y = 0; y < this.tileSize.Height; y++) {
 				for (int x = 0; x < this.tileSize.Width; x++) {
-					uint px = this.data[(y + tilePos.Y) * this.Width + (x + tilePos.X)];
+					uint px = this.data[(y + tilePos.Y * tileSize.Height) * this.Width + (x + tilePos.X * tileSize.Width)];
 					tile[y * this.tileSize.Width + x] = new Pixel(
 						px & 0x00FFFFFF,
 						(px >> 24) & 0xFF,

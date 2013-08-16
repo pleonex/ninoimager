@@ -19,6 +19,8 @@
 // <email>benito356@gmail.com</email>
 // <date>16/08/2013</date>
 // -----------------------------------------------------------------------
+
+//#define VERBOSE
 using System;
 using System.IO;
 
@@ -49,6 +51,10 @@ namespace Ninoimager.Format
 
 		public NitroFile NitroData {
 			get { return this.nitro; }
+		}
+
+		public uint Unknown {
+			get { return this.scrn.Unknown; }
 		}
 
 		public void Write(string fileOut)
@@ -111,15 +117,20 @@ namespace Ninoimager.Format
 				this.Unknown    = br.ReadUInt32();
 				uint dataLength = br.ReadUInt32();
 
+#if VERBOSE
+				if (this.Width == 0 || this.Width == 0xFFFF)
+					Console.WriteLine("\t* Invalid width.");
+				if (this.Height == 0 || this.Height == 0xFFFF)
+					Console.WriteLine("\t* Invalid height.");
+				if (this.Unknown != 0)
+					Console.WriteLine("\t* Unknown -> {0}", this.Unknown);
+				if (dataLength == 0)
+					Console.WriteLine("\t* Length is 0.");
+#endif
+
 				this.Info = new MapInfo[dataLength / 2];
-				for (int i = 0; i < this.Info.Length; i++) {
-					ushort value = br.ReadUInt16();
-					this.Info[i] = new MapInfo(
-						(value >> 00) & 0x3FF,
-						(value >> 12) & 0x0F,
-						((value >> 11) & 0x01) == 1,
-						((value >> 10) & 0x01) == 1);
-				}
+				for (int i = 0; i < this.Info.Length; i++)
+					this.Info[i] = new MapInfo(br.ReadUInt16());
 			}
 
 			protected override void WriteData(Stream strOut)
@@ -131,14 +142,8 @@ namespace Ninoimager.Format
 				bw.Write(this.Unknown);
 				bw.Write((uint)(this.Info.Length * 2));
 
-				foreach (MapInfo info in this.Info) {
-					ushort value = 
-						(ushort)((info.TileIndex << 00) |
-						(info.PaletteIndex << 12) |
-						((info.FlipX ? 1 : 0) << 11) |
-						((info.FlipY ? 1 : 0) << 10));
-					bw.Write(value);
-				}
+				foreach (MapInfo info in this.Info)
+					bw.Write(info.ToUInt16());
 			}
 		}
 	}
