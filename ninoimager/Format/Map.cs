@@ -24,6 +24,13 @@ using System.Drawing;
 
 namespace Ninoimager.Format
 {
+	// For more info see GbaTek
+	public enum BgMode {
+		Text     = 0,
+		Affine   = 1,	// Palette must be 8bpp
+		Extended = 2,	// Extended mode -> Text | Affine, not bitmap
+	}
+
 	public struct MapInfo
 	{
 		public MapInfo(int tileIndex, int paletteIndex, bool flipX, bool flipY)
@@ -35,6 +42,11 @@ namespace Ninoimager.Format
 			this.FlipY = flipY;
 		}
 
+		/// <summary>
+		/// Initializes a new instance of the <see cref="Ninoimager.Format.MapInfo"/> struct.
+		/// Text and extended mode.
+		/// </summary>
+		/// <param name="value">Value.</param>
 		public MapInfo(ushort value)
 			: this()
 		{
@@ -43,6 +55,20 @@ namespace Ninoimager.Format
 			this.FlipX        = ((value >> 10) & 0x01) == 1;
 			this.FlipY        = ((value >> 11) & 0x01) == 1;
 
+		}
+
+		/// <summary>
+		/// Initializes a new instance of the <see cref="Ninoimager.Format.MapInfo"/> struct.
+		/// Affine (rotation / scaling) mode.
+		/// </summary>
+		/// <param name="value">Value.</param>
+		public MapInfo(byte value)
+			: this()
+		{
+			this.TileIndex    = value;
+			this.PaletteIndex = 0;
+			this.FlipX        = false;
+			this.FlipY        = false;
 		}
 
 		public int TileIndex {
@@ -65,6 +91,11 @@ namespace Ninoimager.Format
 			private set;
 		}
 
+		public byte ToByte()
+		{
+			return (byte)this.TileIndex;
+		}
+
 		public ushort ToUInt16()
 		{
 			return (ushort)(
@@ -82,6 +113,7 @@ namespace Ninoimager.Format
 		private Size tileSize;
 		private int width;
 		private int height;
+		private BgMode bgMode;
 
 		public Map()
 		{
@@ -116,8 +148,17 @@ namespace Ninoimager.Format
 			set { this.tileSize = value; }
 		}
 
+		public BgMode BgMode {
+			get { return this.bgMode; }
+			set { this.bgMode = value; }
+		}
+
 		public Bitmap CreateBitmap(Image image, Palette palette)
 		{
+			// UNDONE: Support Text mode and pixel areas
+			if (this.bgMode == BgMode.Text && (this.width > 256 || this.height > 256))
+				throw new NotSupportedException("Text modes with multiple pixel ares not supported.");
+
 			// TODO: Try to change the tile size of the image
 			if (this.tileSize != image.TileSize)
 				throw new FormatException("Image with different tile size");

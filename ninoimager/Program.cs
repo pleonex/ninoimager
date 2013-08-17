@@ -270,10 +270,11 @@ namespace Ninoimager
 			Console.WriteLine("Reading {0} as NSCR map...", mapFile);
 			Nscr map = new Nscr(mapFile);
 
-			Console.WriteLine("\t* Version: {0}", map.NitroData.VersionS);
-			Console.WriteLine("\t* Height:  {0}", map.Height);
-			Console.WriteLine("\t* Width:   {0}", map.Width);
-			Console.WriteLine("\t* Unknown: {0}", map.Unknown);
+			Console.WriteLine("\t* Version:      {0}", map.NitroData.VersionS);
+			Console.WriteLine("\t* Height:       {0}", map.Height);
+			Console.WriteLine("\t* Width:        {0}", map.Width);
+			Console.WriteLine("\t* BG Mode:      {0}", map.BgMode);
+			Console.WriteLine("\t* Palette Mode: {0}", map.PaletteMode);
 
 			map.CreateBitmap(image, palette).Save(outputFile);
 		}

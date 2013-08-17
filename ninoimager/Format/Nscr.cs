@@ -26,6 +26,13 @@ using System.IO;
 
 namespace Ninoimager.Format
 {
+	// For more info see GbaTek
+	public enum PaletteMode {
+		Palette16_16 = 0,	// 16 colors / 16 palettes
+		Palette256_1 = 1,	// 256 colors / 1 palette
+		Extended = 2,		// 256 colors / 16 palettes
+	}
+
 	public class Nscr : Map
 	{
 		private static Type[] BlockTypes = { typeof(Nscr.Scrn) };
@@ -53,8 +60,8 @@ namespace Ninoimager.Format
 			get { return this.nitro; }
 		}
 
-		public uint Unknown {
-			get { return this.scrn.Unknown; }
+		public PaletteMode PaletteMode {
+			get { return this.scrn.PaletteMode; }
 		}
 
 		public void Write(string fileOut)
@@ -74,6 +81,7 @@ namespace Ninoimager.Format
 			this.TileSize = new System.Drawing.Size(8, 8);
 			this.Width    = this.scrn.Width;
 			this.Height   = this.scrn.Height;
+			this.BgMode   = this.scrn.BgMode;
 			this.SetMapInfo(this.scrn.Info);
 		}
 
@@ -98,7 +106,12 @@ namespace Ninoimager.Format
 				private set;
 			}
 
-			public uint Unknown {
+			public PaletteMode PaletteMode {
+				get;
+				private set;
+			}
+
+			public BgMode BgMode {
 				get;
 				private set;
 			}
@@ -112,38 +125,58 @@ namespace Ninoimager.Format
 			{
 				BinaryReader br = new BinaryReader(strIn);
 
-				this.Width      = br.ReadUInt16();
-				this.Height     = br.ReadUInt16();
-				this.Unknown    = br.ReadUInt32();
-				uint dataLength = br.ReadUInt32();
+				this.Width       = br.ReadUInt16();
+				this.Height      = br.ReadUInt16();
+				this.PaletteMode = (PaletteMode)br.ReadUInt16();
+				this.BgMode      = (BgMode)br.ReadUInt16();
+				uint dataLength  = br.ReadUInt32();
+				uint numInfos = (this.BgMode == BgMode.Affine) ? dataLength : dataLength / 2;
 
 #if VERBOSE
 				if (this.Width == 0 || this.Width == 0xFFFF)
 					Console.WriteLine("\t* Invalid width.");
 				if (this.Height == 0 || this.Height == 0xFFFF)
 					Console.WriteLine("\t* Invalid height.");
-				if (this.Unknown != 0)
-					Console.WriteLine("\t* Unknown -> {0}", this.Unknown);
 				if (dataLength == 0)
 					Console.WriteLine("\t* Length is 0.");
+				if (this.BgMode == BgMode.Extended)
+					Console.WriteLine("\t* Extended mode.");
+				if (this.PaletteMode == PaletteMode.Extended)
+					Console.WriteLine("\t* Extended palette.");
+				if (this.PaletteMode == PaletteMode.Palette256_1)
+					Console.WriteLine("\t* 256/1 Palette.");
+				if (this.BgMode == BgMode.Text && (this.Width > 256 || this.Height > 256))
+					Console.WriteLine("\t* Multi pixel areas.");
+				if (this.BgMode == BgMode.Affine)
+					Console.WriteLine("\t* Affine mode.");
 #endif
 
-				this.Info = new MapInfo[dataLength / 2];
-				for (int i = 0; i < this.Info.Length; i++)
-					this.Info[i] = new MapInfo(br.ReadUInt16());
+				this.Info = new MapInfo[numInfos];
+				for (int i = 0; i < this.Info.Length; i++) {
+					if (this.BgMode == BgMode.Affine)
+						this.Info[i] = new MapInfo(br.ReadByte());
+					else
+						this.Info[i] = new MapInfo(br.ReadUInt16());
+				}
 			}
 
 			protected override void WriteData(Stream strOut)
 			{
 				BinaryWriter bw = new BinaryWriter(strOut);
+				int numInfos = (this.BgMode == BgMode.Affine) ? this.Info.Length : this.Info.Length * 2;
 
 				bw.Write(this.Width);
 				bw.Write(this.Height);
-				bw.Write(this.Unknown);
-				bw.Write((uint)(this.Info.Length * 2));
+				bw.Write((ushort)this.PaletteMode);
+				bw.Write((ushort)this.BgMode);
+				bw.Write(numInfos);
 
-				foreach (MapInfo info in this.Info)
-					bw.Write(info.ToUInt16());
+				foreach (MapInfo info in this.Info) {
+					if (this.BgMode == BgMode.Affine)
+						bw.Write(info.ToByte());
+					else
+						bw.Write(info.ToUInt16());
+				}
 			}
 		}
 	}
