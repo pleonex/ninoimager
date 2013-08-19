@@ -390,7 +390,7 @@ namespace Ninoimager.Format
 			}
 		}
 
-		private static int CalculateTiledIndex(int x, int y, PixelEncoding pxEnc, int width, int height, Size tileSize)
+		public static int CalculateTiledIndex(int x, int y, PixelEncoding pxEnc, int width, int height, Size tileSize)
 		{
 			int tileLength = tileSize.Width * tileSize.Height;
 			int numTilesX = width / tileSize.Width;

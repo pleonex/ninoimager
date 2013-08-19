@@ -42,6 +42,8 @@ namespace Ninoimager.Format
 		public Nscr()
 		{
 			this.nitro = new NitroFile(BlockTypes);
+			this.scrn = new Scrn(this.nitro);
+			this.nitro.Blocks.Add(this.scrn);
 		}
 
 		public Nscr(string file)
@@ -62,15 +64,18 @@ namespace Ninoimager.Format
 
 		public PaletteMode PaletteMode {
 			get { return this.scrn.PaletteMode; }
+			set { this.scrn.PaletteMode = value; }
 		}
 
 		public void Write(string fileOut)
 		{
+			this.SetInfo();
 			this.nitro.Write(fileOut);
 		}
 
 		public void Write(Stream strOut)
 		{
+			this.SetInfo();
 			this.nitro.Write(strOut);
 		}
 
@@ -83,6 +88,14 @@ namespace Ninoimager.Format
 			this.Height   = this.scrn.Height;
 			this.BgMode   = this.scrn.BgMode;
 			this.SetMapInfo(this.scrn.Info);
+		}
+
+		private void SetInfo()
+		{
+			this.scrn.BgMode = this.BgMode;
+			this.scrn.Width  = (ushort)this.Width;
+			this.scrn.Height = (ushort)this.Height;
+			this.scrn.Info   = this.GetMapInfo();
 		}
 
 		private class Scrn : NitroBlock
@@ -98,27 +111,27 @@ namespace Ninoimager.Format
 
 			public ushort Width {
 				get;
-				private set;
+				set;
 			}
 
 			public ushort Height {
 				get;
-				private set;
+				set;
 			}
 
 			public PaletteMode PaletteMode {
 				get;
-				private set;
+				set;
 			}
 
 			public BgMode BgMode {
 				get;
-				private set;
+				set;
 			}
 
 			public MapInfo[] Info {
 				get;
-				private set;
+				set;
 			}
 
 			protected override void ReadData(Stream strIn)

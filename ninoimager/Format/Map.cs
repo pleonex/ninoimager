@@ -20,6 +20,7 @@
 // <date>15/08/2013</date>
 // -----------------------------------------------------------------------
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 
 namespace Ninoimager.Format
@@ -208,6 +209,71 @@ namespace Ninoimager.Format
 		public MapInfo[] GetMapInfo()
 		{
 			return (MapInfo[])this.info.Clone();
+		}
+
+		public Pixel[] CreateMap(Pixel[] pixels)
+		{
+			// TODO: Palette index support.
+			List<Pixel[]> tiles = new List<Pixel[]>();
+			List<MapInfo> infos = new List<MapInfo>();
+			int tileLength = this.tileSize.Width * this.tileSize.Height;
+
+			for (int i = 0; i < pixels.Length; i += tileLength) {
+				// Get tile
+				Pixel[] tile = new Pixel[tileLength];
+				Array.Copy(pixels, i, tile, 0, tileLength);
+
+				bool flipX = false;
+				bool flipY = false;
+
+				// Check if it's already in the list
+				int index = tiles.IndexOf(tile);
+
+				// Check flip X
+				if (index == -1) {
+					Pixel[] tileFlipX = (Pixel[])tile.Clone();
+					Map.FlipX(tileFlipX, this.tileSize);
+					index = tiles.IndexOf(tileFlipX);
+					flipX = true;
+					flipY = false;
+
+					// Check flip Y
+					if (index == -1) {
+						Pixel[] tileFlipY = (Pixel[])tile.Clone();
+						Map.FlipY(tileFlipY, this.tileSize);
+						index = tiles.IndexOf(tileFlipY);
+						flipX = false;
+						flipY = true;
+					}
+
+					// Check flip X & Y
+					if (index == -1) {
+						Map.FlipY(tileFlipX, this.tileSize);
+						index = tiles.IndexOf(tileFlipX);
+						flipX = true;
+						flipY = true;
+					}
+				}
+
+				// Otherwise add
+				if (index == -1) {
+					tiles.Add(tile);
+					index = tiles.Count - 1;
+					flipX = false;
+					flipY = false;
+				}
+
+				// Finally create map info
+				infos.Add(new MapInfo(index, 0, flipX, flipY));
+			}
+
+			this.SetMapInfo(infos.ToArray());
+
+			Pixel[] linPixels = new Pixel[tiles.Count * tileLength];
+			for (int i = 0; i < tiles.Count; i++)
+				tiles[i].CopyTo(linPixels, i * tileLength);
+
+			return linPixels;
 		}
 
 		private static void FlipX(Pixel[] tile, Size tileSize)

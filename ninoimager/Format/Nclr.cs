@@ -39,6 +39,9 @@ namespace Ninoimager.Format
 		public Nclr()
 		{
 			this.nitro = new NitroFile(BlockTypes);
+			this.pltt = new Pltt(this.nitro);
+
+			this.nitro.Blocks.Add(this.pltt);
 		}
 
 		public Nclr(string file)
@@ -57,6 +60,11 @@ namespace Ninoimager.Format
 			get { return this.nitro; }
 		}
 
+		public bool Extended {
+			get { return (this.pltt.ExtendedPalette == 0); }
+			set { this.pltt.ExtendedPalette = (value ? 1u : 0u); }
+		}
+
 		public void Write(string fileOut)
 		{
 			this.SetInfo();
@@ -67,6 +75,13 @@ namespace Ninoimager.Format
 		{
 			this.SetInfo();
 			this.nitro.Write(strOut);
+		}
+
+		public void SetData(Color[] palette, ColorFormat depth)
+		{
+			this.pltt.Depth = depth;
+			this.pltt.PaletteColors = palette;
+			this.GetInfo();
 		}
 
 		private void GetInfo()
@@ -151,7 +166,7 @@ namespace Ninoimager.Format
 			/// <value><c>true</c> if this instance is multipalette of 256 colors; otherwise, <c>false</c>.</value>
 			public uint ExtendedPalette {
 				get;
-				private set;
+				set;
 			}
 
 			public Color[] PaletteColors {

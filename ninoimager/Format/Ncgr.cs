@@ -36,6 +36,8 @@ namespace Ninoimager.Format
 		public Ncgr()
 		{
 			this.nitro = new NitroFile(BlockTypes);
+			this.charBlock = new CHAR(this.nitro);
+			this.nitro.Blocks.Add(this.charBlock);
 		}
 
 		public Ncgr(string file)
@@ -56,19 +58,23 @@ namespace Ninoimager.Format
 
 		public uint RegDispcnt {
 			get { return this.charBlock.RegDispcnt; }
+			set { this.charBlock.RegDispcnt = value; }
 		}
 
 		public uint Unknown {
 			get { return this.charBlock.Unknown; }
+			set { this.charBlock.Unknown = value; }
 		}
 
 		public void Write(string fileOut)
 		{
+			this.SetInfo();
 			this.nitro.Write(fileOut);
 		}
 
 		public void Write(Stream strOut)
 		{
+			this.SetInfo();
 			this.nitro.Write(strOut);
 		}
 
@@ -108,6 +114,15 @@ namespace Ninoimager.Format
 			this.SetData(this.charBlock.ImageData, this.charBlock.PixelEncoding, this.charBlock.Format);
 		}
 
+		private void SetInfo()
+		{
+			this.charBlock.Format        = this.Format;
+			this.charBlock.PixelEncoding = this.PixelEncoding;
+			this.charBlock.Height        = (ushort)(this.Height / 8);
+			this.charBlock.Width         = (ushort)(this.Width / 8);
+			this.charBlock.ImageData     = this.GetData();
+		}
+
 		private class CHAR : NitroBlock
 		{
 			public CHAR(NitroFile nitro)
@@ -121,17 +136,17 @@ namespace Ninoimager.Format
 
 			public ushort Height {
 				get;
-				private set;
+				set;
 			}
 
 			public ushort Width {
 				get;
-				private set;
+				set;
 			}
 
 			public ColorFormat Format {
 				get;
-				private set;
+				set;
 			}
 
 			/// <summary>
@@ -141,22 +156,22 @@ namespace Ninoimager.Format
 			/// <value>The register DISPCNT</value>
 			public uint RegDispcnt {
 				get;
-				private set;
+				set;
 			}
 
 			public PixelEncoding PixelEncoding {
 				get;
-				private set;
+				set;
 			}
 
 			public uint Unknown {
 				get;
-				private set;
+				set;
 			}
 
 			public byte[] ImageData {
 				get;
-				private set;
+				set;
 			}
 
 			protected override void ReadData(Stream strIn)
