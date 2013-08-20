@@ -26,6 +26,19 @@ namespace Ninoimager.Format
 {
 	public static class ColorExtension
 	{
+		public static int Compare(this Color c1, Color c2)
+		{
+			if (c1.R == c2.R) {
+				if (c1.G == c2.G) {
+					return c1.B.CompareTo(c2.B);
+				} else {
+					return c1.G.CompareTo(c2.G);
+				}
+			} else {
+				return c1.R.CompareTo(c2.R);
+			}
+		}
+
 		public static ushort ToBgr555(this Color color)
 		{
 			int red   = color.R / 8;

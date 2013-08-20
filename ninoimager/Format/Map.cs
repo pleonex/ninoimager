@@ -141,6 +141,8 @@ namespace Ninoimager.Format
 				Pixel[] tile = new Pixel[tileLength];
 				Array.Copy(pixels, i, tile, 0, tileLength);
 
+				// TODO: Clean code with flips
+				// what about creating a new structure Tile and writing those methods there?
 				bool flipX = false;
 				bool flipY = false;
 

@@ -34,6 +34,7 @@ namespace Ninoimager
 		{
 		}
 
+		#region Importer parameters
 		public bool IncludePcmp {
 			get { return false; }
 		}
@@ -54,6 +55,10 @@ namespace Ninoimager
 			get { return Color.FromArgb(248, 0, 248); }
 		}
 
+		public Color BackdropColor {
+			get { return Color.Black; }
+		}
+
 		public BgMode BgMode {
 			get { return BgMode.Text; }
 		}
@@ -69,6 +74,7 @@ namespace Ninoimager
 		public Drawing.Size TileSize {
 			get { return new Drawing.Size(8, 8); }
 		}
+		#endregion
 
 		/// <summary>
 		/// Import a background image creating and writing a NSCR, NCGR and NCLR files to the streams passed.
@@ -99,6 +105,9 @@ namespace Ninoimager
 			Pixel[] pixels;
 			Color[] palette;
 			this.GetIndexImage(newImg, out pixels, out palette);
+			this.AddBackdropColor(pixels, ref palette);
+			this.SortPalette(pixels, palette);
+			this.FillPalette(ref palette);
 
 			// Create map from pixels
 			Nscr nscr = new Nscr() { 
@@ -161,6 +170,39 @@ namespace Ninoimager
 			}
 
 			palette = listColor.ToArray();
+		}
+
+		private void AddBackdropColor(Pixel[] pixels, ref Color[] palette)
+		{
+			// Add the color to the first place of the palette...
+			Array.Resize(ref palette, palette.Length + 1);
+			for (int i = palette.Length - 1; i >= 1; i--)
+				palette[i] = palette[i - 1];
+			palette[0] = this.BackdropColor;
+
+			// and increment the index of every pixels by 1
+			for (int i = 0; i < pixels.Length; i++) {
+				pixels[i] = pixels[i].ChangeInfo(pixels[i].Info + 1);
+			}
+		}
+
+		private void SortPalette(Pixel[] pixels, Color[] palette)
+		{
+			Color[] messyPalette = (Color[])palette.Clone();
+			Array.Sort<Color>(palette, (c1, c2) => c1.Compare(c2));
+
+			for (int i = 0; i < pixels.Length; i++) {
+				Color oldColor = messyPalette[pixels[i].Info];
+				int newIndex = Array.FindIndex<Color>(palette, c => c.Equals(oldColor));
+
+				pixels[i] = pixels[i].ChangeInfo((uint)newIndex);
+			}
+		}
+
+		private void FillPalette(ref Color[] palette)
+		{
+			// Default color is black, so we only need to resize it.
+			Array.Resize(ref palette, 1 << this.DefaultFormat.Bpp());
 		}
 	}
 }

@@ -51,6 +51,11 @@ namespace Ninoimager.Format
 			get;
 			private set;
 		}
+
+		public Pixel ChangeInfo(uint info)
+		{
+			return new Pixel(info, this.Alpha, this.IsIndexed);
+		}
 	}
 }
 
