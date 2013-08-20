@@ -90,7 +90,7 @@ namespace Ninoimager.Format
 				this.cpos = this.nitro.GetBlock<Cpos>(0);
 
 			this.Format = this.charBlock.Format;	// To get BPP
-			int numPixels = this.charBlock.ImageData.Length * 8 / this.Bpp;
+			int numPixels = this.charBlock.ImageData.Length * 8 / this.Format.Bpp();
 			int defaultWidth = this.TileSize.Width;
 			int defaultHeight = numPixels / defaultWidth;
 

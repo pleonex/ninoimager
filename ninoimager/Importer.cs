@@ -66,6 +66,10 @@ namespace Ninoimager
 			get { return PixelEncoding.HorizontalTiles; }
 		}
 
+		public Drawing.Size TileSize {
+			get { return new Drawing.Size(8, 8); }
+		}
+
 		/// <summary>
 		/// Import a background image creating and writing a NSCR, NCGR and NCLR files to the streams passed.
 		/// </summary>
@@ -91,7 +95,6 @@ namespace Ninoimager
 
 			int width  = newImg.Width;
 			int height = newImg.Height;
-			Drawing.Size tileSize = new Drawing.Size(8, 8);
 
 			Pixel[] pixels;
 			Color[] palette;
@@ -99,7 +102,7 @@ namespace Ninoimager
 
 			// Create map from pixels
 			Nscr nscr = new Nscr() { 
-				TileSize = tileSize,
+				TileSize = this.TileSize,
 				Width    = width, 
 				Height   = height,
 				BgMode   = this.BgMode
@@ -115,7 +118,7 @@ namespace Ninoimager
 				RegDispcnt = this.DispCnt,
 				Unknown    = this.UnknownChar
 			};
-			ncgr.SetData(pixels, this.PixelEncoding, this.DefaultFormat, tileSize);
+			ncgr.SetData(pixels, this.PixelEncoding, this.DefaultFormat, this.TileSize);
 
 			// Create palette format
 			Nclr nclr = new Nclr() {
@@ -134,7 +137,6 @@ namespace Ninoimager
 			List<Color> listColor = new List<Color>();
 			int width  = image.Width;
 			int height = image.Height;
-			Drawing.Size tileSize = new Drawing.Size(8, 8);
 			pixels = new Pixel[width * height];
 
 			bool isIndexed = true;	// TODO: Determine if the image is indexed or not.
@@ -142,7 +144,7 @@ namespace Ninoimager
 			for (int y = 0; y < height; y++) {
 				for (int x = 0; x < width; x++) {
 					Color color = image.GetPixel(x, y);
-					int index = Image.CalculateTiledIndex(x, y, this.PixelEncoding, width, height, tileSize);
+					int index = this.PixelEncoding.GetIndex(x, y, width, height, this.TileSize);
 
 					if (!isIndexed) {
 						pixels[index] = new Pixel((uint)color.ToArgb(), color.A, false);

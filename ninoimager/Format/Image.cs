@@ -24,60 +24,6 @@ using System.Drawing;
 
 namespace Ninoimager.Format
 {
-	public enum ColorFormat {
-		Unknown,
-		// Texture NDS formats from http://nocash.emubase.de/gbatek.htm#ds3dtextureformats
-		Indexed_A3I5  = 1,	// 8  bits-> 0-4: index; 5-7: alpha
-		Indexed_2bpp  = 2,	// 2  bits for 4   colors
-		Indexed_4bpp  = 3,	// 4  bits for 16  colors
-		Indexed_8bpp  = 4,	// 8  bits for 256 colors          
-		Texeled_4x4   = 5,	// 32 bits-> 2 bits per texel (only in textures)
-		Indexed_A5I3  = 6,	// 8  bits-> 0-2: index; 3-7: alpha
-		ABGR555_16bpp = 7,	// 16 bits BGR555 color with alpha component
-        // Also common formats
-		Indexed_1bpp,		// 1  bit  for 2   colors
-		Indexed_A4I4,  		// 8  bits-> 0-3: index; 4-7: alpha
-		BGRA_32bpp, 		// 32 bits BGRA color
-		ABGR_32bpp, 		// 32 bits ABGR color
-	}
-
-	public enum PixelEncoding {
-		HorizontalTiles = 0,
-		Lineal = 1,
-		VerticalTiles,
-		Unknown,
-	}
-
-	public struct Pixel
-	{
-		public Pixel(uint info, uint alpha, bool isIndexed) : this()
-		{
-			this.IsIndexed = isIndexed;
-			this.Info = info;
-			this.Alpha = (byte)alpha;
-		}
-
-		public bool IsIndexed {
-			get;
-			private set;
-		}
-
-		/// <summary>
-		/// Gets the pixel info.
-		/// If it's indexed it returns the color index otherwise, it returns a 32bit BGR value.
-		/// </summary>
-		/// <value>The pixel info.</value>
-		public uint Info {
-			get;
-			private set;
-		}
-
-		public byte Alpha {
-			get;
-			private set;
-		}
-	}
-
 	public class Image
 	{
 		// Image data will be independent of the value of "format" and "pixelEnc" doing a conversion to lineal pixel
@@ -121,67 +67,6 @@ namespace Ninoimager.Format
 			this.tileSize = img.TileSize;
 		}
 
-		public bool IsIndexed {
-			get {
-				switch (this.format) {
-				case ColorFormat.Indexed_1bpp:
-				case ColorFormat.Indexed_2bpp:
-				case ColorFormat.Indexed_4bpp:
-				case ColorFormat.Indexed_8bpp:
-				case ColorFormat.Indexed_A3I5:
-				case ColorFormat.Indexed_A4I4:
-				case ColorFormat.Indexed_A5I3:
-				case ColorFormat.Texeled_4x4:
-					return true;
-
-				case ColorFormat.ABGR555_16bpp:
-				case ColorFormat.BGRA_32bpp:
-				case ColorFormat.ABGR_32bpp:
-					return false;
-
-				default:
-					throw new FormatException();
-				}
-			}
-		}
-
-		public bool IsTiled {
-			get {
-				switch (this.pixelEnc) {
-				case PixelEncoding.HorizontalTiles:
-				case PixelEncoding.VerticalTiles:
-					return true;
-
-				case PixelEncoding.Lineal:
-					return false;
-
-				default:
-					throw new FormatException();
-				}
-			}
-		}
-
-		public int Bpp {
-			get {
-				switch (this.format) {
-				case ColorFormat.Indexed_1bpp:  return 1;
-				case ColorFormat.Indexed_2bpp:  return 2;
-				case ColorFormat.Indexed_4bpp:  return 4;
-				case ColorFormat.Indexed_8bpp:  return 8;
-				case ColorFormat.Indexed_A3I5:  return 8;
-				case ColorFormat.Indexed_A4I4:  return 8;
-				case ColorFormat.Indexed_A5I3:  return 8;
-				case ColorFormat.ABGR555_16bpp: return 16;
-				case ColorFormat.BGRA_32bpp:    return 32;
-				case ColorFormat.ABGR_32bpp:    return 32;
-				case ColorFormat.Texeled_4x4:   return 2;
-
-				default:
-					throw new FormatException();
-				}
-			}
-		}
-
 		public int Width {
 			get { return this.width; }
 			set { this.width = value; }
@@ -209,7 +94,7 @@ namespace Ninoimager.Format
 
 		public Bitmap CreateBitmap()
 		{
-			if (this.IsIndexed)
+			if (this.Format.IsIndexed())
 				throw new ArgumentException("A palette is required.");
 
 			Bitmap bmp = new Bitmap(this.width, this.height);
@@ -224,7 +109,7 @@ namespace Ninoimager.Format
 
 		public Bitmap CreateBitmap(Palette palette, int paletteIndex)
 		{
-			if (!this.IsIndexed) {
+			if (!this.Format.IsIndexed()) {
 				Console.WriteLine("##WARNING## The palette is not required.");
 				return this.CreateBitmap();
 			}
@@ -248,7 +133,7 @@ namespace Ninoimager.Format
 
 		public Bitmap CreateBitmap(Palette palette, uint[] paletteIndex)
 		{
-			if (!this.IsIndexed) {
+			if (!this.Format.IsIndexed()) {
 				Console.WriteLine("##WARNING## The palette is not required.");
 				return this.CreateBitmap();
 			}
@@ -277,7 +162,7 @@ namespace Ninoimager.Format
 		{
 			Pixel[] tile = new Pixel[this.tileSize.Width * this.tileSize.Height];
 
-			bool isIndexed = this.IsIndexed;
+			bool isIndexed = this.Format.IsIndexed();
 			int numTilesX = this.width / this.tileSize.Width;
 			Point tilePos = new Point(index % numTilesX, index / numTilesX);
 
@@ -310,17 +195,17 @@ namespace Ninoimager.Format
 
 			// First convert to 24bpp index + 8 bits alpha if it's indexed or ARGB32 otherwise.
 			// normalizeData contains information about 1 pixel (index or color)
-			uint[] normalizedData = new uint[rawData.Length * 8 / this.Bpp];
+			uint[] normalizedData = new uint[rawData.Length * 8 / this.Format.Bpp()];
 
 			int rawPos = 0;
 			for (int i = 0; i < normalizedData.Length; i++) {
-				uint info = GetValue(rawData, ref rawPos, this.Bpp);	// Get pixel info from raw data
-				normalizedData[i] = UnpackColor(info, this.format);		// Get color from pixel info (unpack info)
+				uint info = rawData.GetBits(ref rawPos, this.Format.Bpp());	// Get pixel info from raw data
+				normalizedData[i] = this.format.UnpackColor(info);			// Get color from pixel info (unpack info)
 			}
 
 			// Then convert to lineal pixel encoding
 			this.data = new uint[this.width * this.height];
-			LinealCodec(normalizedData, this.data, true, this.pixelEnc, this.width, this.height, this.tileSize);
+			this.pixelEnc.Codec(normalizedData, this.data, true, this.width, this.height, this.tileSize);
 		}
 
 		public void SetData(Pixel[] pixels, PixelEncoding pixelEnc, ColorFormat format, Size tileSize)
@@ -337,7 +222,7 @@ namespace Ninoimager.Format
 				normalizedData[i] = (uint)(pixels[i].Alpha << 24) | (uint)pixels[i].Info;
 
 			this.data = new uint[this.width * this.height];
-			LinealCodec(normalizedData, this.data, true, this.pixelEnc, this.width, this.height, this.tileSize);
+			this.pixelEnc.Codec(normalizedData, this.data, true, this.width, this.height, this.tileSize);
 		}
 
 		public byte[] GetData()
@@ -346,172 +231,18 @@ namespace Ninoimager.Format
 
 			// First convert to one-dimension array (encode pixels)
 			uint[] normalizedData = new uint[this.width * this.height];
-			LinealCodec(this.data, normalizedData, false, this.pixelEnc, this.width, this.height, this.tileSize);
+			this.pixelEnc.Codec(this.data, normalizedData, false, this.width, this.height, this.tileSize);
 
 			// Then code normalized data to its format and write to final buffer
-			byte[] buffer = new byte[normalizedData.Length * this.Bpp / 8];
+			byte[] buffer = new byte[normalizedData.Length * this.Format.Bpp() / 8];
 			int bufferPos = 0;
 
 			for (int i = 0; i < normalizedData.Length; i++) {
-				uint info = PackColor(normalizedData[i], this.format);
-				SetValue(buffer, ref bufferPos, this.Bpp, info);
+				uint info = this.format.PackColor(normalizedData[i]);
+				buffer.SetBits(ref bufferPos, this.Format.Bpp(), info);
 			}
 
 			return buffer;
-		}
-
-		public static void LinealCodec(uint[] dataIn, uint[] dataOut, bool decoding, PixelEncoding pxEnc,
-		                               int width, int height, Size tileSize)
-		{
-			if (pxEnc != PixelEncoding.Lineal && pxEnc != PixelEncoding.HorizontalTiles && 
-			    pxEnc != PixelEncoding.VerticalTiles)
-				throw new NotSupportedException();
-
-			if (dataIn == null || dataOut == null || dataIn.Length != dataOut.Length)
-				throw new ArgumentNullException();
-
-			if ((width % tileSize.Width != 0) && 
-			    (pxEnc == PixelEncoding.HorizontalTiles || pxEnc == PixelEncoding.VerticalTiles))
-				throw new FormatException("Width must be a multiple of tile width to use Tiled pixel encoding.");
-
-			// Little trick to use the same equations
-			if (pxEnc == PixelEncoding.Lineal)
-				tileSize = new Size(width, height);
-
-			for (int linealIndex = 0; linealIndex < dataOut.Length; linealIndex++) {
-				int tiledIndex = CalculateTiledIndex(
-					linealIndex % width, linealIndex / width,
-					pxEnc, width, height, tileSize);
-
-				if (decoding)
-					dataOut[linealIndex] = dataIn[tiledIndex];
-				else
-					dataOut[tiledIndex] = dataIn[linealIndex];
-			}
-		}
-
-		public static int CalculateTiledIndex(int x, int y, PixelEncoding pxEnc, int width, int height, Size tileSize)
-		{
-			int tileLength = tileSize.Width * tileSize.Height;
-			int numTilesX = width / tileSize.Width;
-			int numTilesY = height / tileSize.Height;
-
-			// Get lineal index
-			Point pixelPos = new Point(x % tileSize.Width, y % tileSize.Height); // Pos. pixel in tile
-			Point tilePos  = new Point(x / tileSize.Width, y / tileSize.Height); // Pos. tile in image
-			int index = 0;
-
-			if (pxEnc == PixelEncoding.HorizontalTiles)
-				index = tilePos.Y * numTilesX * tileLength + tilePos.X * tileLength;	// Absolute tile pos.
-			else if (pxEnc == PixelEncoding.VerticalTiles)
-				index = tilePos.X * numTilesY * tileLength + tilePos.Y * tileLength;	// Absolute tile pos.
-
-			index += pixelPos.Y * tileSize.Width + pixelPos.X;	// Add pos. of pixel inside tile
-
-			return index;
-		}
-
-		private static uint GetValue(byte[] data, ref int bitPos, int size)
-		{
-			if (size < 0 || size > 32)
-				throw new ArgumentOutOfRangeException("Size is too big");
-
-			if (bitPos + size > data.Length * 8)
-				throw new IndexOutOfRangeException();
-
-			uint value = 0;
-			for (int s = 0; s < size; s++, bitPos++) {
-				uint bit = data[bitPos / 8];
-				bit >>= (bitPos % 8);
-				bit &= 1;
-
-				value |= bit << s;
-			}
-
-			return value;
-		}
-
-		private static void SetValue(byte[] data, ref int bitPos, int size, uint value)
-		{
-			if (size < 0 || size > 32)
-				throw new ArgumentOutOfRangeException("Size is too big");
-
-			if (bitPos + size > data.Length * 8)
-				throw new IndexOutOfRangeException();
-
-			for (int s = 0; s < size; s++, bitPos++) {
-				uint bit = (value >> s) & 1;
-
-				uint dByte = data[bitPos / 8];
-				dByte |= bit << (bitPos % 8);
-				data[bitPos / 8] = (byte)dByte;
-			}
-		}
-
-		private static uint UnpackColor(uint info, ColorFormat format)
-		{
-			switch (format) {
-			// 100% alpha, no transparency
-			case ColorFormat.Indexed_1bpp:
-			case ColorFormat.Indexed_2bpp:
-			case ColorFormat.Indexed_4bpp:
-			case ColorFormat.Indexed_8bpp:
-				return (0xFFu << 24) | info;
-
-			case ColorFormat.Indexed_A3I5:
-				return (((info >> 5) * 0xFF / 0x07) << 24) | (info & 0x1F);
-			case ColorFormat.Indexed_A4I4:
-				return (((info >> 4) * 0xFF / 0x0F) << 24) | (info & 0x0F);
-			case ColorFormat.Indexed_A5I3:
-				return (((info >> 3) * 0xFF / 0x1F) << 24) | (info & 0x07);
-
-			case ColorFormat.ABGR555_16bpp:
-				return 
-					((((info >> 15) & 0x01) * 0xFF / 0x01) << 24) |	// alpha, 1 bit
-					((((info >> 10) & 0x1F) * 0xFF / 0x1F) << 16) | // blue,  5 bits
-					((((info >> 05) & 0x1F) * 0xFF / 0x1F) << 08) | // green, 5 bits
-					((((info >> 00) & 0x1F) * 0xFF / 0x1F) << 00);	// red,   5 bits
-			case ColorFormat.ABGR_32bpp:
-				return info;
-			case ColorFormat.BGRA_32bpp:
-				return ((info & 0x0F) << 24) | (info >> 8);
-
-			default:
-				throw new NotSupportedException();
-			}
-		}
-
-		private static uint PackColor(uint pxInfo, ColorFormat format)
-		{
-			switch (format) {
-				// No transparency
-			case ColorFormat.Indexed_1bpp:
-			case ColorFormat.Indexed_2bpp:
-			case ColorFormat.Indexed_4bpp:
-			case ColorFormat.Indexed_8bpp:
-				return pxInfo & 0x00FFFFFF;
-
-			case ColorFormat.Indexed_A3I5:
-				return (((pxInfo >> 24) * 0x07 / 0xFF) << 5) | (pxInfo & 0x1F);
-			case ColorFormat.Indexed_A4I4:
-				return (((pxInfo >> 24) * 0x0F / 0xFF) << 4) | (pxInfo & 0x0F);
-			case ColorFormat.Indexed_A5I3:
-				return (((pxInfo >> 24) * 0x1F / 0xFF) << 3) | (pxInfo & 0x07);
-
-			case ColorFormat.ABGR555_16bpp:
-				return
-					((((pxInfo >> 24) & 0xFF) * 0x01 / 0xFF) << 15) |	// alpha, 1 bit
-					((((pxInfo >> 16) & 0xFF) * 0x1F / 0xFF) << 10) |	// blue,  5 bits
-					((((pxInfo >> 08) & 0xFF) * 0x1F / 0xFF) << 05) |	// green, 5 bits
-					((((pxInfo >> 00) & 0xFF) * 0x1F / 0xFF) << 00);	// red,   5 bits
-			case ColorFormat.ABGR_32bpp:
-				return pxInfo;
-			case ColorFormat.BGRA_32bpp:
-				return ((pxInfo >> 24) & 0xFF) | (pxInfo << 8);
-
-			default:
-				throw new NotSupportedException();
-			}
 		}
 	}
 }

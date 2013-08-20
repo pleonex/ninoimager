@@ -127,7 +127,7 @@ namespace Ninoimager.Format
 			return palette;
 		}
 
-		public static Color FromBGR555(ushort value)
+		public static Color FromBgr555(ushort value)
 		{
 			int red   = ((value & 0x001F) >> 00) * 8;
 			int green = ((value & 0x03E0) >> 05) * 8;
@@ -136,39 +136,17 @@ namespace Ninoimager.Format
 			return Color.FromArgb(red, green, blue);
 		}
 
-		public static Color[] FromBGR555(byte[] values)
+		public static Color[] FromBgr555(byte[] values)
 		{
 			if (values.Length % 2 != 0)
 				throw new ArgumentException("Length must be even.");
 
 			Color[] colors = new Color[values.Length / 2];
 			for (int i = 0; i < colors.Length; i++) {
-				colors[i] = FromBGR555(BitConverter.ToUInt16(values, i*2));
+				colors[i] = FromBgr555(BitConverter.ToUInt16(values, i*2));
 			}
 
 			return colors;
-		}
-
-		public static ushort ToBGR555(Color color)
-		{
-			int red   = color.R / 8;
-			int green = color.G / 8;
-			int blue  = color.B / 8;
-
-			ushort bgr = (ushort)((red << 0) | (green << 5) | (blue << 10));
-			return bgr;
-		}
-
-		public static byte[] ToBGR555(Color[] colors)
-		{
-			byte[] values = new byte[colors.Length * 2];
-
-			for (int i = 0; i < colors.Length; i++) {
-				ushort bgr = ToBGR555(colors[i]);
-				Array.Copy(BitConverter.GetBytes(bgr), 0, values, i * 2, 2);
-			}
-
-			return values;
 		}
 	}
 }

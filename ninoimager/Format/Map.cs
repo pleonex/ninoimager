@@ -25,88 +25,6 @@ using System.Drawing;
 
 namespace Ninoimager.Format
 {
-	// For more info see GbaTek
-	public enum BgMode {
-		Text     = 0,
-		Affine   = 1,	// Palette must be 8bpp
-		Extended = 2,	// Extended mode -> Text | Affine, not bitmap
-	}
-
-	public struct MapInfo
-	{
-		public MapInfo(int tileIndex, int paletteIndex, bool flipX, bool flipY)
-			: this()
-		{
-			this.TileIndex = tileIndex;
-			this.PaletteIndex = paletteIndex;
-			this.FlipX = flipX;
-			this.FlipY = flipY;
-		}
-
-		/// <summary>
-		/// Initializes a new instance of the <see cref="Ninoimager.Format.MapInfo"/> struct.
-		/// Text and extended mode.
-		/// </summary>
-		/// <param name="value">Value.</param>
-		public MapInfo(ushort value)
-			: this()
-		{
-			this.TileIndex    = (value >> 00) & 0x3FF;
-			this.PaletteIndex = (value >> 12) & 0x0F;
-			this.FlipX        = ((value >> 10) & 0x01) == 1;
-			this.FlipY        = ((value >> 11) & 0x01) == 1;
-
-		}
-
-		/// <summary>
-		/// Initializes a new instance of the <see cref="Ninoimager.Format.MapInfo"/> struct.
-		/// Affine (rotation / scaling) mode.
-		/// </summary>
-		/// <param name="value">Value.</param>
-		public MapInfo(byte value)
-			: this()
-		{
-			this.TileIndex    = value;
-			this.PaletteIndex = 0;
-			this.FlipX        = false;
-			this.FlipY        = false;
-		}
-
-		public int TileIndex {
-			get;
-			private set;
-		}
-
-		public int PaletteIndex {
-			get;
-			private set;
-		}
-
-		public bool FlipX {
-			get;
-			private set;
-		}
-
-		public bool FlipY {
-			get;
-			private set;
-		}
-
-		public byte ToByte()
-		{
-			return (byte)this.TileIndex;
-		}
-
-		public ushort ToUInt16()
-		{
-			return (ushort)(
-				(this.TileIndex << 00) |
-				(this.PaletteIndex << 12) |
-				((this.FlipX ? 1 : 0) << 10) |
-				((this.FlipY ? 1 : 0) << 11));
-		}
-	}
-
 	public class Map
 	{
 		private MapInfo[] info;
@@ -165,7 +83,7 @@ namespace Ninoimager.Format
 				throw new FormatException("Image with different tile size");
 
 			// TODO: Try to convert image to tiled
-			if (!image.IsTiled)
+			if (!image.PixelEncoding.IsTiled())
 				throw new FormatException("Image not tiled.");
 
 			Pixel[] mapImage = new Pixel[this.width * this.height];
@@ -189,7 +107,7 @@ namespace Ninoimager.Format
 
 			// Palette Index must be lineal but it's tiled, convert it.
 			uint[] palIndex = new uint[this.width * this.height];
-			Image.LinealCodec(tmpIndex, palIndex, true, image.PixelEncoding, this.width, this.height, image.TileSize);
+			image.PixelEncoding.Codec(tmpIndex, palIndex, true, this.width, this.height, image.TileSize);
 
 			Image finalImg = new Image(
 				mapImage,

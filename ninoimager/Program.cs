@@ -283,6 +283,7 @@ namespace Ninoimager
 			Ncgr ncgr = new Ncgr(oldImgStr);
 			Nscr nscr = new Nscr(oldMapStr);
 			System.Drawing.Bitmap bmp = nscr.CreateBitmap(ncgr, nclr);
+			bmp.Save(mapFile + ".png");
 
 			Importer importer = new Importer();
 			importer.ImportBackground(bmp, newMapStr, newImgStr, newPalStr);
@@ -307,7 +308,7 @@ namespace Ninoimager
 			nclr = new Nclr(newPalStr);
 			ncgr = new Ncgr(newImgStr);
 			nscr = new Nscr(newMapStr);
-			nscr.CreateBitmap(ncgr, nclr).Save(mapFile + ".png");
+			nscr.CreateBitmap(ncgr, nclr).Save(mapFile + "m.png");
 
 			oldPalStr.Close();
 			oldImgStr.Close();

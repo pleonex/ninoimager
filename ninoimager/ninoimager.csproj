@@ -47,6 +47,13 @@
     <Compile Include="Format\Map.cs" />
     <Compile Include="Format\Nscr.cs" />
     <Compile Include="Importer.cs" />
+    <Compile Include="Format\ColorExtension.cs" />
+    <Compile Include="Format\ColorFormat.cs" />
+    <Compile Include="Format\PixelEncoding.cs" />
+    <Compile Include="Format\Pixel.cs" />
+    <Compile Include="Format\MapInfo.cs" />
+    <Compile Include="Format\BgMode.cs" />
+    <Compile Include="ByteArrayExtension.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

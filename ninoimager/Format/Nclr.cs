@@ -185,7 +185,7 @@ namespace Ninoimager.Format
 				int actualSize     = this.Size - 0x8 - 0x10;
 				int palOffset      = br.ReadInt32();
 				strIn.Position     = blockPos + palOffset;
-				this.PaletteColors = Palette.FromBGR555(br.ReadBytes(actualSize));
+				this.PaletteColors = Palette.FromBgr555(br.ReadBytes(actualSize));
 
 #if VERBOSE
 				if (palSize != actualSize)
@@ -202,7 +202,7 @@ namespace Ninoimager.Format
 
 			protected override void WriteData(Stream strOut)
 			{
-				byte[] paletteBytes = Palette.ToBGR555(this.PaletteColors);
+				byte[] paletteBytes = this.PaletteColors.ToBgr555();
 
 				BinaryWriter bw = new BinaryWriter(strOut);
 				bw.Write((uint)this.Depth);
