@@ -36,7 +36,7 @@ namespace Ninoimager
 			Console.WriteLine("V {0} ~~ by pleoNeX ~~", Assembly.GetExecutingAssembly().GetName().Version);
 			Console.WriteLine();
 
-			//args = new string[] { "-ti", "title_logo_6.nscr", "title_logo_1.ncgr", "title_logo_0.nclr" };
+			//args = new string[] { "-pe", "Ninokuni/title_logo.n2d", "logo.png" };
 
 			if (args.Length < 3)
 				return;
@@ -58,6 +58,10 @@ namespace Ninoimager
 				SelectImagesFiles(args[1], args[2]);
 			else if (args[0] == "-ti" && args.Length == 4)
 				ImportTest(args[1], args[2], args[3]);
+			else if (args[0] == "-pe")
+				ExtractPack(args[1], args[2]);
+			else if (args[0] == "-pi")
+				ImportPack(args[1], args[2]);
 		}
 
 		private static void SpecificSearch(string dir, string format)
@@ -268,6 +272,18 @@ namespace Ninoimager
 			Console.WriteLine("\t* Palette Mode: {0}", map.PaletteMode);
 
 			map.CreateBitmap(image, palette).Save(outputFile);
+		}
+
+		private static void ExtractPack(string packFile, string outputImage)
+		{
+			Npck npck = new Npck(packFile);
+			npck.GetBackgroundImage().Save(outputImage);
+		}
+
+		private static void ImportPack(string inputImage, string outputPack)
+		{
+			Npck npck = Npck.ImportBackgroundImage(inputImage);
+			npck.Write(outputPack);
 		}
 
 		private static void ImportTest(string mapFile, string imgFile, string palFile)

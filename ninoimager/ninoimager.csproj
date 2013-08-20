@@ -54,6 +54,8 @@
     <Compile Include="Format\MapInfo.cs" />
     <Compile Include="Format\BgMode.cs" />
     <Compile Include="ByteArrayExtension.cs" />
+    <Compile Include="Format\Pack.cs" />
+    <Compile Include="Format\Npck.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

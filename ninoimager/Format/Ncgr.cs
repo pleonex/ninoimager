@@ -35,7 +35,7 @@ namespace Ninoimager.Format
 
 		public Ncgr()
 		{
-			this.nitro = new NitroFile("NCGR", "1.0", BlockTypes);
+			this.nitro = new NitroFile("NCGR", "1.1", BlockTypes);
 			this.charBlock = new CHAR(this.nitro);
 			this.nitro.Blocks.Add(this.charBlock);
 		}
@@ -70,6 +70,10 @@ namespace Ninoimager.Format
 			 get;
 			 set;
 		 }
+
+		public bool HasCpos {
+			get { return this.cpos != null; }
+		}
 
 		public void Write(string fileOut)
 		{
