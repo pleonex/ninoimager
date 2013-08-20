@@ -42,10 +42,10 @@ namespace Ninoimager.Format
 	}
 
 	public enum PixelEncoding {
-		Unknown,
-		Lineal = 1,
 		HorizontalTiles = 0,
-		VerticalTiles = 2
+		Lineal = 1,
+		VerticalTiles,
+		Unknown,
 	}
 
 	public struct Pixel
@@ -436,7 +436,7 @@ namespace Ninoimager.Format
 			if (size < 0 || size > 32)
 				throw new ArgumentOutOfRangeException("Size is too big");
 
-			if (bitPos + size > data.Length)
+			if (bitPos + size > data.Length * 8)
 				throw new IndexOutOfRangeException();
 
 			for (int s = 0; s < size; s++, bitPos++) {

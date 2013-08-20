@@ -66,6 +66,11 @@ namespace Ninoimager.Format
 			set { this.charBlock.Unknown = value; }
 		}
 
+		public bool InvalidSize {
+			 get;
+			 set;
+		 }
+
 		public void Write(string fileOut)
 		{
 			this.SetInfo();
@@ -92,16 +97,18 @@ namespace Ninoimager.Format
 			if (this.charBlock.Width == 0xFFFF && this.charBlock.Height == 0xFFFF) {
 				// Since these images can be tiled used with OAMs or MAPs files, the width must be a multiple of 
 				// tile size to do correctly the lineal transformation.
-				this.Width = defaultWidth;
+				this.Width  = defaultWidth;
 				this.Height = defaultHeight;
+				this.InvalidSize = true;
 			} else {
-				this.Width = this.charBlock.Width * 8;		// It indicates the number of tiles in X axis
+				this.Width  = this.charBlock.Width * 8;		// It indicates the number of tiles in X axis
 				this.Height = this.charBlock.Height * 8;	// It indicates the number of tiles in Y axis
+				this.InvalidSize = false;
 			}
 
 			// It's "Digimon" game developper fault
 			if (this.Width * this.Height != numPixels) {
-				this.Width = defaultWidth;
+				this.Width  = defaultWidth;
 				this.Height = defaultHeight;
 			}
 
@@ -118,9 +125,14 @@ namespace Ninoimager.Format
 		{
 			this.charBlock.Format        = this.Format;
 			this.charBlock.PixelEncoding = this.PixelEncoding;
-			this.charBlock.Height        = (ushort)(this.Height / 8);
-			this.charBlock.Width         = (ushort)(this.Width / 8);
 			this.charBlock.ImageData     = this.GetData();
+			if (this.InvalidSize) {
+				this.charBlock.Width  = 0xFFFF;
+				this.charBlock.Height = 0xFFFF;
+			} else {
+				this.charBlock.Height = (ushort)(this.Height / 8);
+				this.charBlock.Width  = (ushort)(this.Width / 8);
+			}
 		}
 
 		private class CHAR : NitroBlock
