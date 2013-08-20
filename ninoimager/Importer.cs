@@ -73,7 +73,7 @@ namespace Ninoimager
 		/// <param name="mapStr">Map stream output.</param>
 		/// <param name="imgStr">Image stream output.</param>
 		/// <param name="palStr">Pal strream output.</param>
-		public void ImportBackground(string imgPath, Stream mapStr, Stream imgStr, Stream palStr)
+		public void ImportBackground(Drawing.Bitmap newImg, Stream mapStr, Stream imgStr, Stream palStr)
 		{
 			/* Specifications: 
 				+ Image will be HorizontalTiled
@@ -86,38 +86,41 @@ namespace Ninoimager
 				+ Transparent color will be magenta: (R:248, G:0, B:248) 
 			*/
 
-			if (!File.Exists(imgPath) || mapStr == null || imgStr == null || palStr == null)
+			if (newImg == null || mapStr == null || imgStr == null || palStr == null)
 				throw new ArgumentNullException();
 
-			Drawing.Bitmap bmp = (Drawing.Bitmap)Drawing.Image.FromFile(imgPath);
-			int width  = bmp.Width;
-			int height = bmp.Height;
+			int width  = newImg.Width;
+			int height = newImg.Height;
+			Drawing.Size tileSize = new Drawing.Size(8, 8);
 
 			Pixel[] pixels;
 			Color[] palette;
-			this.GetIndexImage(bmp, out pixels, out palette);
+			this.GetIndexImage(newImg, out pixels, out palette);
 
 			// Create map from pixels
-			Nscr nscr = new Nscr();
-			nscr.Width       = width;
-			nscr.Height      = height;
-			nscr.TileSize    = new Drawing.Size(8, 8);
-			nscr.BgMode      = this.BgMode;
+			Nscr nscr = new Nscr() { 
+				TileSize = tileSize,
+				Width    = width, 
+				Height   = height,
+				BgMode   = this.BgMode
+			};
 			nscr.PaletteMode = (this.DefaultFormat == ColorFormat.Indexed_4bpp) ?
 				PaletteMode.Palette16_16 : PaletteMode.Palette256_1;
 			pixels = nscr.CreateMap(pixels);
 
 			// Create image format
-			Ncgr ncgr = new Ncgr();
-			ncgr.Width      = width;
-			ncgr.Height     = height;
-			ncgr.RegDispcnt = this.DispCnt;
-			ncgr.Unknown    = this.UnknownChar;
-			ncgr.SetData(pixels, this.PixelEncoding, this.DefaultFormat, new Drawing.Size(8, 8));
+			Ncgr ncgr = new Ncgr() {
+				Width      = width,
+				Height     = height,
+				RegDispcnt = this.DispCnt,
+				Unknown    = this.UnknownChar
+			};
+			ncgr.SetData(pixels, this.PixelEncoding, this.DefaultFormat, tileSize);
 
 			// Create palette format
-			Nclr nclr = new Nclr();
-			nclr.Extended = false;
+			Nclr nclr = new Nclr() {
+				Extended = false
+			};
 			nclr.SetData(palette, this.DefaultFormat);
 
 			// Write data
@@ -126,7 +129,7 @@ namespace Ninoimager
 			nscr.Write(mapStr);
 		}
 
-		private void GetIndexImage(System.Drawing.Bitmap image, out Pixel[] pixels, out Color[] palette)
+		private void GetIndexImage(Drawing.Bitmap image, out Pixel[] pixels, out Color[] palette)
 		{
 			List<Color> listColor = new List<Color>();
 			int width  = image.Width;

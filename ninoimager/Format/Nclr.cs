@@ -38,7 +38,7 @@ namespace Ninoimager.Format
 
 		public Nclr()
 		{
-			this.nitro = new NitroFile(BlockTypes);
+			this.nitro = new NitroFile("NCLR", "1.0", BlockTypes);
 			this.pltt = new Pltt(this.nitro);
 
 			this.nitro.Blocks.Add(this.pltt);
@@ -149,10 +149,6 @@ namespace Ninoimager.Format
 			{ 
 			}
 
-			public override string Name {
-				get { return "PLTT"; }
-			}
-
 			public ColorFormat Depth {
 				get;
 				set;
@@ -215,16 +211,17 @@ namespace Ninoimager.Format
 				bw.Write((uint)0x10);
 				bw.Write(paletteBytes);
 			}
+
+			protected override void UpdateSize()
+			{
+				this.Size = 0x08 + 0x10 + (this.PaletteColors.Length * 2);
+			}
 		}
 
 		private class Pcmp : NitroBlock
 		{
 			public Pcmp(NitroFile file) : base(file)
 			{
-			}
-
-			public override string Name {
-				get { return "PCMP"; }
 			}
 
 			public ushort NumPalettes {
@@ -272,6 +269,11 @@ namespace Ninoimager.Format
 				bw.Write((uint)0x08);
 				for (int i = 0; i < this.NumPalettes; i++)
 					bw.Write(this.PaletteIndex[i]);
+			}
+
+			protected override void UpdateSize()
+			{
+				this.Size = 0x08 + 0x08 + (this.PaletteIndex.Length * 2);
 			}
 		}
 	}

@@ -41,7 +41,7 @@ namespace Ninoimager.Format
 
 		public Nscr()
 		{
-			this.nitro = new NitroFile(BlockTypes);
+			this.nitro = new NitroFile("NSCR", "1.0", BlockTypes);
 			this.scrn = new Scrn(this.nitro);
 			this.nitro.Blocks.Add(this.scrn);
 		}
@@ -103,10 +103,6 @@ namespace Ninoimager.Format
 			public Scrn(NitroFile nitro)
 				: base(nitro)
 			{
-			}
-
-			public override string Name {
-				get { return "SCRN"; }
 			}
 
 			public ushort Width {
@@ -190,6 +186,12 @@ namespace Ninoimager.Format
 					else
 						bw.Write(info.ToUInt16());
 				}
+			}
+
+			protected override void UpdateSize()
+			{
+				this.Size = 0x08 + 0x0C;
+				this.Size += (this.BgMode == BgMode.Affine) ? this.Info.Length : this.Info.Length * 2;
 			}
 		}
 	}

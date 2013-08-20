@@ -34,9 +34,8 @@ namespace Ninoimager.Format
 			this.file = file;
 		}
 
-		public abstract string Name
-		{
-			get;
+		public string Name {
+			get { return this.GetType().Name.ToUpper(); }
 		}
 
 		public int Size {
@@ -65,6 +64,7 @@ namespace Ninoimager.Format
 
 		public void Write(Stream strOut)
 		{
+			this.UpdateSize();
 			//if (this.Size % 4 != 0)
 			//	this.Size += 4 - (this.Size % 4);
 
@@ -85,6 +85,8 @@ namespace Ninoimager.Format
 		}
 
 		protected abstract void WriteData(Stream strOut);
+
+		protected abstract void UpdateSize();
 	}
 }
 

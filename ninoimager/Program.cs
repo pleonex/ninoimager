@@ -36,9 +36,12 @@ namespace Ninoimager
 			Console.WriteLine("V {0} ~~ by pleoNeX ~~", Assembly.GetExecutingAssembly().GetName().Version);
 			Console.WriteLine();
 
+			//args = new string[] { "-ti", "title_logo_6.nscr", "title_logo_1.ncgr", "title_logo_0.nclr" };
+
 			if (args.Length < 3)
 				return;
 
+			// Nitro files tests
 			if (args[0] == "-t1")
 				PaletteInfo(args[1], args[2]);
 			else if (args[0] == "-t2" && args.Length == 4)
@@ -53,6 +56,8 @@ namespace Ninoimager
 				SpecificSearch(args[1], args[2]);
 			else if (args[0] == "-p1")
 				SelectImagesFiles(args[1], args[2]);
+			else if (args[0] == "-ti" && args.Length == 4)
+				ImportTest(args[1], args[2], args[3]);
 		}
 
 		private static void SpecificSearch(string dir, string format)
@@ -203,20 +208,6 @@ namespace Ninoimager
 				}
 			}
 		}
-
-		private static bool Compare(Stream str1, Stream str2)
-		{
-			if (str1.Length != str2.Length)
-				return false;
-
-			str1.Position = str2.Position = 0;
-			while (str1.Position != str1.Length) {
-				if (str1.ReadByte() != str2.ReadByte())
-					return false;
-			}
-
-			return true;
-		}
 	
 		private static void PaletteInfo(string file, string outputDir)
 		{
@@ -277,6 +268,75 @@ namespace Ninoimager
 			Console.WriteLine("\t* Palette Mode: {0}", map.PaletteMode);
 
 			map.CreateBitmap(image, palette).Save(outputFile);
+		}
+
+		private static void ImportTest(string mapFile, string imgFile, string palFile)
+		{
+			FileStream   oldPalStr = new FileStream(palFile, FileMode.Open);
+			FileStream   oldImgStr = new FileStream(imgFile, FileMode.Open);
+			FileStream   oldMapStr = new FileStream(mapFile, FileMode.Open);
+			MemoryStream newPalStr = new MemoryStream();
+			MemoryStream newImgStr = new MemoryStream();
+			MemoryStream newMapStr = new MemoryStream();
+
+			Nclr nclr = new Nclr(oldPalStr);
+			Ncgr ncgr = new Ncgr(oldImgStr);
+			Nscr nscr = new Nscr(oldMapStr);
+			System.Drawing.Bitmap bmp = nscr.CreateBitmap(ncgr, nclr);
+
+			Importer importer = new Importer();
+			importer.ImportBackground(bmp, newMapStr, newImgStr, newPalStr);
+
+			if (!Compare(oldPalStr, newPalStr)) {
+				string newPalFile = palFile + ".new";
+				WriteStream(newPalFile, newPalStr);
+				Console.WriteLine("Palette different... Written to {0}", newPalFile);
+			}
+			if (!Compare(oldImgStr, newImgStr)) {
+				string newImgFile = imgFile + ".new";
+				WriteStream(newImgFile, newImgStr);
+				Console.WriteLine("Image different...   Written to {0}", newImgFile);
+			}
+			if (!Compare(oldMapStr, newMapStr)) {
+				string newMapFile = mapFile + ".new";
+				WriteStream(newMapFile, newMapStr);
+				Console.WriteLine("Map different...     Written to {0}", newMapFile);
+			}
+
+			newPalStr.Position = newImgStr.Position = newMapStr.Position = 0;
+			nclr = new Nclr(newPalStr);
+			ncgr = new Ncgr(newImgStr);
+			nscr = new Nscr(newMapStr);
+			nscr.CreateBitmap(ncgr, nclr).Save(mapFile + ".png");
+
+			oldPalStr.Close();
+			oldImgStr.Close();
+			oldMapStr.Close();
+			newPalStr.Close();
+			newImgStr.Close();
+			newMapStr.Close();
+		}
+
+		private static void WriteStream(string path, MemoryStream data)
+		{
+			FileStream fs = new FileStream(path, FileMode.Create);
+			data.WriteTo(fs);
+			fs.Flush();
+			fs.Close();
+		}
+
+		private static bool Compare(Stream str1, Stream str2)
+		{
+			if (str1.Length != str2.Length)
+				return false;
+
+			str1.Position = str2.Position = 0;
+			while (str1.Position != str1.Length) {
+				if (str1.ReadByte() != str2.ReadByte())
+					return false;
+			}
+
+			return true;
 		}
 	}
 }

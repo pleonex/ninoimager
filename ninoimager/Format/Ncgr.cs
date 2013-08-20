@@ -35,7 +35,7 @@ namespace Ninoimager.Format
 
 		public Ncgr()
 		{
-			this.nitro = new NitroFile(BlockTypes);
+			this.nitro = new NitroFile("NCGR", "1.0", BlockTypes);
 			this.charBlock = new CHAR(this.nitro);
 			this.nitro.Blocks.Add(this.charBlock);
 		}
@@ -142,10 +142,6 @@ namespace Ninoimager.Format
 			{
 			}
 
-			public override string Name {
-				get { return "CHAR"; }
-			}
-
 			public ushort Height {
 				get;
 				set;
@@ -242,6 +238,11 @@ namespace Ninoimager.Format
 				bw.Write(0x18);
 				bw.Write(this.ImageData);
 			}
+
+			protected override void UpdateSize()
+			{
+				this.Size = 0x08 + 0x18 + this.ImageData.Length;;
+			}
 		}
 
 		private class Cpos : NitroBlock
@@ -249,10 +250,6 @@ namespace Ninoimager.Format
 			public Cpos(NitroFile nitro)
 				: base(nitro)
 			{
-			}
-
-			public override string Name {
-				get { return "CPOS"; }
 			}
 
 			public uint Unknown1 {
@@ -284,6 +281,11 @@ namespace Ninoimager.Format
 				bw.Write(this.Unknown1);
 				bw.Write(this.Unknown2);
 				bw.Write(this.Unknown3);
+			}
+
+			protected override void UpdateSize()
+			{
+				this.Size = 0x08 + 0x08;
 			}
 		}
 	}

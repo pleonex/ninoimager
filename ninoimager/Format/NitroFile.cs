@@ -38,7 +38,7 @@ namespace Ninoimager.Format
 		private ushort version;
 		private BlockCollection blocks;
 
-		public NitroFile(params Type[] blockTypes)
+		private NitroFile(params Type[] blockTypes)
 		{
 			// Check that all types heredites from NitroBlock
 			foreach (Type t in blockTypes) {
@@ -48,6 +48,13 @@ namespace Ninoimager.Format
 
 			this.blockTypes = blockTypes;
 			this.blocks = new BlockCollection();
+		}
+
+		public NitroFile(string magicStamp, string version, params Type[] blockTypes)
+			: this(blockTypes)
+		{
+			this.magicStamp = magicStamp;
+			this.VersionS   = version;
 		}
 
 		public NitroFile(string fileIn, params Type[] blockTypes)
