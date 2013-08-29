@@ -21,6 +21,7 @@
 // -----------------------------------------------------------------------
 using System;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
@@ -38,10 +39,15 @@ namespace Ninoimager
 			Console.WriteLine("V {0} ~~ by pleoNeX ~~", Assembly.GetExecutingAssembly().GetName().Version);
 			Console.WriteLine();
 
+			DateTime start = DateTime.Now;
+
 			if (args.Length == 3 && args[0] == "-ibg")
 				SearchAndImportBg(args[1], args[2]);
 			else
 				Tests.RunTest(args);
+
+			DateTime end = DateTime.Now;
+			Console.WriteLine("It tooks: {0}:{1}", (end - start).Minutes, (end - start).Seconds);
 		}
 
 		private static void SearchAndImportBg(string baseDir, string xmlList)
@@ -57,13 +63,30 @@ namespace Ninoimager
 					continue;
 
 				string packFile = match.Groups[1] + ".n2d";
-				Npck npck = Npck.ImportBackgroundImage(file);
-				npck.Write(packFile);
+				string relative = packFile.Replace(baseDir, "");
+				string infoFile = Path.Combine(Path.GetDirectoryName(file), ".info.xml");
+				if (!File.Exists(infoFile))
+					continue;
+
+				try {
+					Npck npck = Npck.ImportBackgroundImage(file);
+					npck.Write(packFile);
+				} catch (Exception ex) {
+					Console.WriteLine("Error trying to import: {0}", relative);
+					Console.WriteLine("\t" + ex.Message);
+					continue;
+				}
+
+				XDocument xinfo = XDocument.Load(infoFile);
+				string id = xinfo.Element("RomInfo").Descendants("File")
+							.First(f => f.Value == Path.GetFileName(packFile)).Attribute("Id").Value;
 
 				XElement xfile = new XElement("File");
-				xfile.SetAttributeValue("ID", "");
-				xfile.Value = packFile.Replace(baseDir, "");
+				xfile.SetAttributeValue("ID", id);
+				xfile.Value = relative;
 				root.Add(xfile);
+
+				Console.WriteLine("Written with success... {0}", relative);
 			}
 
 			xml.Save(xmlList);

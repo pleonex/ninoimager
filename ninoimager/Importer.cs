@@ -101,10 +101,14 @@ namespace Ninoimager
 
 			int width  = newImg.Width;
 			int height = newImg.Height;
+			int maxColors = 1 << this.DefaultFormat.Bpp();
 
 			Pixel[] pixels;
 			Color[] palette;
 			this.GetIndexImage(newImg, out pixels, out palette);
+			if (palette.Length >= maxColors)
+				throw new FormatException(string.Format("The image has more than {0} colors", maxColors));
+
 			this.AddBackdropColor(pixels, ref palette);
 			this.SortPalette(pixels, palette);
 			this.FillPalette(ref palette);
