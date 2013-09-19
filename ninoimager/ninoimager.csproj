@@ -43,11 +43,8 @@
     <Compile Include="Format\Palette.cs" />
     <Compile Include="Format\NitroFile.cs" />
     <Compile Include="Format\NitroBlock.cs" />
-    <Compile Include="Format\Nclr.cs" />
     <Compile Include="Format\Image.cs" />
-    <Compile Include="Format\Ncgr.cs" />
     <Compile Include="Format\Map.cs" />
-    <Compile Include="Format\Nscr.cs" />
     <Compile Include="Importer.cs" />
     <Compile Include="Format\ColorExtension.cs" />
     <Compile Include="Format\ColorFormat.cs" />
@@ -57,11 +54,16 @@
     <Compile Include="Format\BgMode.cs" />
     <Compile Include="ByteArrayExtension.cs" />
     <Compile Include="Format\Pack.cs" />
-    <Compile Include="Format\Npck.cs" />
     <Compile Include="Tests.cs" />
+    <Compile Include="Format\Implementation\Ncgr.cs" />
+    <Compile Include="Format\Implementation\Nclr.cs" />
+    <Compile Include="Format\Implementation\Npck.cs" />
+    <Compile Include="Format\Implementation\Nscr.cs" />
+    <Compile Include="Format\Implementation\Btx0.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
     <Folder Include="Format\" />
+    <Folder Include="Format\Implementation\" />
   </ItemGroup>
 </Project>
