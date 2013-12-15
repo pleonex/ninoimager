@@ -59,6 +59,11 @@ namespace Ninoimager
 			XElement root   = new XElement("NinoImport");
 			xml.Add(root);
 
+			XElement gameInfo = new XElement("GameInfo");
+			XElement editInfo = new XElement("EditInfo");
+			root.Add(gameInfo);
+			root.Add(editInfo);
+
 			foreach (string file in Directory.EnumerateFiles(baseDir, "*.png", SearchOption.AllDirectories)) {
 				Match match = BgRegex.Match(file);
 				if (!match.Success)
@@ -83,10 +88,18 @@ namespace Ninoimager
 				string id = xinfo.Element("RomInfo").Descendants("File")
 							.First(f => f.Value == Path.GetFileName(packFile)).Attribute("Id").Value;
 
-				XElement xfile = new XElement("File");
-				xfile.SetAttributeValue("ID", id);
-				xfile.Value = relative;
-				root.Add(xfile);
+				// Add game info
+				XElement xgame = new XElement("File");
+				xgame.Add(new XElement("Path", relative));
+				xgame.Add(new XElement("Import", relative));
+				gameInfo.Add(xgame);
+
+				// Add edit info
+				XElement xedit = new XElement("FileInfo");
+				xedit.Add(new XElement("Path", relative));
+				xedit.Add(new XElement("Type", "Common.Replace"));
+				xedit.Add(new XElement("DependsOn", "."));	// No idea?
+				editInfo.Add(xedit);
 
 				Console.WriteLine("Written with success... {0}", relative);
 			}
