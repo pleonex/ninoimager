@@ -43,6 +43,8 @@ namespace Ninoimager
 
 			if (args.Length == 3 && args[0] == "-ibg")
 				SearchAndImportBg(args[1], args[2]);
+			else if (args.Length == 2 && args[0] == "-efr")
+				SearchAndExport(args[1]);
 			else
 				Tests.RunTest(args);
 
@@ -90,6 +92,26 @@ namespace Ninoimager
 			}
 
 			xml.Save(xmlList);
+		}
+
+		private static void SearchAndExport(string baseDir)
+		{
+			foreach (string file in Directory.EnumerateFiles(baseDir, "*.n2d", SearchOption.AllDirectories)) {	
+				string relativePath = file.Replace(baseDir, "");
+				string imageName = Path.GetRandomFileName().Substring(0, 8);
+				string imagePath = Path.Combine(baseDir, imageName + ".png");
+
+				try {
+					Npck pack = new Npck(file);
+					pack.GetBackgroundImage().Save(imagePath);
+				} catch (Exception ex) {
+					Console.WriteLine("Error trying to export: {0} to {1}", relativePath, imagePath);
+					Console.WriteLine("\t" + ex.ToString());
+					continue;
+				}
+
+				Console.WriteLine("Exported {0} -> {1}", relativePath, imageName);
+			}
 		}
 	}
 }
