@@ -114,19 +114,18 @@ namespace Ninoimager.Format
 			EmguImage palette = new EmguImage(160, height * 10);
 
 			bool end = false;
-			for (int i = 0; i < 16 & !end; i++)
-			{
-				for (int j = 0; j < 16; j++)
-				{
-					if (colors.Length <= j + 16 * i)
-					{
+			for (int i = 0; i < 16 & !end; i++) {
+				for (int j = 0; j < 16; j++) {
+					// Check if we have reached the end.
+					// A palette image can be incompleted (number of colors not padded to 16)
+					if (colors.Length <= j + 16 * i) {
 						end = true;
 						break;
 					}
 
 					for (int k = 0; k < 10; k++)
 						for (int q = 0; q < 10; q++)
-							palette[i * 10 + k, j * 10 + q] = colors[j + 16 * i];
+							palette.SetPixel(j * 10 + q, i * 10 + k, colors[j + 16 * i]);
 				}
 			}
 
