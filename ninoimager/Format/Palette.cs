@@ -21,8 +21,8 @@
 // -----------------------------------------------------------------------
 using System;
 using System.Collections;
-using Color = Emgu.CV.Structure.Bgra;
-using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Bgra, System.Int32>;
+using Color     = Emgu.CV.Structure.Rgba;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
 
 namespace Ninoimager.Format
 {
@@ -155,7 +155,7 @@ namespace Ninoimager.Format
 			double green = ((value & 0x03E0) >> 05) * 8;
 			double blue  = ((value & 0x7C00) >> 10) * 8;
 
-			return new Color(blue, green, red, 255);
+			return new Color(red, green, blue, 255);
 		}
 
 		public static Color[] FromBgr555(byte[] values)

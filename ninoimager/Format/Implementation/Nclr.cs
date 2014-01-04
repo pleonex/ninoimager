@@ -25,7 +25,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Color = Emgu.CV.Structure.Bgra;
+using Color = Emgu.CV.Structure.Rgba;
 
 namespace Ninoimager.Format
 {
