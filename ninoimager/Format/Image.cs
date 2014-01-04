@@ -20,7 +20,10 @@
 // <date>11/08/2013</date>
 // -----------------------------------------------------------------------
 using System;
-using System.Drawing;
+using Point     = System.Drawing.Point;
+using Size      = System.Drawing.Size;
+using Color     = Emgu.CV.Structure.Rgba;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
 
 namespace Ninoimager.Format
 {
@@ -32,7 +35,6 @@ namespace Ninoimager.Format
 		// work. The conversion will take place at the initialization and when the data is required.
 		// CHECK: What about changing the type to Pixel?
 		private uint[] data;
-
 		private ColorFormat format;
 		private PixelEncoding pixelEnc;
 
@@ -92,67 +94,56 @@ namespace Ninoimager.Format
 			private set { this.tileSize = value; }
 		}
 
-		public Bitmap CreateBitmap()
+		public EmguImage CreateBitmap()
 		{
 			if (this.Format.IsIndexed())
 				throw new ArgumentException("A palette is required.");
 
-			Bitmap bmp = new Bitmap(this.width, this.height);
-
-			for (int i = 0; i < this.data.Length; i++) {
-				Color color = Color.FromArgb((int)this.data[i]);
-				bmp.SetPixel(i % this.width, i / this.width, color);
-			}
+			EmguImage bmp = new EmguImage(this.width, this.height);
+			bmp.SetPixels(0, 0, this.width, this.height, this.data.ToArgbColors());
 
 			return bmp;
 		}
 
-		public Bitmap CreateBitmap(Palette palette, int paletteIndex)
+		public EmguImage CreateBitmap(Palette palette, int paletteIndex)
 		{
 			if (!this.Format.IsIndexed()) {
 				Console.WriteLine("##WARNING## The palette is not required.");
 				return this.CreateBitmap();
 			}
 
-			Bitmap bmp = new Bitmap(this.width, this.height);
-			Color[] imgColors = null; // UNDONE: palette.GetPalette(paletteIndex);
-
-			for (int i = 0; i < this.data.Length; i++) {
-				uint alpha      = this.data[i] >> 24;
-				uint colorIndex = this.data[i] & 0x00FFFFFF;
-				if (colorIndex >= imgColors.Length)
-					throw new IndexOutOfRangeException("Color index out of range");
-
-				Color color = imgColors[colorIndex];
-				color = Color.FromArgb((int)alpha, color);
-				bmp.SetPixel(i % this.width, i / this.width, color);
-			}
+			EmguImage bmp = new EmguImage(this.width, this.height);
+			bmp.SetPixels(
+				0,
+				0,
+				this.width,
+				this.height, 
+				InfoToIndexedColors(this.data, palette.GetPalette(paletteIndex))
+			);
 
 			return bmp;
 		}
 
-		public Bitmap CreateBitmap(Palette palette, uint[] paletteIndex)
+		public EmguImage CreateBitmap(Palette palette, uint[] paletteIndex)
 		{
 			if (!this.Format.IsIndexed()) {
 				Console.WriteLine("##WARNING## The palette is not required.");
 				return this.CreateBitmap();
 			}
 
-			Bitmap bmp = new Bitmap(this.width, this.height);
-
-			for (int i = 0; i < this.data.Length; i++) {
-				uint alpha = this.data[i] >> 24;
-				uint colorIndex = this.data[i] & 0x00FFFFFF;
-
-				Color color = new Color(); // UNDONE: palette.GetColor((int)paletteIndex[i], (int)colorIndex);
-				color = Color.FromArgb((int)alpha, color);
-				bmp.SetPixel(i % this.width, i / this.width, color);
-			}
+			EmguImage bmp = new EmguImage(this.width, this.height);
+			bmp.SetPixels(
+				0,
+				0,
+				this.width,
+				this.height,
+				InfoToIndexedColors(this.data, palette.GetPalettes(), paletteIndex)
+			);
 
 			return bmp;
 		}
 
-		public Image CreateSubImage(int x, int y, int width, int height)
+		public EmguImage CreateSubImage(int x, int y, int width, int height)
 		{
 			// Get pixel of subimage and create using private constructor to pass internal data
 			throw new NotImplementedException();
@@ -243,6 +234,36 @@ namespace Ninoimager.Format
 			}
 
 			return buffer;
+		}
+
+		private static Color[] InfoToIndexedColors(uint[] colorInfo, Color[] palette)
+		{
+			return InfoToIndexedColors(
+				colorInfo,
+				new Color[][] { palette },
+				new uint[colorInfo.Length]	// By default is filled with 0
+			);
+		}
+
+		private static Color[] InfoToIndexedColors(uint[] colorInfo, Color[][] palettes, uint[] palIdx)
+		{
+			Color[] colors = new Color[colorInfo.Length];
+			for (int i = 0; i < colorInfo.Length; i++)
+				colors[i] = InfoToIndexedColor(colorInfo[i], palettes[palIdx[i]]);
+			return colors;
+		}
+
+		private static Color InfoToIndexedColor(uint colorInfo, Color[] palette)
+		{
+			uint alpha      = colorInfo >> 24;
+			uint colorIndex = colorInfo & 0x00FFFFFF;
+			if (colorIndex >= palette.Length)
+				throw new IndexOutOfRangeException("Color index out of palette");
+
+			Color color = palette[colorIndex];
+			color.Alpha = (double)alpha;
+
+			return color;
 		}
 	}
 }

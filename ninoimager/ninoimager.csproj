@@ -66,6 +66,7 @@
     <Compile Include="Format\Implementation\Npck.cs" />
     <Compile Include="Format\Implementation\Nscr.cs" />
     <Compile Include="Format\Implementation\Btx0.cs" />
+    <Compile Include="Format\EmguImageExtension.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

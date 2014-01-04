@@ -38,6 +38,24 @@ namespace Ninoimager.Format
 				return c1.Red.CompareTo(c2.Red);
 			}
 		}
+
+		public static Color[] ToArgbColors(this uint[] argb)
+		{
+			Color[] colors = new Color[argb.Length];
+			for (int i = 0; i < argb.Length; i++)
+				colors[i] = argb[i].ToArgbColor();
+			return colors;
+		}
+
+		public static Color ToArgbColor(this uint argb)
+		{
+			return new Color(
+				(argb >> 16) & 0xFF,
+				(argb >> 08) & 0xFF,
+				(argb >> 00) & 0xFF,
+				(argb >> 24) & 0xFF
+			);
+		}
 	}
 }
 

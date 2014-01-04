@@ -116,7 +116,8 @@ namespace Ninoimager.Format
 			    image.PixelEncoding,
 			    image.Format,
 			    image.TileSize);
-			return finalImg.CreateBitmap(palette, palIndex);
+			return null;
+			// UNDONE: return finalImg.CreateBitmap(palette, palIndex);
 		}
 
 		public void SetMapInfo(MapInfo[] mapInfo)

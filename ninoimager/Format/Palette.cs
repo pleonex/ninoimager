@@ -76,6 +76,11 @@ namespace Ninoimager.Format
 			return (Color[])this.palette[index].Clone();
 		}
 
+		public Color[][] GetPalettes()
+		{
+			return (Color[][])this.palette.Clone();
+		}
+
 		public void SetPalette(Color[] palette)
 		{
 			this.palette = new Color[1][];
