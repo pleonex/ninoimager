@@ -1,0 +1,3 @@
+[submodule "lib/emgucv"]
+	path = lib/emgucv
+	url = git://git.code.sf.net/p/emgucv/code
