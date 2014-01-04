@@ -25,6 +25,7 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using Ninoimager.Format;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
 
 namespace Ninoimager
 {
@@ -294,7 +295,7 @@ namespace Ninoimager
 			Nclr nclr = new Nclr(oldPalStr);
 			Ncgr ncgr = new Ncgr(oldImgStr);
 			Nscr nscr = new Nscr(oldMapStr);
-			System.Drawing.Bitmap bmp = nscr.CreateBitmap(ncgr, nclr);
+			EmguImage bmp = nscr.CreateBitmap(ncgr, nclr);
 			bmp.Save(mapFile + ".png");
 
 			Importer importer = new Importer();

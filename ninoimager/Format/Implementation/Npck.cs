@@ -20,9 +20,10 @@
 // <date>20/08/2013</date>
 // -----------------------------------------------------------------------
 using System;
-using System.Drawing;
 using System.IO;
 using System.Linq;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
+
 
 namespace Ninoimager.Format
 {
@@ -115,7 +116,7 @@ namespace Ninoimager.Format
 			}
 		}
 
-		public Bitmap GetBackgroundImage()
+		public EmguImage GetBackgroundImage()
 		{
 			if (this.NumSubfiles != 9 || this[0] == null || this[1] == null || this[6] == null)
 				throw new FormatException("The pack does not contain a background image.");
@@ -129,10 +130,10 @@ namespace Ninoimager.Format
 
 		public static Npck ImportBackgroundImage(string image)
 		{
-			return ImportBackgroundImage((Bitmap)System.Drawing.Image.FromFile(image));
+			return ImportBackgroundImage(new EmguImage(image));
 		}
 
-		public static Npck ImportBackgroundImage(Bitmap image)
+		public static Npck ImportBackgroundImage(EmguImage image)
 		{
 			MemoryStream nclrStr = new MemoryStream();
 			MemoryStream ncgrStr = new MemoryStream();

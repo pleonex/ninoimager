@@ -49,15 +49,27 @@ namespace Ninoimager.Format
 
 		public static Color ToArgbColor(this uint argb)
 		{
+			// TODO: Swap blue and red component once the bug is fixed in EmguCV
+			// Bug: http://www.emgu.com/bugs/show_bug.cgi?id=89
 			return new Color(
-				(argb >> 16) & 0xFF,
-				(argb >> 08) & 0xFF,
 				(argb >> 00) & 0xFF,
+				(argb >> 08) & 0xFF,
+				(argb >> 16) & 0xFF,
 				(argb >> 24) & 0xFF
 			);
 		}
 
-		public static ushort ToBgr555Color(this Color color)
+		public static uint ToArgb(this Color color)
+		{
+			return (uint)(
+				((byte)color.Red   << 16) |
+				((byte)color.Green << 08) |
+				((byte)color.Blue  << 00) |
+				((byte)color.Alpha << 24)
+			);
+		}
+
+		public static ushort ToBgr555(this Color color)
 		{
 			int red   = (int)(color.Red   / 8);
 			int green = (int)(color.Green / 8);
@@ -66,12 +78,12 @@ namespace Ninoimager.Format
 			return (ushort)((red << 0) | (green << 5) | (blue << 10));
 		}
 
-		public static byte[] ToBgr555Colors(this Color[] colors)
+		public static byte[] ToBgr555(this Color[] colors)
 		{
 			byte[] values = new byte[colors.Length * 2];
 
 			for (int i = 0; i < colors.Length; i++) {
-				ushort bgr = colors[i].ToBgr555Color();
+				ushort bgr = colors[i].ToBgr555();
 				Array.Copy(BitConverter.GetBytes(bgr), 0, values, i * 2, 2);
 			}
 
@@ -80,11 +92,13 @@ namespace Ninoimager.Format
 
 		public static Color ToBgr555Color(this ushort value)
 		{
-			double red   = ((value & 0x001F) >> 00) * 8;
-			double green = ((value & 0x03E0) >> 05) * 8;
-			double blue  = ((value & 0x7C00) >> 10) * 8;
+			double red   = ((value & 0x001F) >> 00) * 8.0;
+			double green = ((value & 0x03E0) >> 05) * 8.0;
+			double blue  = ((value & 0x7C00) >> 10) * 8.0;
 
-			return new Color(red, green, blue, 255);
+			// TODO: Swap blue and red component once the bug is fixed in EmguCV
+			// Bug: http://www.emgu.com/bugs/show_bug.cgi?id=89
+			return new Color(blue, green, red, 255);
 		}
 
 		public static Color[] ToBgr555Colors(this byte[] values)

@@ -202,7 +202,7 @@ namespace Ninoimager.Format
 
 			protected override void WriteData(Stream strOut)
 			{
-				byte[] paletteBytes = this.PaletteColors.ToBgr555Colors();
+				byte[] paletteBytes = this.PaletteColors.ToBgr555();
 
 				BinaryWriter bw = new BinaryWriter(strOut);
 				bw.Write((uint)this.Depth);

@@ -23,8 +23,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Ninoimager.Format;
-using Drawing = System.Drawing;
-using Color = System.Drawing.Color;
+using Size      = System.Drawing.Size;
+using Color     = Emgu.CV.Structure.Rgba;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
 
 namespace Ninoimager
 {
@@ -52,11 +53,11 @@ namespace Ninoimager
 		}
 
 		public Color TransparentColor {
-			get { return Color.FromArgb(248, 0, 248); }
+			get { return new Color(248, 0, 248, 255); }
 		}
 
 		public Color BackdropColor {
-			get { return Color.Black; }
+			get { return new Color(0, 0, 0, 255); }	// Black
 		}
 
 		public BgMode BgMode {
@@ -71,8 +72,8 @@ namespace Ninoimager
 			get { return PixelEncoding.HorizontalTiles; }
 		}
 
-		public Drawing.Size TileSize {
-			get { return new Drawing.Size(8, 8); }
+		public Size TileSize {
+			get { return new Size(8, 8); }
 		}
 		#endregion
 
@@ -83,7 +84,7 @@ namespace Ninoimager
 		/// <param name="mapStr">Map stream output.</param>
 		/// <param name="imgStr">Image stream output.</param>
 		/// <param name="palStr">Pal strream output.</param>
-		public void ImportBackground(Drawing.Bitmap newImg, Stream mapStr, Stream imgStr, Stream palStr)
+		public void ImportBackground(EmguImage newImg, Stream mapStr, Stream imgStr, Stream palStr)
 		{
 			/* Specifications: 
 				+ Image will be HorizontalTiled
@@ -137,7 +138,7 @@ namespace Ninoimager
 			Nclr nclr = new Nclr() {
 				Extended = false
 			};
-			// UNDONE: nclr.SetData(palette, this.DefaultFormat);
+			nclr.SetData(palette, this.DefaultFormat);
 
 			// Write data
 			nclr.Write(palStr);
@@ -145,7 +146,7 @@ namespace Ninoimager
 			nscr.Write(mapStr);
 		}
 
-		private void GetIndexImage(Drawing.Bitmap image, out Pixel[] pixels, out Color[] palette)
+		private void GetIndexImage(EmguImage image, out Pixel[] pixels, out Color[] palette)
 		{
 			List<Color> listColor = new List<Color>();
 			int width  = image.Width;
@@ -156,19 +157,20 @@ namespace Ninoimager
 
 			for (int y = 0; y < height; y++) {
 				for (int x = 0; x < width; x++) {
-					Color color = image.GetPixel(x, y);
+					Color color = image[y, x];
 					int index = this.PixelEncoding.GetIndex(x, y, width, height, this.TileSize);
 
 					if (!isIndexed) {
-						pixels[index] = new Pixel((uint)color.ToArgb(), color.A, false);
+						pixels[index] = new Pixel(color.ToArgb(), (uint)color.Alpha, false);
 					} else {
-						Color noTrans = Color.FromArgb(255, color);
+						Color noTrans = color;
+						noTrans.Alpha = 255;
 
 						if (!listColor.Contains(noTrans))
 							listColor.Add(noTrans);
 
 						int colorIndex = listColor.IndexOf(noTrans);
-						pixels[index] = new Pixel((uint)colorIndex, color.A, true);
+						pixels[index] = new Pixel((uint)colorIndex, (uint)color.Alpha, true);
 					}
 				}
 			}
@@ -193,7 +195,7 @@ namespace Ninoimager
 		private void SortPalette(Pixel[] pixels, Color[] palette)
 		{
 			Color[] messyPalette = (Color[])palette.Clone();
-			// UNDONE: Array.Sort<Color>(palette, (c1, c2) => c1.CompareTo(c2));
+			Array.Sort<Color>(palette, (c1, c2) => c1.CompareTo(c2));
 
 			for (int i = 0; i < pixels.Length; i++) {
 				Color oldColor = messyPalette[pixels[i].Info];

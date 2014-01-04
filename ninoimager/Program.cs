@@ -20,6 +20,7 @@
 // <date>29/07/2013</date>
 // -----------------------------------------------------------------------
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -39,7 +40,8 @@ namespace Ninoimager
 			Console.WriteLine("V {0} ~~ by pleoNeX ~~", Assembly.GetExecutingAssembly().GetName().Version);
 			Console.WriteLine();
 
-			DateTime start = DateTime.Now;
+			Stopwatch watch = new Stopwatch();
+			watch.Start();
 
 			if (args.Length == 3 && args[0] == "-ibg")
 				SearchAndImportBg(args[1], args[2]);
@@ -48,8 +50,8 @@ namespace Ninoimager
 			else
 				Tests.RunTest(args);
 
-			DateTime end = DateTime.Now;
-			Console.WriteLine("It tooks: {0}:{1}", (end - start).Minutes, (end - start).Seconds);
+			watch.Stop();
+			Console.WriteLine("It tooks: {0}", watch.Elapsed);
 		}
 
 		private static void SearchAndImportBg(string baseDir, string xmlList)

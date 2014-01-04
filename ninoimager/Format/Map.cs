@@ -21,7 +21,8 @@
 // -----------------------------------------------------------------------
 using System;
 using System.Collections.Generic;
-using System.Drawing;
+using Size      = System.Drawing.Size;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
 
 namespace Ninoimager.Format
 {
@@ -72,7 +73,7 @@ namespace Ninoimager.Format
 			set { this.bgMode = value; }
 		}
 
-		public Bitmap CreateBitmap(Image image, Palette palette)
+		public EmguImage CreateBitmap(Image image, Palette palette)
 		{
 			// UNDONE: Support Text mode and pixel areas
 			if (this.bgMode == BgMode.Text && (this.width > 256 || this.height > 256))
@@ -115,9 +116,9 @@ namespace Ninoimager.Format
 			    this.height,
 			    image.PixelEncoding,
 			    image.Format,
-			    image.TileSize);
-			return null;
-			// UNDONE: return finalImg.CreateBitmap(palette, palIndex);
+			    image.TileSize
+			);
+			return finalImg.CreateBitmap(palette, palIndex);
 		}
 
 		public void SetMapInfo(MapInfo[] mapInfo)
