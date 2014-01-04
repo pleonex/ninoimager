@@ -21,7 +21,8 @@
 // -----------------------------------------------------------------------
 using System;
 using System.Collections;
-using System.Drawing;
+using Color = Emgu.CV.Structure.Bgra;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Bgra, System.Int32>;
 
 namespace Ninoimager.Format
 {
@@ -91,7 +92,7 @@ namespace Ninoimager.Format
 			}
 		}
 
-		public Bitmap CreateBitmap(int index)
+		public EmguImage CreateBitmap(int index)
 		{
 			if (index < 0 || index >= this.palette.Length)
 				throw new IndexOutOfRangeException();
@@ -99,13 +100,13 @@ namespace Ninoimager.Format
 			return CreateBitmap(this.palette[index]);
 		}
 
-		public static Bitmap CreateBitmap(Color[] colors)
+		public static EmguImage CreateBitmap(Color[] colors)
 		{
 			int height = (colors.Length / 0x10);
 			if (colors.Length % 0x10 != 0)
 				height++;
 
-			Bitmap palette = new Bitmap(160, height * 10);
+			EmguImage palette = new EmguImage(160, height * 10);
 
 			bool end = false;
 			for (int i = 0; i < 16 & !end; i++)
@@ -120,20 +121,41 @@ namespace Ninoimager.Format
 
 					for (int k = 0; k < 10; k++)
 						for (int q = 0; q < 10; q++)
-							palette.SetPixel((j * 10 + q), (i * 10 + k), colors[j + 16 * i]);
+							palette[i * 10 + k, j * 10 + q] = colors[j + 16 * i];
 				}
 			}
 
 			return palette;
 		}
 
+		public static ushort ToBgr555(Color color)
+		{
+			int red   = (int)(color.Red   / 8);
+			int green = (int)(color.Green / 8);
+			int blue  = (int)(color.Blue  / 8);
+
+			return (ushort)((red << 0) | (green << 5) | (blue << 10));
+		}
+
+		public static byte[] ToBgr555(Color[] colors)
+		{
+			byte[] values = new byte[colors.Length * 2];
+
+			for (int i = 0; i < colors.Length; i++) {
+				ushort bgr = ToBgr555(colors[i]);
+				Array.Copy(BitConverter.GetBytes(bgr), 0, values, i * 2, 2);
+			}
+
+			return values;
+		}
+
 		public static Color FromBgr555(ushort value)
 		{
-			int red   = ((value & 0x001F) >> 00) * 8;
-			int green = ((value & 0x03E0) >> 05) * 8;
-			int blue  = ((value & 0x7C00) >> 10) * 8;
+			double red   = ((value & 0x001F) >> 00) * 8;
+			double green = ((value & 0x03E0) >> 05) * 8;
+			double blue  = ((value & 0x7C00) >> 10) * 8;
 
-			return Color.FromArgb(red, green, blue);
+			return new Color(blue, green, red, 255);
 		}
 
 		public static Color[] FromBgr555(byte[] values)

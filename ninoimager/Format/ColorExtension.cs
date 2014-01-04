@@ -20,44 +20,23 @@
 // <date>20/08/2013</date>
 // -----------------------------------------------------------------------
 using System;
-using System.Drawing;
+using Color = Emgu.CV.Structure.Bgra;
 
 namespace Ninoimager.Format
 {
 	public static class ColorExtension
 	{
-		public static int Compare(this Color c1, Color c2)
+		public static int CompareTo(this Color c1, Color c2)
 		{
-			if (c1.R == c2.R) {
-				if (c1.G == c2.G) {
-					return c1.B.CompareTo(c2.B);
+			if (c1.Red == c2.Red) {
+				if (c1.Green == c2.Green) {
+					return c1.Blue.CompareTo(c2.Blue);
 				} else {
-					return c1.G.CompareTo(c2.G);
+					return c1.Green.CompareTo(c2.Green);
 				}
 			} else {
-				return c1.R.CompareTo(c2.R);
+				return c1.Red.CompareTo(c2.Red);
 			}
-		}
-
-		public static ushort ToBgr555(this Color color)
-		{
-			int red   = color.R / 8;
-			int green = color.G / 8;
-			int blue  = color.B / 8;
-	
-			return (ushort)((red << 0) | (green << 5) | (blue << 10));
-		}
-		
-		public static byte[] ToBgr555(this Color[] colors)
-		{
-			byte[] values = new byte[colors.Length * 2];
-
-			for (int i = 0; i < colors.Length; i++) {
-				ushort bgr = ToBgr555(colors[i]);
-				Array.Copy(BitConverter.GetBytes(bgr), 0, values, i * 2, 2);
-			}
-
-			return values;
 		}
 	}
 }

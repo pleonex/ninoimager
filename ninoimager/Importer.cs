@@ -137,7 +137,7 @@ namespace Ninoimager
 			Nclr nclr = new Nclr() {
 				Extended = false
 			};
-			nclr.SetData(palette, this.DefaultFormat);
+			// UNDONE: nclr.SetData(palette, this.DefaultFormat);
 
 			// Write data
 			nclr.Write(palStr);
@@ -193,7 +193,7 @@ namespace Ninoimager
 		private void SortPalette(Pixel[] pixels, Color[] palette)
 		{
 			Color[] messyPalette = (Color[])palette.Clone();
-			Array.Sort<Color>(palette, (c1, c2) => c1.Compare(c2));
+			// UNDONE: Array.Sort<Color>(palette, (c1, c2) => c1.CompareTo(c2));
 
 			for (int i = 0; i < pixels.Length; i++) {
 				Color oldColor = messyPalette[pixels[i].Info];

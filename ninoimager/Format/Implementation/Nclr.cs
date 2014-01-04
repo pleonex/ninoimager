@@ -24,8 +24,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Drawing;
 using System.Linq;
+using Color = Emgu.CV.Structure.Bgra;
 
 namespace Ninoimager.Format
 {
@@ -202,7 +202,7 @@ namespace Ninoimager.Format
 
 			protected override void WriteData(Stream strOut)
 			{
-				byte[] paletteBytes = this.PaletteColors.ToBgr555();
+				byte[] paletteBytes = Palette.ToBgr555(this.PaletteColors);
 
 				BinaryWriter bw = new BinaryWriter(strOut);
 				bw.Write((uint)this.Depth);

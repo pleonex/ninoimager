@@ -115,7 +115,7 @@ namespace Ninoimager.Format
 			}
 
 			Bitmap bmp = new Bitmap(this.width, this.height);
-			Color[] imgColors = palette.GetPalette(paletteIndex);
+			Color[] imgColors = null; // UNDONE: palette.GetPalette(paletteIndex);
 
 			for (int i = 0; i < this.data.Length; i++) {
 				uint alpha      = this.data[i] >> 24;
@@ -144,7 +144,7 @@ namespace Ninoimager.Format
 				uint alpha = this.data[i] >> 24;
 				uint colorIndex = this.data[i] & 0x00FFFFFF;
 
-				Color color = palette.GetColor((int)paletteIndex[i], (int)colorIndex);
+				Color color = new Color(); // UNDONE: palette.GetColor((int)paletteIndex[i], (int)colorIndex);
 				color = Color.FromArgb((int)alpha, color);
 				bmp.SetPixel(i % this.width, i / this.width, color);
 			}
