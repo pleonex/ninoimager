@@ -56,6 +56,49 @@ namespace Ninoimager.Format
 				(argb >> 24) & 0xFF
 			);
 		}
+
+		public static ushort ToBgr555Color(this Color color)
+		{
+			int red   = (int)(color.Red   / 8);
+			int green = (int)(color.Green / 8);
+			int blue  = (int)(color.Blue  / 8);
+
+			return (ushort)((red << 0) | (green << 5) | (blue << 10));
+		}
+
+		public static byte[] ToBgr555Colors(this Color[] colors)
+		{
+			byte[] values = new byte[colors.Length * 2];
+
+			for (int i = 0; i < colors.Length; i++) {
+				ushort bgr = colors[i].ToBgr555Color();
+				Array.Copy(BitConverter.GetBytes(bgr), 0, values, i * 2, 2);
+			}
+
+			return values;
+		}
+
+		public static Color ToBgr555Color(this ushort value)
+		{
+			double red   = ((value & 0x001F) >> 00) * 8;
+			double green = ((value & 0x03E0) >> 05) * 8;
+			double blue  = ((value & 0x7C00) >> 10) * 8;
+
+			return new Color(red, green, blue, 255);
+		}
+
+		public static Color[] ToBgr555Colors(this byte[] values)
+		{
+			if (values.Length % 2 != 0)
+				throw new ArgumentException("Length must be even.");
+
+			Color[] colors = new Color[values.Length / 2];
+			for (int i = 0; i < colors.Length; i++) {
+				colors[i] = BitConverter.ToUInt16(values, i*2).ToBgr555Color();
+			}
+
+			return colors;
+		}
 	}
 }
 
