@@ -127,11 +127,13 @@ namespace Ninoimager
 
 			// Create image format
 			Ncgr ncgr = new Ncgr() {
-				Width      = width,
-				Height     = height,
 				RegDispcnt = this.DispCnt,
 				Unknown    = this.UnknownChar
 			};
+			ncgr.Width  = (pixels.Length > 256) ? 256 : pixels.Length;
+			ncgr.Height = (int)Math.Ceiling(pixels.Length / (double)ncgr.Width);
+			if (ncgr.Height % this.TileSize.Height != 0)
+				ncgr.Height += this.TileSize.Height - (ncgr.Height % this.TileSize.Height);
 			ncgr.SetData(pixels, this.PixelEncoding, this.DefaultFormat, this.TileSize);
 
 			// Create palette format

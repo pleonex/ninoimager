@@ -149,13 +149,13 @@ namespace Ninoimager.Format
 				bool flipY = false;
 
 				// Check if it's already in the list
-				int index = tiles.IndexOf(tile);
+				int index = Search(tile, tiles);
 
 				// Check flip X
 				if (index == -1) {
 					Pixel[] tileFlipX = (Pixel[])tile.Clone();
 					Map.FlipX(tileFlipX, this.tileSize);
-					index = tiles.IndexOf(tileFlipX);
+					index = Search(tileFlipX, tiles);
 					flipX = true;
 					flipY = false;
 
@@ -163,7 +163,7 @@ namespace Ninoimager.Format
 					if (index == -1) {
 						Pixel[] tileFlipY = (Pixel[])tile.Clone();
 						Map.FlipY(tileFlipY, this.tileSize);
-						index = tiles.IndexOf(tileFlipY);
+						index = Search(tileFlipY, tiles);
 						flipX = false;
 						flipY = true;
 					}
@@ -171,7 +171,7 @@ namespace Ninoimager.Format
 					// Check flip X & Y
 					if (index == -1) {
 						Map.FlipY(tileFlipX, this.tileSize);
-						index = tiles.IndexOf(tileFlipX);
+						index = Search(tileFlipX, tiles);
 						flipX = true;
 						flipY = true;
 					}
@@ -196,6 +196,20 @@ namespace Ninoimager.Format
 				tiles[i].CopyTo(linPixels, i * tileLength);
 
 			return linPixels;
+		}
+
+		private static int Search(Pixel[] tile, List<Pixel[]> tiles)
+		{
+			for (int k = 0; k < tiles.Count; k++) {
+				bool result = true;
+				for (int i = 0; i < tiles[k].Length && result; i++)
+					result = (tile[i].Equals(tiles[k][i]));
+
+				if (result)
+					return k;
+			}
+
+			return -1;
 		}
 
 		private static void FlipX(Pixel[] tile, Size tileSize)

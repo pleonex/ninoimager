@@ -55,7 +55,7 @@ namespace Ninoimager.Format
 			    pxEnc != PixelEncoding.VerticalTiles)
 				throw new NotSupportedException();
 
-			if (dataIn == null || dataOut == null || dataIn.Length != dataOut.Length)
+			if (dataIn == null || dataOut == null || dataIn.Length > dataOut.Length)
 				throw new ArgumentNullException();
 
 			if ((width % tileSize.Width != 0) && 
@@ -69,10 +69,19 @@ namespace Ninoimager.Format
 			for (int linealIndex = 0; linealIndex < dataOut.Length; linealIndex++) {
 				int tiledIndex = pxEnc.GetIndex(linealIndex % width, linealIndex / width, width, height, tileSize);
 
-				if (decoding)
-					dataOut[linealIndex] = dataIn[tiledIndex];
-				else
+				if (decoding) {
+					// As the new data is lineal, and in the last row of tiles in the dataIn can be incompleted
+					// the output array can contains null pixels in the middle of the array.
+					if (tiledIndex >= dataIn.Length)
+						dataOut[linealIndex] = 0;	// Null pixel
+					else
+						dataOut[linealIndex] = dataIn[tiledIndex];
+				} else {
+					// As this index will increment lineally, we can stop, there isn't more data to code
+					if (linealIndex >= dataIn.Length)
+						break;
 					dataOut[tiledIndex] = dataIn[linealIndex];
+				}
 			}
 		}
 

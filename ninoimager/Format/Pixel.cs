@@ -56,6 +56,17 @@ namespace Ninoimager.Format
 		{
 			return new Pixel(info, this.Alpha, this.IsIndexed);
 		}
+
+		public override bool Equals(object obj)
+		{
+			if (!(obj is Pixel))
+				return false;
+
+			Pixel other = (Pixel)obj;
+
+			return (this.IsIndexed == other.IsIndexed) && (this.Info == other.Info) &&
+			(this.Alpha == other.Alpha);
+		}
 	}
 }
 
