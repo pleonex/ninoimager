@@ -22,7 +22,7 @@
 using System;
 using Color = Emgu.CV.Structure.Rgba;
 
-namespace Ninoimager.Format
+namespace Ninoimager
 {
 	public static class ColorExtension
 	{

@@ -24,7 +24,7 @@ using Rectangle = System.Drawing.Rectangle;
 using Color     = Emgu.CV.Structure.Rgba;
 using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
 
-namespace Ninoimager.Format
+namespace Ninoimager
 {
 	public static class EmguImageExtension
 	{

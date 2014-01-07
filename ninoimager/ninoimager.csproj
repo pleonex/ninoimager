@@ -52,13 +52,11 @@
     <Compile Include="Format\Image.cs" />
     <Compile Include="Format\Map.cs" />
     <Compile Include="Importer.cs" />
-    <Compile Include="Format\ColorExtension.cs" />
     <Compile Include="Format\ColorFormat.cs" />
     <Compile Include="Format\PixelEncoding.cs" />
     <Compile Include="Format\Pixel.cs" />
     <Compile Include="Format\MapInfo.cs" />
     <Compile Include="Format\BgMode.cs" />
-    <Compile Include="ByteArrayExtension.cs" />
     <Compile Include="Format\Pack.cs" />
     <Compile Include="Tests.cs" />
     <Compile Include="Format\Implementation\Ncgr.cs" />
@@ -66,11 +64,14 @@
     <Compile Include="Format\Implementation\Npck.cs" />
     <Compile Include="Format\Implementation\Nscr.cs" />
     <Compile Include="Format\Implementation\Btx0.cs" />
-    <Compile Include="Format\EmguImageExtension.cs" />
+    <Compile Include="Extensions\ByteArrayExtension.cs" />
+    <Compile Include="Extensions\EmguImageExtension.cs" />
+    <Compile Include="Extensions\ColorExtension.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
     <Folder Include="Format\" />
     <Folder Include="Format\Implementation\" />
+    <Folder Include="Extensions\" />
   </ItemGroup>
 </Project>
