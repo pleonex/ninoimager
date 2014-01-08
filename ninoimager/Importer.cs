@@ -182,25 +182,19 @@ namespace Ninoimager
 			int height = image.Height;
 			pixels = new Pixel[width * height];
 
-			bool isIndexed = true;	// TODO: Determine if the image is indexed or not.
-
 			for (int y = 0; y < height; y++) {
 				for (int x = 0; x < width; x++) {
-					Color color = image[y, x];
 					int index = this.PixelEncoding.GetIndex(x, y, width, height, this.TileSize);
 
-					if (!isIndexed) {
-						pixels[index] = new Pixel(color.ToArgb(), (uint)color.Alpha, false);
-					} else {
-						Color noTrans = color;
-						noTrans.Alpha = 255;
+					Color color   = image[y, x];
+					Color noTrans = color;
+					noTrans.Alpha = 255;
 
-						if (!listColor.Contains(noTrans))
-							listColor.Add(noTrans);
+					if (!listColor.Contains(noTrans))
+						listColor.Add(noTrans);
 
-						int colorIndex = listColor.IndexOf(noTrans);
-						pixels[index] = new Pixel((uint)colorIndex, (uint)color.Alpha, true);
-					}
+					int colorIndex = listColor.IndexOf(noTrans);
+					pixels[index] = new Pixel((uint)colorIndex, (uint)color.Alpha, true);
 				}
 			}
 
