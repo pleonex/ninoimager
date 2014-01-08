@@ -48,14 +48,28 @@ namespace Ninoimager
 		}
 
 		/// <summary>
-		/// Get the palette index of the nearest color by using k-d tree algorithm
-		/// (http://en.wikipedia.org/wiki/K-d_tree) to search.
+		/// Get the palette index of the nearest color by using exhaustive search.
 		/// </summary>
 		/// <returns>The nearest color palette index.</returns>
 		/// <param name="color">Color to get its nearest palette color.</param>
 		public int GetNearestIndex(Lab color)
 		{
-			throw new NotImplementedException();
+			// Set the largest distance and a null index
+			double minDistance = (255 * 255) + (255 * 255) + (255 * 255) + 1;
+			int nearestColor = -1;
+
+			// FUTURE: Implement "Approximate Nearest Neighbors in Non-Euclidean Spaces" algorithm or
+			// k-d tree if it's computing CIE76 color difference
+			for (int i = 0; i < this.palette.Length; i++) {
+				// Since we only want the value to compare, it is faster to not computer the squared root
+				double distance = color.GetDistanceSquared(this.palette[i]);
+				if (distance < minDistance) {
+					minDistance = distance;
+					nearestColor = i;
+				}
+			}
+
+			return nearestColor;
 		}
 	}
 }

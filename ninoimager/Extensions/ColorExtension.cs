@@ -55,6 +55,13 @@ namespace Ninoimager
 			);
 		}
 
+		public static double GetDistanceSquared(this LabColor c1, LabColor c2)
+		{
+			return 	(c2.X - c1.X) * (c2.X - c1.X) +
+				(c2.Y - c1.Y) * (c2.Y - c1.Y) +
+				(c2.Z - c1.Z) * (c2.Z - c1.Z);
+		}
+
 		public static Color[] ToArgbColors(this uint[] argb)
 		{
 			Color[] colors = new Color[argb.Length];
