@@ -232,12 +232,27 @@ namespace Ninoimager
 					int index = this.PixelEncoding.GetIndex(x, y, width, height, this.TileSize);
 
 					// Get nearest color from palette
+					LabColor oldPixel = labImg[y, x];
 					int colorIndex = fixedPalette.GetNearestIndex(labImg[y, x]);
+					LabColor newPixel = fixedPalette.GetColor(colorIndex);
 
-					// UNDONE: Apply Floyd-Steinberg algorithm
+					// Apply Floyd-Steinberg algorithm for each channel
+					Importer.FloydSteinbergDithering(labImg.Data, x, y, 0, oldPixel.X - newPixel.X);
+					Importer.FloydSteinbergDithering(labImg.Data, x, y, 1, oldPixel.Y - newPixel.Y);
+					Importer.FloydSteinbergDithering(labImg.Data, x, y, 2, oldPixel.Z - newPixel.Z);
+
+					// Finally set the new pixel into the array
 					pixels[index]  = new Pixel((uint)colorIndex, (uint)this.Palette[colorIndex].Alpha, true);
 				}
 			}
+		}
+
+		private static void FloydSteinbergDithering(byte[,,] data, int x, int y, int channel, double error)
+		{
+			data[y    , x + 1, channel] = (byte)(data[y    , x + 1, channel] + 7.0 / 16.0 * error);
+			data[y + 1, x - 1, channel] = (byte)(data[y + 1, x - 1, channel] + 3.0 / 16.0 * error);
+			data[y + 1, x    , channel] = (byte)(data[y + 1, x    , channel] + 5.0 / 16.0 * error);
+			data[y + 1, x + 1, channel] = (byte)(data[y + 1, x + 1, channel] + 1.0 / 16.0 * error);
 		}
 
 		private void AddBackdropColor(Pixel[] pixels, ref Color[] palette)

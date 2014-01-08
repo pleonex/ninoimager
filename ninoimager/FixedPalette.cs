@@ -39,6 +39,14 @@ namespace Ninoimager
 			return new FixedPalette(ColorConversion.ConvertColors<TColor, Lab>(palette));
 		}
 
+		public Lab GetColor(int index)
+		{
+			if (index < 0 || index >= this.palette.Length)
+				throw new ArgumentOutOfRangeException("index", index, "Index out of range");
+
+			return this.palette[index];
+		}
+
 		/// <summary>
 		/// Get the palette index of the nearest color by using k-d tree algorithm
 		/// (http://en.wikipedia.org/wiki/K-d_tree) to search.
