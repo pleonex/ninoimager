@@ -26,6 +26,7 @@ using System.Reflection;
 using System.Text;
 using Ninoimager.Format;
 using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
+using Emgu.CV.Structure;
 
 namespace Ninoimager
 {
@@ -57,6 +58,8 @@ namespace Ninoimager
 				ExtractPack(args[1], args[2]);
 			else if (args[0] == "-pi")
 				ImportPack(args[1], args[2]);
+			else if (args[0] == "-tc")
+				TestConvertColors(args[1], args[2]);
 			else
 				Console.WriteLine("Invalid program arguments");
 		}
@@ -329,6 +332,28 @@ namespace Ninoimager
 			newPalStr.Close();
 			newImgStr.Close();
 			newMapStr.Close();
+		}
+
+		private static void TestConvertColors(string inputImage, string outputImage)
+		{
+			// Get colors of the input image
+			var img = new Emgu.CV.Image<Bgr, byte>(inputImage);
+			Bgr[] colors = new Bgr[img.Width * img.Height];
+			for (int x = 0; x < img.Width; x++)
+				for (int y = 0; y < img.Height; y++)
+					colors[y * img.Width + x] = img[y, x];
+
+			// Convert
+			Lab[] newColors = Importer.ConvertColors<Bgr, Lab>(colors);
+			Bgr[] newColors2 = Importer.ConvertColors<Lab, Bgr>(newColors);
+
+			// Set colors of output image
+			var img2 = new Emgu.CV.Image<Bgr, byte>(img.Width, img.Height);
+			for (int x = 0; x < img2.Width; x++)
+				for (int y = 0; y < img2.Height; y++)
+					img2[y, x] = newColors2[y * img2.Width + x];
+
+			img2.Save(outputImage);
 		}
 
 		private static void WriteStream(string path, MemoryStream data)
