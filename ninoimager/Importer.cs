@@ -33,47 +33,74 @@ namespace Ninoimager
 	{
 		public Importer()
 		{
+			// Default parameters
+			this.IncludePcmp = false;
+			this.IncludeCpos = false;
+			this.DispCnt     = 0;
+			this.UnknownChar = 0;
+			this.TransparentColor = new Color(248, 0, 248, 255);	// Magenta
+			this.BackdropColor = new Color(0, 0, 0, 255);			// Black
+			this.BgMode        = BgMode.Text;
+			this.DefaultFormat = ColorFormat.Indexed_8bpp;
+			this.PixelEncoding = PixelEncoding.HorizontalTiles;
+			this.TileSize = new Size(8, 8);
+			this.Palette  = null;
 		}
 
 		#region Importer parameters
 		public bool IncludePcmp {
-			get { return false; }
+			get;
+			set;
 		}
 
 		public bool IncludeCpos {
-			get { return false; }
+			get;
+			set;
 		}
 
 		public uint DispCnt {
-			get { return 0; }
+			get;
+			set;
 		}
 
 		public uint UnknownChar {
-			get { return 0; }
+			get;
+			set;
 		}
 
 		public Color TransparentColor {
-			get { return new Color(248, 0, 248, 255); }
+			get;
+			set;
 		}
 
 		public Color BackdropColor {
-			get { return new Color(0, 0, 0, 255); }	// Black
+			get;
+			set;
 		}
 
 		public BgMode BgMode {
-			get { return BgMode.Text; }
+			get;
+			set;
 		}
 
 		public ColorFormat DefaultFormat {
-			get { return ColorFormat.Indexed_8bpp; }
+			get;
+			set;
 		}
 
 		public PixelEncoding PixelEncoding {
-			get { return PixelEncoding.HorizontalTiles; }
+			get;
+			set;
 		}
 
 		public Size TileSize {
-			get { return new Size(8, 8); }
+			get;
+			set;
+		}
+
+		public Color[] Palette {
+			get;
+			set;
 		}
 		#endregion
 
