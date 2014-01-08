@@ -216,66 +216,19 @@ namespace Ninoimager
 			int height = image.Height;
 			pixels = new Pixel[width * height];
 
-			// Convert palette and image to Lab color space
-			LabColor[] labPal = Importer.ConvertColors<Color, LabColor>(palette);
+			// Convert image to Lab color space and get palette
 			Emgu.CV.Image<LabColor, byte> labImg = image.Convert<LabColor, byte>();
+			FixedPalette fixedPalette = FixedPalette.FromAnyColor<Color>(this.Palette);
 
 			for (int y = 0; y < height; y++) {
 				for (int x = 0; x < width; x++) {
 					int index = this.PixelEncoding.GetIndex(x, y, width, height, this.TileSize);
 
 					// Get nearest color from palette
-					int colorIndex = Importer.GetNearestColor(labImg[y, x], labPal);
+					int colorIndex = fixedPalette.GetNearestIndex(labImg[y, x]);
 					pixels[index]  = new Pixel((uint)colorIndex, (uint)palette[colorIndex].Alpha, true);
 				}
 			}
-		}
-
-		public static ColorDst[] ConvertColors<ColorSrc, ColorDst>(ColorSrc[] colors)
-			where ColorSrc : struct, Emgu.CV.IColor
-			where ColorDst : struct, Emgu.CV.IColor 
-		{
-			if (colors == null || colors.Length == 0)
-				throw new ArgumentNullException("colors", "The array is null or empty.");
-
-			int dimensionSrc = colors[0].Dimension;
-			int dimensionDst = new ColorDst().Dimension;
-			Emgu.CV.Matrix<byte> matSrc = new Emgu.CV.Matrix<byte>(1, colors.Length, dimensionSrc);
-			Emgu.CV.Matrix<byte> matDst = new Emgu.CV.Matrix<byte>(1, colors.Length, dimensionDst);
-			Emgu.CV.CvEnum.COLOR_CONVERSION code = Emgu.CV.Util.CvToolbox.GetColorCvtCode(
-				typeof(ColorSrc),
-				typeof(ColorDst)
-			);
-
-			// Copy colors into matSrc
-			for (int i = 0; i < colors.Length; i++) {
-				if (dimensionSrc > 0) matSrc.Data[0, i * dimensionSrc + 0] = (byte)colors[i].MCvScalar.v0;
-				if (dimensionSrc > 1) matSrc.Data[0, i * dimensionSrc + 1] = (byte)colors[i].MCvScalar.v1;
-				if (dimensionSrc > 2) matSrc.Data[0, i * dimensionSrc + 2] = (byte)colors[i].MCvScalar.v2;
-				if (dimensionSrc > 3) matSrc.Data[0, i * dimensionSrc + 3] = (byte)colors[i].MCvScalar.v3;
-			}
-
-			// Convert colors
-			Emgu.CV.CvInvoke.cvCvtColor(matSrc, matDst, code);
-
-			// Copy matDst into new color array
-			ColorDst[] newColors = new ColorDst[colors.Length];
-			for (int i = 0; i < colors.Length; i++) {
-				newColors[i] = new ColorDst();
-				Emgu.CV.Structure.MCvScalar colorComp = new Emgu.CV.Structure.MCvScalar();
-				if (dimensionDst > 0) colorComp.v0 = matDst.Data[0, i * dimensionDst + 0];
-				if (dimensionDst > 1) colorComp.v1 = matDst.Data[0, i * dimensionDst + 1];
-				if (dimensionDst > 2) colorComp.v2 = matDst.Data[0, i * dimensionDst + 2];
-				if (dimensionDst > 3) colorComp.v3 = matDst.Data[0, i * dimensionDst + 3];
-				newColors[i].MCvScalar = colorComp;
-			}
-
-			return newColors;
-		}
-
-		private static int GetNearestColor(LabColor color, LabColor[] palette)
-		{
-			throw new NotImplementedException();
 		}
 
 		private void AddBackdropColor(Pixel[] pixels, ref Color[] palette)

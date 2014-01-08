@@ -344,8 +344,8 @@ namespace Ninoimager
 					colors[y * img.Width + x] = img[y, x];
 
 			// Convert
-			Lab[] newColors = Importer.ConvertColors<Bgr, Lab>(colors);
-			Bgr[] newColors2 = Importer.ConvertColors<Lab, Bgr>(newColors);
+			Lab[] newColors  = ColorConversion.ConvertColors<Bgr, Lab>(colors);
+			Bgr[] newColors2 = ColorConversion.ConvertColors<Lab, Bgr>(newColors);
 
 			// Set colors of output image
 			var img2 = new Emgu.CV.Image<Bgr, byte>(img.Width, img.Height);
