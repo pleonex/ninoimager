@@ -20,7 +20,8 @@
 // <date>20/08/2013</date>
 // -----------------------------------------------------------------------
 using System;
-using Color = Emgu.CV.Structure.Rgba;
+using Color    = Emgu.CV.Structure.Rgba;
+using LabColor = Emgu.CV.Structure.Lab;
 
 namespace Ninoimager
 {
@@ -37,6 +38,21 @@ namespace Ninoimager
 			} else {
 				return c1.Red.CompareTo(c2.Red);
 			}
+		}
+
+		/// <summary>
+		/// Gets the color difference using Delta E CIE76 (http://en.wikipedia.org/wiki/Color_difference)
+		/// </summary>
+		/// <returns>The distance.</returns>
+		/// <param name="c1">C1.</param>
+		/// <param name="c2">C2.</param>
+		public static double GetDistance(this LabColor c1, LabColor c2)
+		{
+			return Math.Sqrt(
+				(c2.X - c1.X) * (c2.X - c1.X) +
+				(c2.Y - c1.Y) * (c2.Y - c1.Y) +
+				(c2.Z - c1.Z) * (c2.Z - c1.Z)
+			);
 		}
 
 		public static Color[] ToArgbColors(this uint[] argb)

@@ -144,7 +144,7 @@ namespace Ninoimager
 				this.SortPalette(pixels, palette);
 				this.FillPalette(ref palette);
 			} else {
-				this.GetFixedPaletteImage(newImg, out pixels, this.Palette);
+				this.GetFixedPaletteImage(newImg, out pixels);
 				palette = (Color[])this.Palette.Clone();
 				if (this.Palette.Length >= maxColors)
 					throw new FormatException(string.Format("The fixed palette has more than {0} colors", maxColors));
@@ -210,7 +210,14 @@ namespace Ninoimager
 			palette = listColor.ToArray();
 		}
 
-		private void GetFixedPaletteImage(EmguImage image, out Pixel[] pixels, Color[] palette)
+		/// <summary>
+		/// Gets an indexed image from a fixed palette. Floyd-Steinberg algorithm is applied
+		/// for dithering. (https://en.wikipedia.org/wiki/Floyd%E2%80%93Steinberg_dithering)
+		/// </summary>
+		/// <param name="image">The source image.</param>
+		/// <param name="pixels">The output indexed pixels.</param>
+		/// <param name="palette">The fixed palette.</param>
+		private void GetFixedPaletteImage(EmguImage image, out Pixel[] pixels)
 		{
 			int width  = image.Width;
 			int height = image.Height;
@@ -226,7 +233,9 @@ namespace Ninoimager
 
 					// Get nearest color from palette
 					int colorIndex = fixedPalette.GetNearestIndex(labImg[y, x]);
-					pixels[index]  = new Pixel((uint)colorIndex, (uint)palette[colorIndex].Alpha, true);
+
+					// UNDONE: Apply Floyd-Steinberg algorithm
+					pixels[index]  = new Pixel((uint)colorIndex, (uint)this.Palette[colorIndex].Alpha, true);
 				}
 			}
 		}
