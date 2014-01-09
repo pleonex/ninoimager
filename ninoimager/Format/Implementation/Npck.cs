@@ -145,6 +145,27 @@ namespace Ninoimager.Format
 			nclrStr.Position = ncgrStr.Position = nscrStr.Position = 0;
 			return new Npck(nscrStr, ncgrStr, nclrStr);
 		}
+
+		public static Npck ImportBackgroundImage(string image, Stream oriNclrStr)
+		{
+			return ImportBackgroundImage(new EmguImage(image), oriNclrStr);
+		}
+
+		public static Npck ImportBackgroundImage(EmguImage image, Stream oriNclrStr)
+		{
+			Nclr palette = new Nclr(oriNclrStr);
+
+			MemoryStream nclrStr = new MemoryStream();
+			MemoryStream ncgrStr = new MemoryStream();
+			MemoryStream nscrStr = new MemoryStream();
+
+			Importer importer = new Importer();
+			importer.Palette = palette.GetPalette(0);
+			importer.ImportBackground(image, nscrStr, ncgrStr, nclrStr);
+
+			nclrStr.Position = ncgrStr.Position = nscrStr.Position = 0;
+			return new Npck(nscrStr, ncgrStr, nclrStr);
+		}
 	}
 }
 

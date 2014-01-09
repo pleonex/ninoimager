@@ -89,8 +89,12 @@ namespace Ninoimager
 
 				// Try to import
 				try {
-					Npck npck = Npck.ImportBackgroundImage(file);
+					Npck original = new Npck(packFile);							// Original pack
+					Npck npck = Npck.ImportBackgroundImage(file, original[0]); 	// New pack
 					npck.Write(outFile);
+
+					original.CloseAll();
+					npck.CloseAll();
 				} catch (Exception ex) {
 					Console.WriteLine("## Error ## Importing:  {0}", relative);
 					Console.WriteLine("\t" + ex.Message);
