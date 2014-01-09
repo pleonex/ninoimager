@@ -19,6 +19,8 @@
 // <email>benito356@gmail.com</email>
 // <date>17/08/2013</date>
 // -----------------------------------------------------------------------
+
+//#define DITHERING
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -232,14 +234,16 @@ namespace Ninoimager
 					int index = this.PixelEncoding.GetIndex(x, y, width, height, this.TileSize);
 
 					// Get nearest color from palette
-					LabColor oldPixel = labImg[y, x];
 					int colorIndex = fixedPalette.GetNearestIndex(labImg[y, x]);
-					LabColor newPixel = fixedPalette.GetColor(colorIndex);
 
+					#if DITHERING
 					// Apply Floyd-Steinberg algorithm for each channel
+					LabColor oldPixel = labImg[y, x];
+					LabColor newPixel = fixedPalette.GetColor(colorIndex);
 					Importer.FloydSteinbergDithering(labImg.Data, x, y, 0, oldPixel.X - newPixel.X);
 					Importer.FloydSteinbergDithering(labImg.Data, x, y, 1, oldPixel.Y - newPixel.Y);
 					Importer.FloydSteinbergDithering(labImg.Data, x, y, 2, oldPixel.Z - newPixel.Z);
+					#endif
 
 					// Finally set the new pixel into the array
 					pixels[index]  = new Pixel((uint)colorIndex, (uint)this.Palette[colorIndex].Alpha, true);
