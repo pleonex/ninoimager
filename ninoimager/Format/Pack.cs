@@ -92,8 +92,10 @@ namespace Ninoimager.Format
 	
 		public void CloseAll()
 		{
-			foreach (Stream subfile in this.subfiles)
-				subfile.Close();
+			foreach (Stream subfile in this.subfiles) {
+				if (subfile != null)
+					subfile.Close();
+			}
 		}
 	}
 }

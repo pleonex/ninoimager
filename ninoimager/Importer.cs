@@ -146,7 +146,7 @@ namespace Ninoimager
 			} else {
 				this.GetFixedPaletteImage(newImg, out pixels);
 				palette = (Color[])this.Palette.Clone();
-				if (this.Palette.Length >= maxColors)
+				if (this.Palette.Length > maxColors)
 					throw new FormatException(string.Format("The fixed palette has more than {0} colors", maxColors));
 			}
 
@@ -249,10 +249,18 @@ namespace Ninoimager
 
 		private static void FloydSteinbergDithering(byte[,,] data, int x, int y, int channel, double error)
 		{
-			data[y    , x + 1, channel] = (byte)(data[y    , x + 1, channel] + 7.0 / 16.0 * error);
-			data[y + 1, x - 1, channel] = (byte)(data[y + 1, x - 1, channel] + 3.0 / 16.0 * error);
-			data[y + 1, x    , channel] = (byte)(data[y + 1, x    , channel] + 5.0 / 16.0 * error);
-			data[y + 1, x + 1, channel] = (byte)(data[y + 1, x + 1, channel] + 1.0 / 16.0 * error);
+			// These values are not exactly width and height but for this task are ok
+			int width  = data.GetLength(1);
+			int height = data.GetLength(0);
+
+			if (x + 1 < width)
+				data[y    , x + 1, channel] = (byte)(data[y    , x + 1, channel] + 7.0 / 16.0 * error);
+			if (x - 1 > 0 && y + 1 < height)
+				data[y + 1, x - 1, channel] = (byte)(data[y + 1, x - 1, channel] + 3.0 / 16.0 * error);
+			if (y + 1 < height)
+				data[y + 1, x    , channel] = (byte)(data[y + 1, x    , channel] + 5.0 / 16.0 * error);
+			if (x + 1 < width && y + 1 < height)
+				data[y + 1, x + 1, channel] = (byte)(data[y + 1, x + 1, channel] + 1.0 / 16.0 * error);
 		}
 
 		private void AddBackdropColor(Pixel[] pixels, ref Color[] palette)

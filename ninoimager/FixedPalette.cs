@@ -20,7 +20,9 @@
 // <date>01/08/2014</date>
 // -----------------------------------------------------------------------
 using System;
+using Emgu.CV;
 using Emgu.CV.Structure;
+using Emgu.CV.Util;
 
 namespace Ninoimager
 {
@@ -36,7 +38,18 @@ namespace Ninoimager
 		public static FixedPalette FromAnyColor<TColor>(TColor[] palette)
 			where TColor : struct, Emgu.CV.IColor
 		{
-			return new FixedPalette(ColorConversion.ConvertColors<TColor, Lab>(palette));
+			Lab[] labPalette;
+
+			// Try direct conversion
+			try {
+				CvToolbox.GetColorCvtCode(typeof(TColor), typeof(Lab));
+				labPalette = ColorConversion.ConvertColors<TColor, Lab>(palette);
+			} catch {
+				Rgb[] tempPalette = ColorConversion.ConvertColors<TColor, Rgb>(palette);
+				labPalette = ColorConversion.ConvertColors<Rgb, Lab>(tempPalette);
+			}
+
+			return new FixedPalette(labPalette);
 		}
 
 		public Lab GetColor(int index)
