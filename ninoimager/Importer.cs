@@ -53,7 +53,7 @@ namespace Ninoimager
 			this.TransparentColor = new Color(248, 0, 248, 255);	// Magenta
 			this.BackdropColor = new Color(0, 0, 0, 255);			// Black
 			this.BgMode        = BgMode.Text;
-			this.DefaultFormat = ColorFormat.Indexed_8bpp;
+			this.Format = ColorFormat.Indexed_8bpp;
 			this.PixelEncoding = PixelEncoding.HorizontalTiles;
 			this.TileSize = new Size(8, 8);
 			this.Palette  = null;
@@ -95,7 +95,7 @@ namespace Ninoimager
 			set;
 		}
 
-		public ColorFormat DefaultFormat {
+		public ColorFormat Format {
 			get;
 			set;
 		}
@@ -111,6 +111,16 @@ namespace Ninoimager
 		}
 
 		public Color[] Palette {
+			get;
+			set;
+		}
+
+		public bool ExtendedPalette {
+			get;
+			set;
+		}
+
+		public PaletteMode PaletteMode {
 			get;
 			set;
 		}
@@ -130,7 +140,7 @@ namespace Ninoimager
 
 			int width  = newImg.Width;
 			int height = newImg.Height;
-			int maxColors = 1 << this.DefaultFormat.Bpp();
+			int maxColors = 1 << this.Format.Bpp();
 
 			Pixel[] pixels;
 			Color[] palette;
@@ -154,18 +164,19 @@ namespace Ninoimager
 
 			// Create palette format
 			Nclr nclr = new Nclr() {
-				Extended = false
+				Extended = this.ExtendedPalette
 			};
-			nclr.SetData(palette, this.DefaultFormat);
+			nclr.SetData(palette, this.Format);
 
 			// Create map from pixels
 			Nscr nscr = new Nscr() { 
-				TileSize = this.TileSize,
-				Width    = width, 
-				Height   = height,
-				BgMode   = this.BgMode
+				TileSize    = this.TileSize,
+				Width       = width, 
+				Height      = height,
+				BgMode      = this.BgMode,
+				PaletteMode = this.PaletteMode
 			};
-			nscr.PaletteMode = (this.DefaultFormat == ColorFormat.Indexed_4bpp) ?
+			nscr.PaletteMode = (this.Format == ColorFormat.Indexed_4bpp) ?
 				PaletteMode.Palette16_16 : PaletteMode.Palette256_1;
 			pixels = nscr.CreateMap(pixels);
 
@@ -178,7 +189,7 @@ namespace Ninoimager
 			ncgr.Height = (int)Math.Ceiling(pixels.Length / (double)ncgr.Width);
 			if (ncgr.Height % this.TileSize.Height != 0)
 				ncgr.Height += this.TileSize.Height - (ncgr.Height % this.TileSize.Height);
-			ncgr.SetData(pixels, this.PixelEncoding, this.DefaultFormat, this.TileSize);
+			ncgr.SetData(pixels, this.PixelEncoding, this.Format, this.TileSize);
 
 			// Write data
 			nclr.Write(palStr);
@@ -297,7 +308,7 @@ namespace Ninoimager
 		private void FillPalette(ref Color[] palette)
 		{
 			// Default color is black, so we only need to resize it.
-			Array.Resize(ref palette, 1 << this.DefaultFormat.Bpp());
+			Array.Resize(ref palette, 1 << this.Format.Bpp());
 		}
 	}
 }

@@ -146,24 +146,53 @@ namespace Ninoimager.Format
 			return new Npck(nscrStr, ncgrStr, nclrStr);
 		}
 
-		public static Npck ImportBackgroundImage(string image, Stream oriNclrStr)
+		public static Npck ImportBackgroundImage(string image, Npck original)
 		{
-			return ImportBackgroundImage(new EmguImage(image), oriNclrStr);
+			return ImportBackgroundImage(new EmguImage(image), original);
 		}
 
-		public static Npck ImportBackgroundImage(EmguImage image, Stream oriNclrStr)
+		public static Npck ImportBackgroundImage(EmguImage image, Npck original)
 		{
-			Nclr palette = new Nclr(oriNclrStr);
-
+			Importer importer = new Importer();
 			MemoryStream nclrStr = new MemoryStream();
 			MemoryStream ncgrStr = new MemoryStream();
 			MemoryStream nscrStr = new MemoryStream();
 
-			Importer importer = new Importer();
-			importer.Palette = palette.GetPalette(0);
-			importer.ImportBackground(image, nscrStr, ncgrStr, nclrStr);
+			// Set original palette settings
+			if (original[0] != null) {
+				Nclr nclr = new Nclr(original[0]);
+				importer.Palette         = nclr.GetPalette(0);
+				importer.ExtendedPalette = nclr.Extended;
+			}
 
+			// Set original image settings if the file is not compressed
+			if (original[1] != null && original[1].ReadByte() == 0x52) {
+				original[1].Position -= 1;
+
+				Ncgr ncgr = new Ncgr(original[1]);
+				importer.DispCnt       = ncgr.RegDispcnt;
+				importer.UnknownChar   = ncgr.Unknown;
+				importer.Format        = ncgr.Format;
+				importer.IncludeCpos   = ncgr.HasCpos;
+				importer.PixelEncoding = ncgr.PixelEncoding;
+			}
+
+			// Set original map settings
+			if (original[2] != null) {
+				Nscr nscr = new Nscr(original[2]);
+				importer.BgMode      = nscr.BgMode;
+				importer.PaletteMode = nscr.PaletteMode;
+				importer.TileSize    = nscr.TileSize;
+			}
+
+			// Import image
+			importer.ImportBackground(image, nscrStr, ncgrStr, nclrStr);
 			nclrStr.Position = ncgrStr.Position = nscrStr.Position = 0;
+
+			// If there wasn't a palette in the new pack file won't be a new one
+			if (original[0] == null)
+				nclrStr = null;
+
 			return new Npck(nscrStr, ncgrStr, nclrStr);
 		}
 	}

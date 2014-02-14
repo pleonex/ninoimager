@@ -92,17 +92,10 @@ namespace Ninoimager
 					Npck npck;
 					Npck original = new Npck(packFile);
 
-					// If there is palette, keeps old palette
-					if (original[0] != null) {
-						npck = Npck.ImportBackgroundImage(file, original[0]);
-					} else {
-						// Create pack with new palette but not save it
-						Console.WriteLine("## Info ## Pack file without palette");
-						npck = Npck.ImportBackgroundImage(file);
-						npck[0] = null;
-					}
-
+					// Import with original palette and settings
+					npck = Npck.ImportBackgroundImage(file, original);
 					npck.Write(outFile);
+
 					original.CloseAll();
 					npck.CloseAll();
 				} catch (Exception ex) {
