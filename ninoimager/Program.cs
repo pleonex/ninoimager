@@ -81,11 +81,6 @@ namespace Ninoimager
 					relative = relative.Substring(1);
 				string packFile  = Path.Combine(outputDir, relative) + ".n2d";
 				string outFile   = Path.Combine(outputDir, relative) + "_new.n2d";
-				string infoFile  = Path.Combine(Path.GetDirectoryName(packFile), ".info.xml");
-				if (!File.Exists(infoFile)) {
-					Console.WriteLine("## Warning ## '.info.xml' file not found.");
-					continue;
-				}
 
 				// Try to import
 				try {
@@ -103,11 +98,6 @@ namespace Ninoimager
 					Console.WriteLine("\t" + ex.Message);
 					continue;
 				}
-
-				// Read info file to get ROM id
-				XDocument xinfo = XDocument.Load(infoFile);
-				string id = xinfo.Element("RomInfo").Descendants("File")
-							.First(f => f.Value == Path.GetFileName(packFile)).Attribute("Id").Value;
 
 				// Add game info
 				XElement xgame = new XElement("File");

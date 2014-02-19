@@ -63,7 +63,6 @@
     <Compile Include="Format\Implementation\Nclr.cs" />
     <Compile Include="Format\Implementation\Npck.cs" />
     <Compile Include="Format\Implementation\Nscr.cs" />
-    <Compile Include="Format\Implementation\Btx0.cs" />
     <Compile Include="Extensions\ByteArrayExtension.cs" />
     <Compile Include="Extensions\EmguImageExtension.cs" />
     <Compile Include="Extensions\ColorExtension.cs" />
