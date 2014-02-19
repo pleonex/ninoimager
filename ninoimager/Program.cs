@@ -20,6 +20,7 @@
 // <date>29/07/2013</date>
 // -----------------------------------------------------------------------
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -43,8 +44,8 @@ namespace Ninoimager
 			Stopwatch watch = new Stopwatch();
 			watch.Start();
 
-			if (args.Length == 4 && args[0] == "-ibg")
-				SearchAndImportBg(args[1], args[2], args[3]);
+			if ((args.Length == 4 || args.Length == 5) && args[0] == "-ibg")
+				SearchAndImportBg(args[1], args[2], args[3], (args.Length == 5)? args[4] : string.Empty);
 			else if (args.Length == 2 && args[0] == "-efr")
 				SearchAndExport(args[1]);
 			else
@@ -54,7 +55,67 @@ namespace Ninoimager
 			Console.WriteLine("It tooks: {0}", watch.Elapsed);
 		}
 
-		private static void SearchAndImportBg(string baseDir, string outputDir, string xmlList)
+		private static void SearchAndImportBg(string baseDir, string outDir, string modimeXml, string multiXml)
+		{
+			List<string> imported = new List<string>();
+
+			// First import "special files" that share palette and images data with other N2D files
+			MultiImport(baseDir, outDir, imported, multiXml);
+
+			// Then import other images
+			SingleImport(baseDir, outDir, imported);
+
+			// Create a new XML document with data of the modime XMLs
+			CreateModimeXml(imported.ToArray(), modimeXml);
+		}
+
+		private static void MultiImport(string baseDir, string outputDir, List<string> importedList, string xml)
+		{
+			return;
+			throw new NotImplementedException();
+		}
+
+		private static void SingleImport(string baseDir, string outputDir, List<string> importedList)
+		{
+			foreach (string imgFile in Directory.EnumerateFiles(baseDir, "*.png", SearchOption.AllDirectories)) {
+				Match match = BgRegex.Match(imgFile);
+				if (!match.Success)
+					continue;
+
+				// Get paths
+				string imagePath = match.Groups[1].Value;
+				string relative  = imagePath.Replace(baseDir, "");
+				if (relative[0] == Path.DirectorySeparatorChar)
+					relative = relative.Substring(1);
+				string oriFile = Path.Combine(outputDir, relative) + ".n2d";
+				string outFile = Path.Combine(outputDir, relative) + "_new.n2d";
+
+				// Check if it has been already imported
+				if (importedList.Contains(relative))
+					continue;
+
+				// Try to import
+				try {
+					// Import with original palette and settings
+					Npck original = new Npck(oriFile);
+					Npck npck = Npck.ImportBackgroundImage(imgFile, original);
+
+					npck.Write(outFile);
+
+					original.CloseAll();
+					npck.CloseAll();
+				} catch (Exception ex) {
+					Console.WriteLine("## Error ## Importing:  {0}", relative);
+					Console.WriteLine("\t" + ex.Message);
+					continue;
+				}
+
+				importedList.Add(relative);
+				Console.WriteLine("Written with success... {0}", relative);
+			}
+		}
+
+		private static void CreateModimeXml(string[] relativePaths, string outputXml)
 		{
 			const string RootName    = "/Ninokuni.nds";
 			const string BaseRomPath = "/Ninokuni.nds/ROM/data/";
@@ -69,36 +130,7 @@ namespace Ninoimager
 			root.Add(gameInfo);
 			root.Add(editInfo);
 
-			foreach (string file in Directory.EnumerateFiles(baseDir, "*.png", SearchOption.AllDirectories)) {
-				Match match = BgRegex.Match(file);
-				if (!match.Success)
-					continue;
-
-				// Get paths
-				string imagePath = match.Groups[1].Value;
-				string relative  = imagePath.Replace(baseDir, "");
-				if (relative[0] == Path.DirectorySeparatorChar)
-					relative = relative.Substring(1);
-				string packFile  = Path.Combine(outputDir, relative) + ".n2d";
-				string outFile   = Path.Combine(outputDir, relative) + "_new.n2d";
-
-				// Try to import
-				try {
-					Npck npck;
-					Npck original = new Npck(packFile);
-
-					// Import with original palette and settings
-					npck = Npck.ImportBackgroundImage(file, original);
-					npck.Write(outFile);
-
-					original.CloseAll();
-					npck.CloseAll();
-				} catch (Exception ex) {
-					Console.WriteLine("## Error ## Importing:  {0}", relative);
-					Console.WriteLine("\t" + ex.Message);
-					continue;
-				}
-
+			foreach (string relative in relativePaths) {
 				// Add game info
 				XElement xgame = new XElement("File");
 				xgame.Add(new XElement("Path", Path.Combine(BaseRomPath, relative) + ".n2d"));
@@ -111,11 +143,9 @@ namespace Ninoimager
 				xedit.Add(new XElement("Type", "Common.Replace"));
 				xedit.Add(new XElement("DependsOn", RootName));
 				editInfo.Add(xedit);
-
-				Console.WriteLine("Written with success... {0}", relative);
 			}
 
-			xml.Save(xmlList);
+			xml.Save(outputXml);
 		}
 
 		private static void SearchAndExport(string baseDir)
