@@ -195,6 +195,34 @@ namespace Ninoimager.Format
 
 			return new Npck(nscrStr, ncgrStr, nclrStr);
 		}
+
+		public static Npck[] ImportBackgroundImageSharePalette(string[] images)
+		{
+			EmguImage[] emguImgs = new EmguImage[images.Length];
+			for (int i = 0; i < images.Length; i++)
+				emguImgs[i] = new EmguImage(images[i]);
+
+			return ImportBackgroundImageSharePalette(emguImgs);
+		}
+
+		public static Npck[] ImportBackgroundImageSharePalette(EmguImage[] images)
+		{
+			throw new NotImplementedException();
+		}
+
+		public static Npck[] ImportBackgroundImageShareImage(string[] images)
+		{
+			EmguImage[] emguImgs = new EmguImage[images.Length];
+			for (int i = 0; i < images.Length; i++)
+				emguImgs[i] = new EmguImage(images[i]);
+
+			return ImportBackgroundImageShareImage(emguImgs);
+		}
+
+		public static Npck[] ImportBackgroundImageShareImage(EmguImage[] images)
+		{
+			throw new NotImplementedException();
+		}
 	}
 }
 

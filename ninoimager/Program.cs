@@ -71,8 +71,34 @@ namespace Ninoimager
 
 		private static void MultiImport(string baseDir, string outputDir, List<string> importedList, string xml)
 		{
-			return;
-			throw new NotImplementedException();
+			XDocument doc = XDocument.Load(xml);
+			foreach (XElement entry in doc.Root.Elements("Pack")) {
+				// Get mode
+				string mode = entry.Element("Mode").Value;
+
+				// Get paths
+				List<string> imgPaths = new List<string>();
+				List<string> outPaths = new List<string>();
+				foreach (XElement ximg in entry.Element("Images").Elements("Image")) {
+					imgPaths.Add(Path.Combine(baseDir, ximg.Value));
+					outPaths.Add(Path.Combine(outputDir, ximg.Value));
+				}
+
+				// Import
+				Npck[] packs = null;
+				if (mode == "SharePalette")
+					packs = Npck.ImportBackgroundImageSharePalette(imgPaths.ToArray());
+				else if (mode == "ShareImage")
+					packs = Npck.ImportBackgroundImageShareImage(imgPaths.ToArray());
+				else
+					throw new FormatException(string.Format("Unsopported mode \"{0}\"", mode)); 
+
+				// Write output
+				for (int i = 0; i < outPaths.Count; i++) {
+					packs[i].Write(outPaths[i]);
+					packs[i].CloseAll();
+				}
+			}
 		}
 
 		private static void SingleImport(string baseDir, string outputDir, List<string> importedList)
