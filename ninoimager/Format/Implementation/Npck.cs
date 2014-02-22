@@ -153,48 +153,22 @@ namespace Ninoimager.Format
 
 		public static Npck ImportBackgroundImage(EmguImage image, Npck original)
 		{
-			Importer importer = new Importer();
+			if (original[0] == null || original[1] == null)
+				throw new FormatException(
+					"Can not import image.\n" + 
+					"There is not palette or image in the original pack."
+				);
+
 			MemoryStream nclrStr = new MemoryStream();
 			MemoryStream ncgrStr = new MemoryStream();
 			MemoryStream nscrStr = new MemoryStream();
 
-			// Set original palette settings
-			if (original[0] != null) {
-				Nclr nclr = new Nclr(original[0]);
-				importer.Quantization = new FixedPaletteQuantization(nclr.GetPalette(0));
-				importer.ExtendedPalette = nclr.Extended;
-			}
-
-			// Set original image settings if the file is not compressed
-			if (original[1] != null && original[1].ReadByte() == 0x52) {
-				original[1].Position -= 1;
-
-				Ncgr ncgr = new Ncgr(original[1]);
-				importer.DispCnt       = ncgr.RegDispcnt;
-				importer.UnknownChar   = ncgr.Unknown;
-				importer.Format        = ncgr.Format;
-				importer.IncludeCpos   = ncgr.HasCpos;
-				importer.PixelEncoding = ncgr.PixelEncoding;
-			}
-
-			// Set original map settings
-			if (original[2] != null) {
-				Nscr nscr = new Nscr(original[2]);
-				importer.BgMode      = nscr.BgMode;
-				importer.PaletteMode = nscr.PaletteMode;
-				importer.TileSize    = nscr.TileSize;
-			}
-
 			// Import image
+			Importer importer = new Importer();
+			importer.SetOriginalSettings(original[2], original[1], original[0]);
 			importer.ImportBackground(image, nscrStr, ncgrStr, nclrStr);
+
 			nclrStr.Position = ncgrStr.Position = nscrStr.Position = 0;
-
-			// If there wasn't a palette/image in the new pack file won't be a new one
-			if (original[0] == null)
-				nclrStr = null;
-			if (original[1] == null)
-				ncgrStr = null;
-
 			return new Npck(nscrStr, ncgrStr, nclrStr);
 		}
 

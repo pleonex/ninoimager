@@ -116,6 +116,36 @@ namespace Ninoimager
 		}
 		#endregion
 
+		public void SetOriginalSettings(Stream mapStr, Stream imgStr, Stream palStr)
+		{
+			// Set original palette settings
+			if (palStr != null) {
+				Nclr nclr = new Nclr(palStr);
+				this.Quantization = new FixedPaletteQuantization(nclr.GetPalette(0));
+				this.ExtendedPalette = nclr.Extended;
+			}
+
+			// Set original image settings if the file is not compressed
+			if (imgStr != null && imgStr.ReadByte() == 0x52) {
+				imgStr.Position -= 1;
+
+				Ncgr ncgr = new Ncgr(imgStr);
+				this.DispCnt       = ncgr.RegDispcnt;
+				this.UnknownChar   = ncgr.Unknown;
+				this.Format        = ncgr.Format;
+				this.IncludeCpos   = ncgr.HasCpos;
+				this.PixelEncoding = ncgr.PixelEncoding;
+			}
+
+			// Set original map settings
+			if (mapStr != null) {
+				Nscr nscr = new Nscr(mapStr);
+				this.BgMode      = nscr.BgMode;
+				this.PaletteMode = nscr.PaletteMode;
+				this.TileSize    = nscr.TileSize;
+			}
+		}
+
 		/// <summary>
 		/// Import a background image creating and writing a NSCR, NCGR and NCLR files to the streams passed.
 		/// </summary>
