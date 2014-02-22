@@ -52,7 +52,6 @@
     <Compile Include="Format\NitroBlock.cs" />
     <Compile Include="Format\Image.cs" />
     <Compile Include="Format\Map.cs" />
-    <Compile Include="Importer.cs" />
     <Compile Include="Format\ColorFormat.cs" />
     <Compile Include="Format\PixelEncoding.cs" />
     <Compile Include="Format\Pixel.cs" />
@@ -67,13 +66,23 @@
     <Compile Include="Extensions\ByteArrayExtension.cs" />
     <Compile Include="Extensions\EmguImageExtension.cs" />
     <Compile Include="Extensions\ColorExtension.cs" />
-    <Compile Include="FixedPalette.cs" />
     <Compile Include="ColorConversion.cs" />
+    <Compile Include="Importer.cs" />
+    <Compile Include="ImageProcessing\ColorQuantization.cs" />
+    <Compile Include="ImageProcessing\Dithering.cs" />
+    <Compile Include="ImageProcessing\NoDithering.cs" />
+    <Compile Include="ImageProcessing\FloydSteinbergDithering.cs" />
+    <Compile Include="ImageProcessing\FixedPaletteQuantization.cs" />
+    <Compile Include="ImageProcessing\BasicQuantization.cs" />
+    <Compile Include="ImageProcessing\NdsQuantization.cs" />
+    <Compile Include="ImageProcessing\NearestNeighbour.cs" />
+    <Compile Include="ImageProcessing\ExhaustiveSearch.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
     <Folder Include="Format\" />
     <Folder Include="Format\Implementation\" />
     <Folder Include="Extensions\" />
+    <Folder Include="ImageProcessing\" />
   </ItemGroup>
 </Project>

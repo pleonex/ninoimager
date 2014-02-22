@@ -22,8 +22,8 @@
 using System;
 using System.IO;
 using System.Linq;
+using Ninoimager.ImageProcessing;
 using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
-
 
 namespace Ninoimager.Format
 {
@@ -161,7 +161,7 @@ namespace Ninoimager.Format
 			// Set original palette settings
 			if (original[0] != null) {
 				Nclr nclr = new Nclr(original[0]);
-				importer.Palette         = nclr.GetPalette(0);
+				importer.Quantization = new FixedPaletteQuantization(nclr.GetPalette(0));
 				importer.ExtendedPalette = nclr.Extended;
 			}
 
@@ -189,9 +189,11 @@ namespace Ninoimager.Format
 			importer.ImportBackground(image, nscrStr, ncgrStr, nclrStr);
 			nclrStr.Position = ncgrStr.Position = nscrStr.Position = 0;
 
-			// If there wasn't a palette in the new pack file won't be a new one
+			// If there wasn't a palette/image in the new pack file won't be a new one
 			if (original[0] == null)
 				nclrStr = null;
+			if (original[1] == null)
+				ncgrStr = null;
 
 			return new Npck(nscrStr, ncgrStr, nclrStr);
 		}

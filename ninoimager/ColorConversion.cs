@@ -20,11 +20,32 @@
 // <date>01/08/2014</date>
 // -----------------------------------------------------------------------
 using System;
+using Emgu.CV;
+using Emgu.CV.Structure;
+using Emgu.CV.Util;
 
 namespace Ninoimager
 {
 	public static class ColorConversion
 	{
+		public static Lab[] ToLabPalette<TColor>(TColor[] palette)
+			where TColor : struct, IColor
+		{
+			Lab[] labPalette = null;
+
+			try {
+				// Try direct conversion
+				CvToolbox.GetColorCvtCode(typeof(TColor), typeof(Lab));
+				labPalette = ColorConversion.ConvertColors<TColor, Lab>(palette);
+			} catch {
+				// Indirect conversion (converting first to Rgb)
+				Rgb[] tempPalette = ColorConversion.ConvertColors<TColor, Rgb>(palette);
+				labPalette = ColorConversion.ConvertColors<Rgb, Lab>(tempPalette);
+			}
+
+			return labPalette;
+		}
+
 		public static ColorDst[] ConvertColors<ColorSrc, ColorDst>(ColorSrc[] colors)
 			where ColorSrc : struct, Emgu.CV.IColor
 			where ColorDst : struct, Emgu.CV.IColor 

@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------
-// <copyright file="FixedPalette.cs" company="none">
+// <copyright file="ExhaustiveSearch.cs" company="none">
 // Copyright (C) 2014 
 //
 //   This program is free software: you can redistribute it and/or modify
@@ -17,47 +17,18 @@
 // </copyright>
 // <author>pleoNeX</author>
 // <email>benito356@gmail.com</email>
-// <date>01/08/2014</date>
+// <date>02/22/2014</date>
 // -----------------------------------------------------------------------
 using System;
-using Emgu.CV;
-using Emgu.CV.Structure;
-using Emgu.CV.Util;
+using LabColor  = Emgu.CV.Structure.Lab;
 
-namespace Ninoimager
+namespace Ninoimager.ImageProcessing
 {
-	public class FixedPalette
+	public class ExhaustivePaletteSearch : NearestNeighbour<LabColor>
 	{
-		private Lab[] palette;
-
-		public FixedPalette(Lab[] palette)
+		public override void Initialize(LabColor[] vertex)
 		{
-			this.palette = (Lab[])palette.Clone();
-		}
-
-		public static FixedPalette FromAnyColor<TColor>(TColor[] palette)
-			where TColor : struct, Emgu.CV.IColor
-		{
-			Lab[] labPalette;
-
-			// Try direct conversion
-			try {
-				CvToolbox.GetColorCvtCode(typeof(TColor), typeof(Lab));
-				labPalette = ColorConversion.ConvertColors<TColor, Lab>(palette);
-			} catch {
-				Rgb[] tempPalette = ColorConversion.ConvertColors<TColor, Rgb>(palette);
-				labPalette = ColorConversion.ConvertColors<Rgb, Lab>(tempPalette);
-			}
-
-			return new FixedPalette(labPalette);
-		}
-
-		public Lab GetColor(int index)
-		{
-			if (index < 0 || index >= this.palette.Length)
-				throw new ArgumentOutOfRangeException("index", index, "Index out of range");
-
-			return this.palette[index];
+			this.vertex = vertex;
 		}
 
 		/// <summary>
@@ -65,7 +36,7 @@ namespace Ninoimager
 		/// </summary>
 		/// <returns>The nearest color palette index.</returns>
 		/// <param name="color">Color to get its nearest palette color.</param>
-		public int GetNearestIndex(Lab color)
+		public override int Search(LabColor color)
 		{
 			// Set the largest distance and a null index
 			double minDistance = (255 * 255) + (255 * 255) + (255 * 255) + 1;
@@ -73,9 +44,9 @@ namespace Ninoimager
 
 			// FUTURE: Implement "Approximate Nearest Neighbors in Non-Euclidean Spaces" algorithm or
 			// k-d tree if it's computing CIE76 color difference
-			for (int i = 0; i < this.palette.Length; i++) {
+			for (int i = 0; i < this.vertex.Length; i++) {
 				// Since we only want the value to compare, it is faster to not computer the squared root
-				double distance = color.GetDistanceSquared(this.palette[i]);
+				double distance = color.GetDistanceSquared(this.vertex[i]);
 				if (distance < minDistance) {
 					minDistance = distance;
 					nearestColor = i;

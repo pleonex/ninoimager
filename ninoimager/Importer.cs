@@ -25,6 +25,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Ninoimager.Format;
+using Ninoimager.ImageProcessing;
 using Size      = System.Drawing.Size;
 using Color     = Emgu.CV.Structure.Rgba;
 using LabColor  = Emgu.CV.Structure.Lab;
@@ -50,16 +51,20 @@ namespace Ninoimager
 			this.IncludeCpos = false;
 			this.DispCnt     = 0;
 			this.UnknownChar = 0;
-			this.TransparentColor = new Color(248, 0, 248, 255);	// Magenta
-			this.BackdropColor = new Color(0, 0, 0, 255);			// Black
-			this.BgMode        = BgMode.Text;
-			this.Format = ColorFormat.Indexed_8bpp;
+			this.BgMode      = BgMode.Text;
+			this.Format      = ColorFormat.Indexed_8bpp;
+			this.TileSize    = new Size(8, 8);
 			this.PixelEncoding = PixelEncoding.HorizontalTiles;
-			this.TileSize = new Size(8, 8);
-			this.Palette  = null;
+
+			this.Quantization = new NdsQuantization();
 		}
 
 		#region Importer parameters
+		public ColorQuantization Quantization {
+			get;
+			set;
+		}
+
 		public bool IncludePcmp {
 			get;
 			set;
@@ -80,16 +85,6 @@ namespace Ninoimager
 			set;
 		}
 
-		public Color TransparentColor {
-			get;
-			set;
-		}
-
-		public Color BackdropColor {
-			get;
-			set;
-		}
-
 		public BgMode BgMode {
 			get;
 			set;
@@ -106,11 +101,6 @@ namespace Ninoimager
 		}
 
 		public Size TileSize {
-			get;
-			set;
-		}
-
-		public Color[] Palette {
 			get;
 			set;
 		}
@@ -142,25 +132,12 @@ namespace Ninoimager
 			int height = newImg.Height;
 			int maxColors = 1 << this.Format.Bpp();
 
-			Pixel[] pixels;
-			Color[] palette;
-
-			// If there is no fixed palette, then get palette from the image
-			if (this.Palette == null) {
-				this.GetIndexImage(newImg, out pixels, out palette);
-				if (palette.Length >= maxColors)
-					throw new FormatException(string.Format("The image has more than {0} colors", maxColors));
-			
-				// Normalize palette
-				this.AddBackdropColor(pixels, ref palette);
-				this.SortPalette(pixels, palette);
-				this.FillPalette(ref palette);
-			} else {
-				this.GetFixedPaletteImage(newImg, out pixels);
-				palette = (Color[])this.Palette.Clone();
-				if (this.Palette.Length > maxColors)
-					throw new FormatException(string.Format("The fixed palette has more than {0} colors", maxColors));
-			}
+			// Quantizate image -> get pixels and palette
+			this.Quantization.Quantizate(newImg);
+			Pixel[] pixels  = this.Quantization.GetPixels();
+			Color[] palette = this.Quantization.GetPalette();
+			if (palette.Length > maxColors)
+				throw new FormatException(string.Format("The image has more than {0} colors", maxColors));
 
 			// Create palette format
 			Nclr nclr = new Nclr() {
@@ -195,120 +172,6 @@ namespace Ninoimager
 			nclr.Write(palStr);
 			ncgr.Write(imgStr);
 			nscr.Write(mapStr);
-		}
-
-		private void GetIndexImage(EmguImage image, out Pixel[] pixels, out Color[] palette)
-		{
-			List<Color> listColor = new List<Color>();
-			int width  = image.Width;
-			int height = image.Height;
-			pixels = new Pixel[width * height];
-
-			for (int y = 0; y < height; y++) {
-				for (int x = 0; x < width; x++) {
-					int index = this.PixelEncoding.GetIndex(x, y, width, height, this.TileSize);
-
-					Color color   = image[y, x];
-					Color noTrans = color;
-					noTrans.Alpha = 255;
-
-					if (!listColor.Contains(noTrans))
-						listColor.Add(noTrans);
-
-					int colorIndex = listColor.IndexOf(noTrans);
-					pixels[index] = new Pixel((uint)colorIndex, (uint)color.Alpha, true);
-				}
-			}
-
-			palette = listColor.ToArray();
-		}
-
-		/// <summary>
-		/// Gets an indexed image from a fixed palette. Floyd-Steinberg algorithm is applied
-		/// for dithering. (https://en.wikipedia.org/wiki/Floyd%E2%80%93Steinberg_dithering)
-		/// </summary>
-		/// <param name="image">The source image.</param>
-		/// <param name="pixels">The output indexed pixels.</param>
-		/// <param name="palette">The fixed palette.</param>
-		private void GetFixedPaletteImage(EmguImage image, out Pixel[] pixels)
-		{
-			int width  = image.Width;
-			int height = image.Height;
-			pixels = new Pixel[width * height];
-
-			// Convert image to Lab color space and get palette
-			Emgu.CV.Image<LabColor, byte> labImg = image.Convert<LabColor, byte>();
-			FixedPalette fixedPalette = FixedPalette.FromAnyColor<Color>(this.Palette);
-
-			for (int y = 0; y < height; y++) {
-				for (int x = 0; x < width; x++) {
-					int index = this.PixelEncoding.GetIndex(x, y, width, height, this.TileSize);
-
-					// Get nearest color from palette
-					int colorIndex = fixedPalette.GetNearestIndex(labImg[y, x]);
-
-					#if DITHERING
-					// Apply Floyd-Steinberg algorithm for each channel
-					LabColor oldPixel = labImg[y, x];
-					LabColor newPixel = fixedPalette.GetColor(colorIndex);
-					Importer.FloydSteinbergDithering(labImg.Data, x, y, 0, oldPixel.X - newPixel.X);
-					Importer.FloydSteinbergDithering(labImg.Data, x, y, 1, oldPixel.Y - newPixel.Y);
-					Importer.FloydSteinbergDithering(labImg.Data, x, y, 2, oldPixel.Z - newPixel.Z);
-					#endif
-
-					// Finally set the new pixel into the array
-					pixels[index]  = new Pixel((uint)colorIndex, (uint)this.Palette[colorIndex].Alpha, true);
-				}
-			}
-		}
-
-		private static void FloydSteinbergDithering(byte[,,] data, int x, int y, int channel, double error)
-		{
-			// These values are not exactly width and height but for this task are ok
-			int width  = data.GetLength(1);
-			int height = data.GetLength(0);
-
-			if (x + 1 < width)
-				data[y    , x + 1, channel] = (byte)(data[y    , x + 1, channel] + 7.0 / 16.0 * error);
-			if (x - 1 > 0 && y + 1 < height)
-				data[y + 1, x - 1, channel] = (byte)(data[y + 1, x - 1, channel] + 3.0 / 16.0 * error);
-			if (y + 1 < height)
-				data[y + 1, x    , channel] = (byte)(data[y + 1, x    , channel] + 5.0 / 16.0 * error);
-			if (x + 1 < width && y + 1 < height)
-				data[y + 1, x + 1, channel] = (byte)(data[y + 1, x + 1, channel] + 1.0 / 16.0 * error);
-		}
-
-		private void AddBackdropColor(Pixel[] pixels, ref Color[] palette)
-		{
-			// Add the color to the first place of the palette...
-			Array.Resize(ref palette, palette.Length + 1);
-			for (int i = palette.Length - 1; i >= 1; i--)
-				palette[i] = palette[i - 1];
-			palette[0] = this.BackdropColor;
-
-			// and increment the index of every pixels by 1
-			for (int i = 0; i < pixels.Length; i++) {
-				pixels[i] = pixels[i].ChangeInfo(pixels[i].Info + 1);
-			}
-		}
-
-		private void SortPalette(Pixel[] pixels, Color[] palette)
-		{
-			Color[] messyPalette = (Color[])palette.Clone();
-			Array.Sort<Color>(palette, (c1, c2) => c1.CompareTo(c2));
-
-			for (int i = 0; i < pixels.Length; i++) {
-				Color oldColor = messyPalette[pixels[i].Info];
-				int newIndex = Array.FindIndex<Color>(palette, c => c.Equals(oldColor));
-
-				pixels[i] = pixels[i].ChangeInfo((uint)newIndex);
-			}
-		}
-
-		private void FillPalette(ref Color[] palette)
-		{
-			// Default color is black, so we only need to resize it.
-			Array.Resize(ref palette, 1 << this.Format.Bpp());
 		}
 	}
 }
