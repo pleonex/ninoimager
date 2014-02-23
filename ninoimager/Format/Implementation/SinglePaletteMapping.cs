@@ -21,6 +21,7 @@
 // -----------------------------------------------------------------------
 using System;
 using System.Collections.Generic;
+using Size = System.Drawing.Size;
 
 namespace Ninoimager.Format
 {
@@ -37,39 +38,9 @@ namespace Ninoimager.Format
 				Pixel[] tile = new Pixel[tileLength];
 				Array.Copy(image, i, tile, 0, tileLength);
 
-				// TODO: Clean code with flips
-				// what about creating a new structure Tile and writing those methods there?
-				bool flipX = false;
-				bool flipY = false;
-
-				// Check if it's already in the list
-				int index = Mapable.Search(tile, tiles);
-
-				// Check flip X
-				if (index == -1) {
-					Pixel[] tileFlipX = (Pixel[])tile.Clone();
-					tileFlipX.FlipX(this.TileSize);
-					index = Mapable.Search(tileFlipX, tiles);
-					flipX = true;
-					flipY = false;
-
-					// Check flip Y
-					if (index == -1) {
-						Pixel[] tileFlipY = (Pixel[])tile.Clone();
-						tileFlipY.FlipY(this.TileSize);
-						index = Mapable.Search(tileFlipY, tiles);
-						flipX = false;
-						flipY = true;
-					}
-
-					// Check flip X & Y
-					if (index == -1) {
-						tileFlipX.FlipY(this.TileSize);
-						index = Mapable.Search(tileFlipX, tiles);
-						flipX = true;
-						flipY = true;
-					}
-				}
+				bool flipX;
+				bool flipY;
+				int index = SinglePaletteMapping.Search(tile, tiles, this.TileSize, out flipX, out flipY);
 
 				// Otherwise add
 				if (index == -1) {
@@ -91,6 +62,43 @@ namespace Ninoimager.Format
 			// Set data
 			this.mappedImage = linPixels;
 			this.mapInfo = infos.ToArray();
+		}
+
+		protected static int Search(Pixel[] tile, List<Pixel[]> tiles, Size tileSize,
+			out bool flipX, out bool flipY)
+		{
+			// Check if it's already in the list
+			int index = Mapable.Search(tile, tiles);
+			flipX = false;
+			flipY = false;
+
+			// Check flip X
+			if (index == -1) {
+				Pixel[] tileFlipX = (Pixel[])tile.Clone();
+				tileFlipX.FlipX(tileSize);
+				index = Mapable.Search(tileFlipX, tiles);
+				flipX = true;
+				flipY = false;
+
+				// Check flip Y
+				if (index == -1) {
+					Pixel[] tileFlipY = (Pixel[])tile.Clone();
+					tileFlipY.FlipY(tileSize);
+					index = Mapable.Search(tileFlipY, tiles);
+					flipX = false;
+					flipY = true;
+				}
+
+				// Check flip X & Y
+				if (index == -1) {
+					tileFlipX.FlipY(tileSize);
+					index = Mapable.Search(tileFlipX, tiles);
+					flipX = true;
+					flipY = true;
+				}
+			}
+
+			return index;
 		}
 	}
 }

@@ -24,7 +24,7 @@ using System.Collections.Generic;
 
 namespace Ninoimager.Format
 {
-	public class MatchMapping : Mapable
+	public class MatchMapping : SinglePaletteMapping
 	{
 		public MatchMapping(Pixel[] mappedImage)
 		{
@@ -33,7 +33,35 @@ namespace Ninoimager.Format
 
 		public override void Map(Pixel[] image)
 		{
-			throw new NotImplementedException();
+			List<Pixel[]> tiles = new List<Pixel[]>();
+			List<MapInfo> infos = new List<MapInfo>();
+			int tileLength = this.TileSize.Width * this.TileSize.Height;
+
+			// Get tiles
+			for (int i = 0; i < mappedImage.Length; i += tileLength) {
+				Pixel[] tile = new Pixel[tileLength];
+				Array.Copy(mappedImage, i, tile, 0, tileLength);
+				tiles.Add(tile);
+			}
+
+			// Perfom search
+			for (int i = 0; i < image.Length; i += tileLength) {
+				// Get tile
+				Pixel[] tile = new Pixel[tileLength];
+				Array.Copy(image, i, tile, 0, tileLength);
+
+				bool flipX;
+				bool flipY;
+				int index = SinglePaletteMapping.Search(tile, tiles, this.TileSize, out flipX, out flipY);
+
+				if (index == -1)
+					throw new Exception("Tile not found.");
+
+				// Finally create map info
+				infos.Add(new MapInfo(index, 0, flipX, flipY));
+			}
+
+			this.mapInfo = infos.ToArray();
 		}
 	}
 }
