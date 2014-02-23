@@ -52,11 +52,19 @@ namespace Ninoimager
 				Tests.RunTest(args);
 
 			watch.Stop();
+			Console.WriteLine();
 			Console.WriteLine("It tooks: {0}", watch.Elapsed);
 		}
 
 		private static void SearchAndImportBg(string baseDir, string outDir, string modimeXml, string multiXml)
 		{
+			Console.WriteLine("@ Batch import");
+			Console.WriteLine("From: {0}", baseDir);
+			Console.WriteLine("To:   {0}", outDir);
+			Console.WriteLine("Modime XML:       {0}", modimeXml);
+			Console.WriteLine("MultiImport from: {0}", multiXml);
+			Console.WriteLine();
+
 			List<string> imported = new List<string>();
 
 			// First import "special files" that share palette and images data with other N2D files
@@ -71,6 +79,9 @@ namespace Ninoimager
 
 		private static void MultiImport(string baseDir, string outputDir, List<string> importedList, string xml)
 		{
+			if (string.IsNullOrEmpty(xml))
+				return;
+
 			XDocument doc = XDocument.Load(xml);
 			foreach (XElement entry in doc.Root.Elements("Pack")) {
 				// Get mode
