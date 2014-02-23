@@ -20,6 +20,7 @@
 // <date>20/08/2013</date>
 // -----------------------------------------------------------------------
 using System;
+using Size = System.Drawing.Size;
 
 namespace Ninoimager.Format
 {
@@ -66,6 +67,37 @@ namespace Ninoimager.Format
 
 			return (this.IsIndexed == other.IsIndexed) && (this.Info == other.Info) &&
 			(this.Alpha == other.Alpha);
+		}
+	}
+
+	public static class PixelExtension
+	{
+		public static void FlipX(this Pixel[] tile, Size tileSize)
+		{
+			for (int y = 0; y < tileSize.Height; y++) {
+				for (int x = 0; x < tileSize.Width / 2; x++) {
+					int t1 = y * tileSize.Width + x;
+					int t2 = y * tileSize.Width + (tileSize.Width - 1 - x);
+
+					Pixel swap = tile[t1];
+					tile[t1] = tile[t2];
+					tile[t2] = swap;
+				}
+			}
+		}
+
+		public static void FlipY(this Pixel[] tile, Size tileSize)
+		{
+			for (int x = 0; x < tileSize.Width; x++) {
+				for (int y = 0; y < tileSize.Height / 2; y++) {
+					int t1 = x + tileSize.Width * y;
+					int t2 = x + tileSize.Width * (tileSize.Height - 1 - y);
+
+					Pixel swap = tile[t1];
+					tile[t1] = tile[t2];
+					tile[t2] = swap;
+				}
+			}
 		}
 	}
 }
