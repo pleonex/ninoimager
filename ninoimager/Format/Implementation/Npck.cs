@@ -204,9 +204,13 @@ namespace Ninoimager.Format
 				MemoryStream nscrStr = new MemoryStream();
 
 				importer.ImportBackground(images[i], nscrStr, ncgrStr, nclrStr);
-
 				nclrStr.Position = ncgrStr.Position = nscrStr.Position = 0;
-				packs[i] = new Npck(nscrStr, ncgrStr, nclrStr);
+
+				// Only first pack file has palette file
+				if (i == 0)
+					packs[i] = new Npck(nscrStr, ncgrStr, nclrStr);
+				else
+					packs[i] = new Npck(nscrStr, ncgrStr, null);
 			}
 
 			return packs;
@@ -252,7 +256,12 @@ namespace Ninoimager.Format
 					MemoryStream nscrStr = new MemoryStream();
 					importer.ImportBackgroundShareImage(images[i], fullImage, nscrStr);
 					nscrStr.Position = 0;
-					packs[i] = new Npck(nscrStr, ncgrStr, nclrStr);
+
+					// Only first pack file has palette and image files
+					if (i == 0)
+						packs[i] = new Npck(nscrStr, ncgrStr, nclrStr);
+					else
+						packs[i] = new Npck(nscrStr, null, null);
 				}
 			}
 
