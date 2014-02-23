@@ -155,7 +155,7 @@ namespace Ninoimager
 		/// <param name="palStr">Pal strream output.</param>
 		public void ImportBackground(EmguImage newImg, Stream mapStr, Stream imgStr, Stream palStr)
 		{
-			if (newImg == null || mapStr == null || imgStr == null || palStr == null)
+			if (newImg == null)
 				throw new ArgumentNullException();
 
 			int width  = newImg.Width;
@@ -199,8 +199,39 @@ namespace Ninoimager
 			ncgr.SetData(pixels, this.PixelEncoding, this.Format, this.TileSize);
 
 			// Write data
-			nclr.Write(palStr);
-			ncgr.Write(imgStr);
+			if (palStr != null)
+				nclr.Write(palStr);
+			if (imgStr != null)
+				ncgr.Write(imgStr);
+			if (mapStr != null)
+				nscr.Write(mapStr);
+		}
+
+		public void ImportBackgroundShareImage(EmguImage newImg, Pixel[] fullImg, Stream mapStr)
+		{
+			if (newImg == null || mapStr == null)
+				throw new ArgumentNullException();
+
+			int width  = newImg.Width;
+			int height = newImg.Height;
+			int maxColors = 1 << this.Format.Bpp();
+
+			// Quantizate image -> get pixels
+			this.Quantization.Quantizate(newImg);
+			Pixel[] pixels  = this.Quantization.GetPixels();
+			if (this.Quantization.GetPalette().Length > maxColors)
+				throw new FormatException(string.Format("The image has more than {0} colors", maxColors));
+
+			// Create map
+			Nscr nscr = new Nscr() {
+				TileSize    = this.TileSize,
+				Width       = width,
+				Height      = height,
+				BgMode      = this.BgMode,
+				PaletteMode = this.PaletteMode,
+				Mapping = new MatchMapping(fullImg)
+			};
+			nscr.CreateMap(pixels);
 			nscr.Write(mapStr);
 		}
 	}

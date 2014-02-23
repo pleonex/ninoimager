@@ -223,7 +223,40 @@ namespace Ninoimager.Format
 
 		public static Npck[] ImportBackgroundImageShareImage(EmguImage[] images)
 		{
-			throw new NotImplementedException();
+			Importer importer = new Importer();
+			Npck[] packs = new Npck[images.Length];
+
+			using (EmguImage combinedImg = images[0]) {
+				// Concatenate images
+				for (int i = 1; i < images.Length; i++)
+					combinedImg.ConcateHorizontal(images[i]);
+
+				// Get quantization to share palette
+				NdsQuantization quantization = new NdsQuantization();
+				quantization.Quantizate(combinedImg);
+				importer.Quantization = new FixedPaletteQuantization(quantization.GetPalette());
+
+				// Get the palette and image file that it's shared
+				MemoryStream nclrStr = new MemoryStream();
+				MemoryStream ncgrStr = new MemoryStream();
+				importer.ImportBackground(combinedImg, null, ncgrStr, nclrStr);
+				nclrStr.Position = ncgrStr.Position = 0;
+
+				// Get the array of pixel from the image file
+				Ncgr ncgr = new Ncgr(ncgrStr);
+				Pixel[] fullImage = ncgr.GetPixels();
+				ncgrStr.Position = 0;
+
+				// Create packs
+				for (int i = 0; i < images.Length; i++) {
+					MemoryStream nscrStr = new MemoryStream();
+					importer.ImportBackgroundShareImage(images[i], fullImage, nscrStr);
+					nscrStr.Position = 0;
+					packs[i] = new Npck(nscrStr, ncgrStr, nclrStr);
+				}
+			}
+
+			return packs;
 		}
 	}
 }

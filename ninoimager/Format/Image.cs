@@ -236,6 +236,26 @@ namespace Ninoimager.Format
 			return buffer;
 		}
 
+		public Pixel[] GetPixels()
+		{
+			// Inverse operation of SetData
+
+			// First convert to one-dimension array (encode pixels)
+			uint[] normalizedData = new uint[this.width * this.height];
+			this.pixelEnc.Codec(this.data, normalizedData, false, this.width, this.height, this.tileSize);
+
+			// Then get the array of pixels
+			Pixel[] pixels = new Pixel[normalizedData.Length];
+			for (int i = 0; i < normalizedData.Length; i++)
+				pixels[i] = new Pixel(
+					normalizedData[i] & 0xFFFFFF,
+					normalizedData[i] >> 24,
+					this.format.IsIndexed()
+				);
+
+			return pixels;
+		}
+
 		private static Color[] InfoToIndexedColors(uint[] colorInfo, Color[] palette)
 		{
 			return InfoToIndexedColors(
