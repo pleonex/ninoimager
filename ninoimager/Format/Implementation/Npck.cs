@@ -23,6 +23,7 @@ using System;
 using System.IO;
 using System.Linq;
 using Ninoimager.ImageProcessing;
+using Color     = Emgu.CV.Structure.Rgba;
 using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
 
 namespace Ninoimager.Format
@@ -183,7 +184,32 @@ namespace Ninoimager.Format
 
 		public static Npck[] ImportBackgroundImageSharePalette(EmguImage[] images)
 		{
-			throw new NotImplementedException();
+			Importer importer = new Importer();
+
+			// Concatenate images
+			using (EmguImage combinedImg = images[0]) {
+				for (int i = 1; i < images.Length; i++)
+					combinedImg.ConcateHorizontal(images[i]);
+
+				NdsQuantization quantization = new NdsQuantization();
+				quantization.Quantizate(combinedImg);
+				importer.Quantization = new FixedPaletteQuantization(quantization.GetPalette());
+			}
+
+			// Create packs
+			Npck[] packs = new Npck[images.Length];
+			for (int i = 0; i < images.Length; i++) {
+				MemoryStream nclrStr = new MemoryStream();
+				MemoryStream ncgrStr = new MemoryStream();
+				MemoryStream nscrStr = new MemoryStream();
+
+				importer.ImportBackground(images[i], nscrStr, ncgrStr, nclrStr);
+
+				nclrStr.Position = ncgrStr.Position = nscrStr.Position = 0;
+				packs[i] = new Npck(nscrStr, ncgrStr, nclrStr);
+			}
+
+			return packs;
 		}
 
 		public static Npck[] ImportBackgroundImageShareImage(string[] images)
