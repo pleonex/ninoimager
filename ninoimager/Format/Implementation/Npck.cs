@@ -187,14 +187,15 @@ namespace Ninoimager.Format
 			Importer importer = new Importer();
 
 			// Concatenate images
-			using (EmguImage combinedImg = images[0]) {
-				for (int i = 1; i < images.Length; i++)
-					combinedImg.ConcateHorizontal(images[i]);
+			EmguImage combinedImg = images[0].Clone();
+			for (int i = 1; i < images.Length; i++)
+				combinedImg = combinedImg.ConcateHorizontal(images[i]);
 
-				NdsQuantization quantization = new NdsQuantization();
-				quantization.Quantizate(combinedImg);
-				importer.Quantization = new FixedPaletteQuantization(quantization.GetPalette());
-			}
+			NdsQuantization quantization = new NdsQuantization();
+			quantization.Quantizate(combinedImg);
+			importer.Quantization = new FixedPaletteQuantization(quantization.GetPalette());
+
+			combinedImg.Dispose();
 
 			// Create packs
 			Npck[] packs = new Npck[images.Length];
@@ -230,41 +231,41 @@ namespace Ninoimager.Format
 			Importer importer = new Importer();
 			Npck[] packs = new Npck[images.Length];
 
-			using (EmguImage combinedImg = images[0]) {
-				// Concatenate images
-				for (int i = 1; i < images.Length; i++)
-					combinedImg.ConcateHorizontal(images[i]);
+			EmguImage combinedImg = images[0].Clone();
+			// Concatenate images
+			for (int i = 1; i < images.Length; i++)
+				combinedImg = combinedImg.ConcateHorizontal(images[i]);
 
-				// Get quantization to share palette
-				NdsQuantization quantization = new NdsQuantization();
-				quantization.Quantizate(combinedImg);
-				importer.Quantization = new FixedPaletteQuantization(quantization.GetPalette());
+			// Get quantization to share palette
+			NdsQuantization quantization = new NdsQuantization();
+			quantization.Quantizate(combinedImg);
+			importer.Quantization = new FixedPaletteQuantization(quantization.GetPalette());
 
-				// Get the palette and image file that it's shared
-				MemoryStream nclrStr = new MemoryStream();
-				MemoryStream ncgrStr = new MemoryStream();
-				importer.ImportBackground(combinedImg, null, ncgrStr, nclrStr);
-				nclrStr.Position = ncgrStr.Position = 0;
+			// Get the palette and image file that it's shared
+			MemoryStream nclrStr = new MemoryStream();
+			MemoryStream ncgrStr = new MemoryStream();
+			importer.ImportBackground(combinedImg, null, ncgrStr, nclrStr);
+			nclrStr.Position = ncgrStr.Position = 0;
 
-				// Get the array of pixel from the image file
-				Ncgr ncgr = new Ncgr(ncgrStr);
-				Pixel[] fullImage = ncgr.GetPixels();
-				ncgrStr.Position = 0;
+			// Get the array of pixel from the image file
+			Ncgr ncgr = new Ncgr(ncgrStr);
+			Pixel[] fullImage = ncgr.GetPixels();
+			ncgrStr.Position = 0;
 
-				// Create packs
-				for (int i = 0; i < images.Length; i++) {
-					MemoryStream nscrStr = new MemoryStream();
-					importer.ImportBackgroundShareImage(images[i], fullImage, nscrStr);
-					nscrStr.Position = 0;
+			// Create packs
+			for (int i = 0; i < images.Length; i++) {
+				MemoryStream nscrStr = new MemoryStream();
+				importer.ImportBackgroundShareImage(images[i], fullImage, nscrStr);
+				nscrStr.Position = 0;
 
-					// Only first pack file has palette and image files
-					if (i == 0)
-						packs[i] = new Npck(nscrStr, ncgrStr, nclrStr);
-					else
-						packs[i] = new Npck(nscrStr, null, null);
-				}
+				// Only first pack file has palette and image files
+				if (i == 0)
+					packs[i] = new Npck(nscrStr, ncgrStr, nclrStr);
+				else
+					packs[i] = new Npck(nscrStr, null, null);
 			}
 
+			combinedImg.Dispose();
 			return packs;
 		}
 	}
