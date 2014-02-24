@@ -95,7 +95,7 @@ namespace Ninoimager
 				foreach (XElement ximg in entry.Element("Images").Elements("Image")) {
 					relatives.Add(ximg.Value);
 					imgPaths.Add(Path.Combine(baseDir, ximg.Value) + "_6.nscrm.png");
-					outPaths.Add(Path.Combine(outputDir, ximg.Value) + "_new.n2d");
+					outPaths.Add(Path.Combine(outputDir, ximg.Value));
 
 					if (!File.Exists(imgPaths[imgPaths.Count - 1])) {
 						existImages = false;
@@ -108,17 +108,19 @@ namespace Ninoimager
 					continue;
 
 				// Import
+				Npck originalPack = new Npck(outPaths[0] + ".n2d");
 				Npck[] packs = null;
 				if (mode == "SharePalette")
-					packs = Npck.ImportBackgroundImageSharePalette(imgPaths.ToArray());
+					packs = Npck.ImportBackgroundImageSharePalette(imgPaths.ToArray(), originalPack);
 				else if (mode == "ShareImage")
-					packs = Npck.ImportBackgroundImageShareImage(imgPaths.ToArray());
+					packs = Npck.ImportBackgroundImageShareImage(imgPaths.ToArray(), originalPack);
 				else
 					throw new FormatException(string.Format("Unsopported mode \"{0}\"", mode)); 
 
 				// Write output
+				originalPack.CloseAll();
 				for (int i = 0; i < outPaths.Count; i++) {
-					packs[i].Write(outPaths[i]);
+					packs[i].Write(outPaths[i] + "_new.n2d");
 					packs[i].CloseAll();
 				}
 

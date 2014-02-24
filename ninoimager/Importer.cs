@@ -138,7 +138,9 @@ namespace Ninoimager
 			}
 
 			// Set original map settings
-			if (mapStr != null) {
+			if (mapStr != null && mapStr.ReadByte() == 0x52) {
+				mapStr.Position -= 1;
+
 				Nscr nscr = new Nscr(mapStr);
 				this.BgMode      = nscr.BgMode;
 				this.PaletteMode = nscr.PaletteMode;

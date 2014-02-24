@@ -179,23 +179,34 @@ namespace Ninoimager.Format
 			for (int i = 0; i < images.Length; i++)
 				emguImgs[i] = new EmguImage(images[i]);
 
-			return ImportBackgroundImageSharePalette(emguImgs);
+			return ImportBackgroundImageSharePalette(emguImgs, new Importer());
 		}
 
-		public static Npck[] ImportBackgroundImageSharePalette(EmguImage[] images)
+		public static Npck[] ImportBackgroundImageSharePalette(string[] images, Npck original)
 		{
+			EmguImage[] emguImgs = new EmguImage[images.Length];
+			for (int i = 0; i < images.Length; i++)
+				emguImgs[i] = new EmguImage(images[i]);
+
 			Importer importer = new Importer();
+			importer.SetOriginalSettings(original[6], original[1], original[0]);
+			return ImportBackgroundImageSharePalette(emguImgs, importer);
+		}
 
-			// Concatenate images
-			EmguImage combinedImg = images[0].Clone();
-			for (int i = 1; i < images.Length; i++)
-				combinedImg = combinedImg.ConcateHorizontal(images[i]);
+		public static Npck[] ImportBackgroundImageSharePalette(EmguImage[] images, Importer importer)
+		{
+			if (!(importer.Quantization is FixedPaletteQuantization)) {
+				// Concatenate images
+				EmguImage combinedImg = images[0].Clone();
+				for (int i = 1; i < images.Length; i++)
+					combinedImg = combinedImg.ConcateHorizontal(images[i]);
 
-			NdsQuantization quantization = new NdsQuantization();
-			quantization.Quantizate(combinedImg);
-			importer.Quantization = new FixedPaletteQuantization(quantization.GetPalette());
+				NdsQuantization quantization = new NdsQuantization();
+				quantization.Quantizate(combinedImg);
+				importer.Quantization = new FixedPaletteQuantization(quantization.GetPalette());
 
-			combinedImg.Dispose();
+				combinedImg.Dispose();
+			}
 
 			// Create packs
 			Npck[] packs = new Npck[images.Length];
@@ -223,12 +234,22 @@ namespace Ninoimager.Format
 			for (int i = 0; i < images.Length; i++)
 				emguImgs[i] = new EmguImage(images[i]);
 
-			return ImportBackgroundImageShareImage(emguImgs);
+			return ImportBackgroundImageShareImage(emguImgs, new Importer());
 		}
 
-		public static Npck[] ImportBackgroundImageShareImage(EmguImage[] images)
+		public static Npck[] ImportBackgroundImageShareImage(string[] images, Npck original)
 		{
+			EmguImage[] emguImgs = new EmguImage[images.Length];
+			for (int i = 0; i < images.Length; i++)
+				emguImgs[i] = new EmguImage(images[i]);
+
 			Importer importer = new Importer();
+			importer.SetOriginalSettings(original[6], original[1], original[0]);
+			return ImportBackgroundImageShareImage(emguImgs, importer);
+		}
+
+		public static Npck[] ImportBackgroundImageShareImage(EmguImage[] images, Importer importer)
+		{
 			Npck[] packs = new Npck[images.Length];
 
 			EmguImage combinedImg = images[0].Clone();
@@ -236,10 +257,12 @@ namespace Ninoimager.Format
 			for (int i = 1; i < images.Length; i++)
 				combinedImg = combinedImg.ConcateHorizontal(images[i]);
 
-			// Get quantization to share palette
-			NdsQuantization quantization = new NdsQuantization();
-			quantization.Quantizate(combinedImg);
-			importer.Quantization = new FixedPaletteQuantization(quantization.GetPalette());
+			if (!(importer.Quantization is FixedPaletteQuantization)) {
+				// Get quantization to share palette
+				NdsQuantization quantization = new NdsQuantization();
+				quantization.Quantizate(combinedImg);
+				importer.Quantization = new FixedPaletteQuantization(quantization.GetPalette());
+			}
 
 			// Get the palette and image file that it's shared
 			MemoryStream nclrStr = new MemoryStream();
