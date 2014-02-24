@@ -228,7 +228,7 @@ namespace Ninoimager
 				Width       = width,
 				Height      = height,
 				BgMode      = this.BgMode,
-				PaletteMode = this.PaletteMode,
+				PaletteMode = PaletteMode.Palette256_1,
 				Mapping = new MatchMapping(fullImg)
 			};
 			nscr.CreateMap(pixels);
