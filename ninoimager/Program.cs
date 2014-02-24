@@ -88,12 +88,24 @@ namespace Ninoimager
 				string mode = entry.Element("Mode").Value;
 
 				// Get paths
-				List<string> imgPaths = new List<string>();
-				List<string> outPaths = new List<string>();
+				bool existImages = true;
+				List<string> relatives = new List<string>();
+				List<string> imgPaths  = new List<string>();
+				List<string> outPaths  = new List<string>();
 				foreach (XElement ximg in entry.Element("Images").Elements("Image")) {
-					imgPaths.Add(Path.Combine(baseDir, ximg.Value));
-					outPaths.Add(Path.Combine(outputDir, ximg.Value));
+					relatives.Add(ximg.Value);
+					imgPaths.Add(Path.Combine(baseDir, ximg.Value) + "_6.nscrm.png");
+					outPaths.Add(Path.Combine(outputDir, ximg.Value) + "_new.n2d");
+
+					if (!File.Exists(imgPaths[imgPaths.Count - 1])) {
+						existImages = false;
+						break;
+					}
 				}
+
+				// Images still not translated
+				if (!existImages)
+					continue;
 
 				// Import
 				Npck[] packs = null;
@@ -108,6 +120,12 @@ namespace Ninoimager
 				for (int i = 0; i < outPaths.Count; i++) {
 					packs[i].Write(outPaths[i]);
 					packs[i].CloseAll();
+				}
+
+				Console.WriteLine("MultiImport done!");
+				foreach (string image in relatives) {
+					importedList.Add(image);
+					Console.WriteLine("\tWritten with success... {0}", image);
 				}
 			}
 		}
