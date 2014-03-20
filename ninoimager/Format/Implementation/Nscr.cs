@@ -26,13 +26,6 @@ using System.IO;
 
 namespace Ninoimager.Format
 {
-	// For more info see GbaTek
-	public enum PaletteMode {
-		Palette16_16 = 0,	// 16 colors / 16 palettes
-		Palette256_1 = 1,	// 256 colors / 1 palette
-		Extended = 2,		// 256 colors / 16 palettes
-	}
-
 	public class Nscr : Map
 	{
 		private static Type[] BlockTypes = { typeof(Nscr.Scrn) };

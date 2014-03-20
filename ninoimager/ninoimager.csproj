@@ -80,6 +80,8 @@
     <Compile Include="Format\Mapable.cs" />
     <Compile Include="Format\Implementation\SinglePaletteMapping.cs" />
     <Compile Include="Format\Implementation\MatchMapping.cs" />
+    <Compile Include="Format\Oam.cs" />
+    <Compile Include="Format\PaletteMode.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
