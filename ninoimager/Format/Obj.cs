@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------
-// <copyright file="Oam.cs" company="none">
+// <copyright file="Obj.cs" company="none">
 // Copyright (C) 2014 
 //
 //   This program is free software: you can redistribute it and/or modify
@@ -39,20 +39,40 @@ namespace Ninoimager.Format
 	}
 
 	/// <summary>
-	/// Object Attribute Memory.
+	/// Object (moveable sprite).
 	/// <see cref="http://nocash.emubase.de/gbatek.htm#lcdobjoverview"/>
 	/// </summary>
-	public class Oam
+	public class Obj
 	{
+		private ushort id;
 		private sbyte coordY;
 		private short coordX;
 		private PaletteMode paletteMode;
+		private ushort tileNumber;
 		private byte rotScaGroup;
 		private byte objSize;
+		private byte objPriority;
+		private byte paletteIdx;
+		private byte alpha;
 
-		public static Oam FromUshort(ushort attr0, ushort attr1, ushort attr2)
+		public static Obj FromUshort(ushort attr0, ushort attr1, ushort attr2)
 		{
 			throw new NotImplementedException();
+		}
+
+		/// <summary>
+		/// Gets or sets the identifier (OAM Entry Number).
+		/// It is used for priority.
+		/// </summary>
+		/// <value>The identifier.</value>
+		public ushort Id {
+			get { return this.id; }
+			set {
+				if (value >= 128)
+					throw new ArgumentOutOfRangeException("Property value", value, "Must be less than 128");
+
+				this.id = value;
+			}
 		}
 
 		/// <summary>
@@ -83,7 +103,7 @@ namespace Ninoimager.Format
 		}
 
 		/// <summary>
-		/// Gets or sets a value indicating whether this <see cref="Ninoimager.Format.Oam"/>
+		/// Gets or sets a value indicating whether this <see cref="Ninoimager.Format.Obj"/>
 		/// supports rotation or scaling.
 		/// </summary>
 		/// <value><c>true</c> if rotation or scaling is used; otherwise, <c>false</c>.</value>
@@ -94,7 +114,7 @@ namespace Ninoimager.Format
 
 		#region Rotation / Scaling enabled
 		/// <summary>
-		/// Gets or sets a value indicating whether this <see cref="Ninoimager.Format.Oam"/> support double size.
+		/// Gets or sets a value indicating whether this <see cref="Ninoimager.Format.Obj"/> support double size.
 		/// </summary>
 		/// <description>
 		/// The sprites are displayed inside a rectangular area. When the sprite is rotated or scaled this area
@@ -137,7 +157,7 @@ namespace Ninoimager.Format
 
 		#region Rotation / Scaling disabled
 		/// <summary>
-		/// Gets or sets a value indicating whether this <see cref="Ninoimager.Format.Oam"/> is displayed.
+		/// Gets or sets a value indicating whether this <see cref="Ninoimager.Format.Obj"/> is displayed.
 		/// </summary>
 		/// <remarks>Only if Rotation/Scaling is disabled.</remarks>
 		/// <value><c>true</c> if object is disabled; otherwise, <c>false</c>.</value>
@@ -147,7 +167,7 @@ namespace Ninoimager.Format
 		}
 
 		/// <summary>
-		/// Gets or sets a value indicating whether this <see cref="Ninoimager.Format.Oam"/> must perfom a
+		/// Gets or sets a value indicating whether this <see cref="Ninoimager.Format.Obj"/> must perfom a
 		/// horizontal flip.
 		/// </summary>
 		/// <value><c>true</c> if horizontal flip; otherwise, <c>false</c>.</value>
@@ -157,7 +177,7 @@ namespace Ninoimager.Format
 		}
 
 		/// <summary>
-		/// Gets or sets a value indicating whether this <see cref="Ninoimager.Format.Oam"/> must perfom a
+		/// Gets or sets a value indicating whether this <see cref="Ninoimager.Format.Obj"/> must perfom a
 		/// vertical flip.
 		/// </summary>
 		/// <value><c>true</c> if vertical flip; otherwise, <c>false</c>.</value>
@@ -177,7 +197,7 @@ namespace Ninoimager.Format
 		}
 
 		/// <summary>
-		/// Gets or sets a value indicating whether this <see cref="Ninoimager.Format.Oam"/>
+		/// Gets or sets a value indicating whether this <see cref="Ninoimager.Format.Obj"/>
 		/// mosaic mode is enabled. <see cref="http://nocash.emubase.de/gbatek.htm#lcdiomosaicfunction"/>
 		/// </summary>
 		/// <value><c>true</c> if object mosaic; otherwise, <c>false</c>.</value>
@@ -202,7 +222,88 @@ namespace Ninoimager.Format
 		}
 
 		/// <summary>
-		/// Gets or sets the object shape (first parameter of the OAM size).
+		/// Gets or sets the tile number.
+		/// </summary>
+		/// <remarks>
+		/// It returns the final value multiplied by the factor that depends on the PaletteMode.
+		/// It will also convert at the setter the final value to the internal.
+		/// The exception will be thrown when the final value is higher than 1024. To see how this value is
+		/// calculated check <see cref="http://nocash.emubase.de/gbatek.htm#lcdobjoverview"/>.
+		/// </remarks>
+		/// <value>The tile number.</value>
+		public ushort TileNumber {
+			get {
+				ushort tileNumber = (ushort)(this.tileNumber * 4);
+				if (this.PaletteMode == PaletteMode.Palette256_1)
+					tileNumber *= 2;
+
+				return tileNumber;
+			}
+			set {
+				ushort tileNumber = (ushort)(value / 4);
+				if (this.PaletteMode == PaletteMode.Palette256_1)
+					tileNumber /= 2;
+
+				if (value >= 1024)
+					throw new ArgumentOutOfRangeException("Property value", value, "Out of range tile number.");
+
+				this.tileNumber = tileNumber;
+			}
+		}
+
+		/// <summary>
+		/// Gets or sets the Object priority.
+		/// </summary>
+		/// <remarks>
+		/// This is not the final priority. To get that value see <see cref="Ninoimager.Format.Obj.GetPriority"/>.
+		/// </remarks>
+		/// <value>The obj priority.</value>
+		public byte ObjPriority {
+			get { return this.objPriority; }
+			set {
+				if (value >= 4)
+					throw new ArgumentOutOfRangeException("Property value", value, "Must be less than 4");
+
+				this.objPriority = value;
+			}
+		}
+
+		/// <summary>
+		/// Gets or sets the index of the palette.
+		/// </summary>
+		/// <remarks>
+		/// Only if Object Mode is not set to Bitmap.
+		/// </remarks>
+		/// <value>The index of the palette.</value>
+		public byte PaletteIndex {
+			get { return this.paletteIdx; }
+			set {
+				if (value >= 16)
+					throw new ArgumentOutOfRangeException("Property value", value, "Must be less than 16");
+
+				this.paletteIdx = value;
+			}
+		}
+
+		/// <summary>
+		/// Gets or sets the alpha component of the Object.
+		/// </summary>
+		/// <remarks>
+		/// Only if Object Mode is set to Bitmap.
+		/// </remarks>
+		/// <value>The alpha component.</value>
+		public byte Alpha {
+			get { return this.alpha; }
+			set {
+				if (value >= 16)
+					throw new ArgumentOutOfRangeException("Property value", value, "Must be less than 16");
+
+				this.alpha = value;
+			}
+		}
+
+		/// <summary>
+		/// Gets or sets the object shape (first parameter of the Object size).
 		/// </summary>
 		/// <value>The object shape.</value>
 		public ObjShape ObjShape {
@@ -211,7 +312,7 @@ namespace Ninoimager.Format
 		}
 
 		/// <summary>
-		/// Gets or sets the second parameter of the OAM size.
+		/// Gets or sets the second parameter of the Object size.
 		/// </summary>
 		/// <value>The size of the object.</value>
 		public byte ObjSize {
@@ -226,25 +327,70 @@ namespace Ninoimager.Format
 
 		public Size GetSize()
 		{
-			int[,] sizeMatrix = new int[3, 4] {
-				{  8, 16, 32, 64},
-				{ 16, 32, 32, 64},
-				{  8,  8, 16, 32}
+			int[,] SizeMatrix = new int[3, 4] {
+				{  8, 16, 32, 64},	// Square
+				{ 16, 32, 32, 64},	// Horizontal
+				{  8,  8, 16, 32}	// Vertical
 			};
 
 			Size size = new Size();
 			if (this.ObjShape == ObjShape.Square)
-				size = new Size(sizeMatrix[0, this.ObjSize], sizeMatrix[0, this.ObjSize]);
+				size = new Size(SizeMatrix[0, this.ObjSize], SizeMatrix[0, this.ObjSize]);
 			else if (this.ObjShape == ObjShape.Horizontal)
-				size = new Size(sizeMatrix[1, this.ObjSize], sizeMatrix[2, this.ObjSize]);
+				size = new Size(SizeMatrix[1, this.ObjSize], SizeMatrix[2, this.ObjSize]);
 			else if (this.ObjShape == ObjShape.Vertical)
-				size = new Size(sizeMatrix[2, this.ObjSize], sizeMatrix[1, this.ObjSize]);
+				size = new Size(SizeMatrix[2, this.ObjSize], SizeMatrix[1, this.ObjSize]);
 			return size;
 		}
 
 		public void SetSize(Size size)
 		{
-			throw new NotImplementedException();
+			if (size.Width % 8 != 0 || size.Height % 8 != 0)
+				throw new ArgumentException("Invalid size.", "size");
+
+			if (size.Width == size.Height) {
+				this.ObjShape = ObjShape.Square;
+
+				if (size.Width == 8)
+					this.ObjSize = 0;
+				else if (size.Width == 16)
+					this.ObjSize = 1;
+				else if (size.Width == 32)
+					this.ObjSize = 2;
+				else if (size.Width == 64)
+					this.ObjSize = 3;
+				else
+					throw new ArgumentException("Invalid size.", "size");
+
+			} else if (size.Width > size.Height) {
+				this.ObjShape = ObjShape.Horizontal;
+
+				if (size.Width == 16 && size.Height == 8)
+					this.ObjSize = 0;
+				else if (size.Width == 32 && size.Height == 8)
+					this.ObjSize = 1;
+				else if (size.Width == 32 && size.Height == 16)
+					this.ObjSize = 2;
+				else if (size.Width == 64 && size.Height == 32)
+					this.ObjSize = 3;
+				else
+					throw new ArgumentException("Invalid size.", "size");
+
+			} else { 
+				this.ObjShape = ObjShape.Vertical;
+
+				if (size.Width == 8 && size.Height == 16)
+					this.ObjSize = 0;
+				else if (size.Width == 8 && size.Height == 32)
+					this.ObjSize = 1;
+				else if (size.Width == 16 && size.Height == 32)
+					this.ObjSize = 2;
+				else if (size.Width == 32 && size.Height == 64)
+					this.ObjSize = 3;
+				else
+					throw new ArgumentException("Invalid size.", "size");
+
+			}
 		}
 
 		public Point GetReferencePoint() {
@@ -254,6 +400,18 @@ namespace Ninoimager.Format
 		public Point GetRotationCenter() {
 			Size size = this.GetSize();
 			return new Point(this.CoordX + size.Width / 2, this.CoordY + size.Height / 2);
+		}
+
+		/// <summary>
+		/// Gets the priority.
+		/// </summary>
+		/// <remarks>
+		/// UNTESTED. There is no info about how to calculate it.
+		/// <see cref="http://nocash.emubase.de/gbatek.htm#dsvideoobjs"/>
+		/// </remarks>
+		/// <returns>The priority.</returns>
+		public ushort GetPriority() {
+			return (ushort)((this.objPriority << 7) | this.Id);
 		}
 	}
 }
