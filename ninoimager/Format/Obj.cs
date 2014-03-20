@@ -57,7 +57,36 @@ namespace Ninoimager.Format
 
 		public static Obj FromUshort(ushort attr0, ushort attr1, ushort attr2)
 		{
-			throw new NotImplementedException();
+			Obj obj = new Obj();
+
+			// Attribute 0
+			obj.CoordY      = (sbyte)      ((attr0 >> 00) & 0x00FF);
+			obj.RotSca      =              ((attr0 >> 08) & 0x0001) == 1;
+			obj.Mode        = (ObjMode)    ((attr0 >> 10) & 0x0003);
+			obj.IsMosaic    =              ((attr0 >> 12) & 0x0001) == 1;
+			obj.PaletteMode = (PaletteMode)((attr0 >> 13) & 0x0001);
+			obj.Shape       = (ObjShape)   ((attr0 >> 14) & 0x0003);
+
+			// Attribute 1
+			obj.CoordX   = (short)(((attr1 >> 00) & 0x001FF) - 256);
+			obj.SizeMode = (byte)  ((attr1 >> 14) & 0x0003);
+
+			// Attribute 2
+			obj.tileNumber   = (ushort)((attr2 >> 00) & 0x003FF);	// I don't use the property since is the raw value
+			obj.ObjPriority  = (byte)  ((attr2 >> 10) & 0x0003);
+			obj.PaletteIndex = (byte)  ((attr2 >> 12) & 0x000F);
+
+			// Rotation / Scaling mode
+			if (obj.RotSca) {
+				obj.DoubleSize  =       ((attr0 >> 09) & 0x0001) == 1;
+				obj.RotScaGroup = (byte)((attr1 >> 09) & 0x001F);        
+			} else {
+				obj.IsDisabled     = ((attr0 >> 09) & 0x0001) == 1;
+				obj.HorizontalFlip = ((attr1 >> 12) & 0x0001) == 1;
+				obj.VerticalFlip   = ((attr1 >> 13) & 0x0001) == 1;
+			}
+
+			return obj;
 		}
 
 		/// <summary>
@@ -161,7 +190,7 @@ namespace Ninoimager.Format
 		/// </summary>
 		/// <remarks>Only if Rotation/Scaling is disabled.</remarks>
 		/// <value><c>true</c> if object is disabled; otherwise, <c>false</c>.</value>
-		public bool ObjDisable {
+		public bool IsDisabled {
 			get;
 			set;
 		}
@@ -191,7 +220,7 @@ namespace Ninoimager.Format
 		/// Gets or sets the object mode. <see cref="Ninoimager.Format.ObjMode"/>
 		/// </summary>
 		/// <value>The object mode.</value>
-		public ObjMode ObjMode {
+		public ObjMode Mode {
 			get;
 			set;
 		}
@@ -201,7 +230,7 @@ namespace Ninoimager.Format
 		/// mosaic mode is enabled. <see cref="http://nocash.emubase.de/gbatek.htm#lcdiomosaicfunction"/>
 		/// </summary>
 		/// <value><c>true</c> if object mosaic; otherwise, <c>false</c>.</value>
-		public bool ObjMosaic {
+		public bool IsMosaic {
 			get;
 			set;
 		}
@@ -306,7 +335,7 @@ namespace Ninoimager.Format
 		/// Gets or sets the object shape (first parameter of the Object size).
 		/// </summary>
 		/// <value>The object shape.</value>
-		public ObjShape ObjShape {
+		public ObjShape Shape {
 			get;
 			set;
 		}
@@ -315,7 +344,7 @@ namespace Ninoimager.Format
 		/// Gets or sets the second parameter of the Object size.
 		/// </summary>
 		/// <value>The size of the object.</value>
-		public byte ObjSize {
+		public byte SizeMode {
 			get { return this.objSize; }
 			set {
 				if (value >= 4)
@@ -334,12 +363,12 @@ namespace Ninoimager.Format
 			};
 
 			Size size = new Size();
-			if (this.ObjShape == ObjShape.Square)
-				size = new Size(SizeMatrix[0, this.ObjSize], SizeMatrix[0, this.ObjSize]);
-			else if (this.ObjShape == ObjShape.Horizontal)
-				size = new Size(SizeMatrix[1, this.ObjSize], SizeMatrix[2, this.ObjSize]);
-			else if (this.ObjShape == ObjShape.Vertical)
-				size = new Size(SizeMatrix[2, this.ObjSize], SizeMatrix[1, this.ObjSize]);
+			if (this.Shape == ObjShape.Square)
+				size = new Size(SizeMatrix[0, this.SizeMode], SizeMatrix[0, this.SizeMode]);
+			else if (this.Shape == ObjShape.Horizontal)
+				size = new Size(SizeMatrix[1, this.SizeMode], SizeMatrix[2, this.SizeMode]);
+			else if (this.Shape == ObjShape.Vertical)
+				size = new Size(SizeMatrix[2, this.SizeMode], SizeMatrix[1, this.SizeMode]);
 			return size;
 		}
 
@@ -349,44 +378,44 @@ namespace Ninoimager.Format
 				throw new ArgumentException("Invalid size.", "size");
 
 			if (size.Width == size.Height) {
-				this.ObjShape = ObjShape.Square;
+				this.Shape = ObjShape.Square;
 
 				if (size.Width == 8)
-					this.ObjSize = 0;
+					this.SizeMode = 0;
 				else if (size.Width == 16)
-					this.ObjSize = 1;
+					this.SizeMode = 1;
 				else if (size.Width == 32)
-					this.ObjSize = 2;
+					this.SizeMode = 2;
 				else if (size.Width == 64)
-					this.ObjSize = 3;
+					this.SizeMode = 3;
 				else
 					throw new ArgumentException("Invalid size.", "size");
 
 			} else if (size.Width > size.Height) {
-				this.ObjShape = ObjShape.Horizontal;
+				this.Shape = ObjShape.Horizontal;
 
 				if (size.Width == 16 && size.Height == 8)
-					this.ObjSize = 0;
+					this.SizeMode = 0;
 				else if (size.Width == 32 && size.Height == 8)
-					this.ObjSize = 1;
+					this.SizeMode = 1;
 				else if (size.Width == 32 && size.Height == 16)
-					this.ObjSize = 2;
+					this.SizeMode = 2;
 				else if (size.Width == 64 && size.Height == 32)
-					this.ObjSize = 3;
+					this.SizeMode = 3;
 				else
 					throw new ArgumentException("Invalid size.", "size");
 
 			} else { 
-				this.ObjShape = ObjShape.Vertical;
+				this.Shape = ObjShape.Vertical;
 
 				if (size.Width == 8 && size.Height == 16)
-					this.ObjSize = 0;
+					this.SizeMode = 0;
 				else if (size.Width == 8 && size.Height == 32)
-					this.ObjSize = 1;
+					this.SizeMode = 1;
 				else if (size.Width == 16 && size.Height == 32)
-					this.ObjSize = 2;
+					this.SizeMode = 2;
 				else if (size.Width == 32 && size.Height == 64)
-					this.ObjSize = 3;
+					this.SizeMode = 3;
 				else
 					throw new ArgumentException("Invalid size.", "size");
 
