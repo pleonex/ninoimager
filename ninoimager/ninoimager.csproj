@@ -82,6 +82,7 @@
     <Compile Include="Format\Implementation\MatchMapping.cs" />
     <Compile Include="Format\PaletteMode.cs" />
     <Compile Include="Format\Obj.cs" />
+    <Compile Include="Format\Frame.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

@@ -22,6 +22,8 @@
 using System;
 using Size  = System.Drawing.Size;
 using Point = System.Drawing.Point;
+using Rectangle = System.Drawing.Rectangle;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
 
 namespace Ninoimager.Format
 {
@@ -441,6 +443,16 @@ namespace Ninoimager.Format
 		/// <returns>The priority.</returns>
 		public ushort GetPriority() {
 			return (ushort)((this.objPriority << 7) | this.Id);
+		}
+
+		public Rectangle GetArea()
+		{
+			return new Rectangle(this.GetReferencePoint(), this.GetSize());
+		}
+
+		public EmguImage CreateBitmap(Image image, Palette palette)
+		{
+			throw new NotImplementedException();
 		}
 	}
 }
