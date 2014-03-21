@@ -143,7 +143,7 @@ namespace Ninoimager.Format
 			return bmp;
 		}
 
-		public EmguImage CreateSubImage(int x, int y, int width, int height)
+		public Image CreateSubImage(int tileNumber, int length)
 		{
 			// Get pixel of subimage and create using private constructor to pass internal data
 			throw new NotImplementedException();

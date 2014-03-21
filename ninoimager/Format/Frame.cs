@@ -61,7 +61,9 @@ namespace Ninoimager.Format
 				EmguImage objBitmap = obj.CreateBitmap(image, palette);
 
 				// Copy the object image to the frame
-				bitmap.ROI = obj.GetArea();
+				Rectangle roi = obj.GetArea();
+				roi.Offset(256, 128);	// Only positive coordinate values
+				bitmap.ROI = roi;
 				objBitmap.CopyTo(bitmap);
 
 				objBitmap.Dispose();

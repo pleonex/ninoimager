@@ -452,8 +452,21 @@ namespace Ninoimager.Format
 
 		public EmguImage CreateBitmap(Image image, Palette palette)
 		{
-			throw new NotImplementedException();
+			Size size = this.GetSize();
+			Image objImage = image.CreateSubImage(this.TileNumber, size.Width * size.Height);
+
+			EmguImage bitmap = null;
+			if (this.Mode == ObjMode.Bitmap)
+				bitmap = objImage.CreateBitmap();	// TODO: Add alpha support
+			else
+				bitmap = objImage.CreateBitmap(palette, this.PaletteIndex);
+
+			if (!this.RotSca && this.HorizontalFlip)
+				bitmap = bitmap.Flip(Emgu.CV.CvEnum.FLIP.HORIZONTAL);
+			else if (!this.RotSca && this.VerticalFlip)
+				bitmap = bitmap.Flip(Emgu.CV.CvEnum.FLIP.VERTICAL);
+
+			return bitmap;
 		}
 	}
 }
-
