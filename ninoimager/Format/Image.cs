@@ -143,10 +143,15 @@ namespace Ninoimager.Format
 			return bmp;
 		}
 
-		public Image CreateSubImage(int tileNumber, int length)
+		public Image CreateSubImage(int tileNumber, Size size)
 		{
-			// Get pixel of subimage and create using private constructor to pass internal data
-			throw new NotImplementedException();
+			int index  = tileNumber * tileSize.Width * tileSize.Height;
+			int length = size.Width * size.Height;
+
+			uint[] subImage = new uint[length];
+			Array.Copy(this.data, index, subImage, 0, length);
+
+			return new Image(this, subImage, size.Width, size.Height);
 		}
 
 		public Pixel[] GetTile(int index)

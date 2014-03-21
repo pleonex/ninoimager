@@ -453,7 +453,7 @@ namespace Ninoimager.Format
 		public EmguImage CreateBitmap(Image image, Palette palette)
 		{
 			Size size = this.GetSize();
-			Image objImage = image.CreateSubImage(this.TileNumber, size.Width * size.Height);
+			Image objImage = image.CreateSubImage(this.TileNumber, size);
 
 			EmguImage bitmap = null;
 			if (this.Mode == ObjMode.Bitmap)
