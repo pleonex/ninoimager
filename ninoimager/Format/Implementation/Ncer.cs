@@ -19,6 +19,8 @@
 // <email>benito356@gmail.com</email>
 // <date>03/21/2014</date>
 // -----------------------------------------------------------------------
+
+//#define VERBOSE
 using System;
 using System.IO;
 using Point = System.Drawing.Point;
@@ -28,7 +30,7 @@ namespace Ninoimager.Format
 {
 	public class Ncer : Sprite
 	{
-		private static Type[] BlockTypes = { typeof(Cebk) };
+		private static Type[] BlockTypes = { typeof(Cebk), typeof(Labl), typeof(Uext) };
 		private NitroFile nitro;
 		private Cebk cebk;
 
@@ -96,7 +98,22 @@ namespace Ninoimager.Format
 				set;
 			}
 
-			public uint TileSize {
+			public int TileSize {
+				get;
+				set;
+			}
+
+			public uint UnknownOffset1 {
+				get;
+				set;
+			}
+
+			public uint Unknown {
+				get;
+				set;
+			}
+
+			public uint UnknownOffset2 {
 				get;
 				set;
 			}
@@ -109,12 +126,21 @@ namespace Ninoimager.Format
 				ushort numFrames  = br.ReadUInt16();
 				this.TypeFrame    = br.ReadUInt16();
 				uint frameOffset  = br.ReadUInt32();
-				this.TileSize     = br.ReadUInt32();
+				this.TileSize     = 1 << (5 + (int)(br.ReadUInt32() & 0xFF));
 				int frameInfoSize = ((this.TypeFrame & 1) != 0) ? 0x10 : 0x08;
 
-				br.ReadUInt32();	// Offset to unknown block
-				br.ReadUInt32();	// Unknown
-				br.ReadUInt32();	// Unknown offset
+				this.UnknownOffset1 = br.ReadUInt32();	// Offset to unknown block
+				this.Unknown        = br.ReadUInt32();	// Unknown
+				this.UnknownOffset2 =br.ReadUInt32();	// Unknown offset
+
+#if VERBOSE
+				if (this.UnknownOffset1 != 0)
+					Console.WriteLine("\t* UnknownOffset1 -> {0:x8}", this.UnknownOffset1);
+				if (this.Unknown != 0)
+					Console.WriteLine("\t* Unknown -> {0:x8}", this.Unknown);
+				if (this.UnknownOffset2 != 0)
+					Console.WriteLine("\t* UnknownOffset2 -> {0:X8}", this.UnknownOffset2);
+#endif
 
 				this.Frames = new Frame[numFrames];
 				for (int i = 0; i < numFrames; i++) {

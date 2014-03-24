@@ -97,7 +97,7 @@ namespace Ninoimager.Format
 
 		protected override void UpdateSize()
 		{
-			this.Size = 4 * this.Name.Length;
+			this.Size = 8 + 4 * this.Name.Length;
 			foreach (String n in this.Names)
 				this.Size += System.Text.Encoding.GetEncoding("shift_jis").GetByteCount(n) + 1;
 		}
