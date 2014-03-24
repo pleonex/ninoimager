@@ -111,6 +111,12 @@ namespace Ninoimager.Format
 			this.blocks = new BlockCollection(numBlocks);
 			for (int i = 0; i < numBlocks; i++)
 			{
+				if (strIn.Position == strIn.Length) {
+					Console.WriteLine("##ERROR?## Missing {0} blocks", numBlocks - i);
+					return;
+				}
+
+
 				long blockPosition = strIn.Position;
 
 				// First get block parameters
