@@ -84,6 +84,9 @@
     <Compile Include="Format\Obj.cs" />
     <Compile Include="Format\Frame.cs" />
     <Compile Include="Format\Sprite.cs" />
+    <Compile Include="Format\Implementation\Ncer.cs" />
+    <Compile Include="Format\Implementation\Labl.cs" />
+    <Compile Include="Format\Implementation\Uext.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
