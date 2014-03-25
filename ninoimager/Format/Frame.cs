@@ -63,11 +63,17 @@ namespace Ninoimager.Format
 			foreach (Obj obj in sortedObjs) {
 				EmguImage objBitmap = obj.CreateBitmap(image, palette);
 
+				// Set first palette color as transparent
+				var mask = objBitmap.InRange(
+					palette.GetColor(obj.PaletteIndex, 0),
+					palette.GetColor(obj.PaletteIndex, 0)
+				);
+				objBitmap.SetValue(0, mask);
+
 				// Copy the object image to the frame
-				Rectangle roi = obj.GetArea();
-				roi.Offset(256, 128);	// Only positive coordinate values
-				bitmap.ROI = roi;
-				objBitmap.CopyTo(bitmap);
+				Point position = obj.GetReferencePoint();
+				position.Offset(256, 128);	// Only positive coordinate values
+				bitmap.Overlay(position.X, position.Y, objBitmap);
 
 				objBitmap.Dispose();
 			}
