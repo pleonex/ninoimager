@@ -276,7 +276,7 @@ namespace Ninoimager
 			map.CreateBitmap(image, palette).Save(outputFile);
 		}
 
-		private static void SpriteInfo(string spriteFile, string imgFile, string palFile, string outputFile)
+		private static void SpriteInfo(string spriteFile, string imgFile, string palFile, string outputDir)
 		{
 			Console.WriteLine("Reading {0} as NCLR palette...", palFile);
 			Nclr palette = new Nclr(palFile);
@@ -287,7 +287,17 @@ namespace Ninoimager
 			Console.WriteLine("Reading {0} as NCER sprite...", spriteFile);
 			Ncer sprite = new Ncer(spriteFile);
 
-			sprite.GetFrames()[0].CreateBitmap(image, palette).Save(outputFile);
+			if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
+				Directory.CreateDirectory(outputDir);
+
+			for (int i = 0; i < sprite.NumFrames; i++) {
+				if (!string.IsNullOrEmpty(outputDir)) {
+					string outputFile = Path.Combine(outputDir, "Sprite" + i.ToString() + ".png");
+					if (File.Exists(outputFile))
+						File.Delete(outputFile);
+					sprite.CreateBitmap(i, image, palette).Save(outputFile);
+				}
+			}
 		}
 
 		private static void ExtractPack(string packFile, string outputImage)

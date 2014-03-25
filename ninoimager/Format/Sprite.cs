@@ -33,6 +33,10 @@ namespace Ninoimager.Format
 			this.frames = null;
 		}
 
+		public int NumFrames {
+			get { return this.frames.Length; }
+		}
+
 		public void SetFrames(Frame[] frames)
 		{
 			this.frames = (Frame[])frames.Clone();
@@ -43,7 +47,7 @@ namespace Ninoimager.Format
 			return (Frame[])this.frames.Clone();
 		}
 
-		public EmguImage GetImage(int numFrame, Image image, Palette palette)
+		public EmguImage CreateBitmap(int numFrame, Image image, Palette palette)
 		{
 			return this.frames[numFrame].CreateBitmap(image, palette);
 		}
