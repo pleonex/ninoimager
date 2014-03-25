@@ -176,8 +176,10 @@ namespace Ninoimager.Format
 					// Read Objs
 					strIn.Position = blockStart + frameOffset + numFrames * frameInfoSize + objOffset;
 					Obj[] objs = new Obj[numObjs];
-					for (int j = 0; j < numObjs; j++)
+					for (int j = 0; j < numObjs; j++) {
 						objs[j] = Obj.FromUshort(br.ReadUInt16(), br.ReadUInt16(), br.ReadUInt16());
+						objs[j].Id = (ushort)j;
+					}
 
 					// TODO: Detect frame position for square size
 

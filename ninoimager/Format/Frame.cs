@@ -20,6 +20,7 @@
 // <date>03/21/2014</date>
 // -----------------------------------------------------------------------
 using System;
+using System.Collections.Generic;
 using Point     = System.Drawing.Point;
 using Size      = System.Drawing.Size;
 using Rectangle = System.Drawing.Rectangle;
@@ -56,8 +57,10 @@ namespace Ninoimager.Format
 		public EmguImage CreateBitmap(Image image, Palette palette)
 		{
 			EmguImage bitmap = new EmguImage(512, 256);
+			List<Obj> sortedObjs = new List<Obj>(this.objects);
+			sortedObjs.Sort((a, b) => b.GetPriority().CompareTo(a.GetPriority()));
 
-			foreach (Obj obj in this.objects) {
+			foreach (Obj obj in sortedObjs) {
 				EmguImage objBitmap = obj.CreateBitmap(image, palette);
 
 				// Copy the object image to the frame
