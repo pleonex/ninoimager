@@ -155,10 +155,10 @@ namespace Ninoimager.Format
 					bool squareSizeFlag = ((areaInfo >> 11) & 1) == 0;
 					Rectangle frameArea = new Rectangle();
 					if ((this.TypeFrame & 1) != 0 && !squareSizeFlag) {
-						ushort xend = br.ReadUInt16();
-						ushort yend = br.ReadUInt16();
-						ushort xstart = br.ReadUInt16();
-						ushort ystart = br.ReadUInt16();
+						short xend = br.ReadInt16();
+						short yend = br.ReadInt16();
+						short xstart = br.ReadInt16();
+						short ystart = br.ReadInt16();
 
 						frameArea.Location = new Point(xstart, ystart);
 						frameArea.Width    = xend - xstart;

@@ -69,7 +69,9 @@ namespace Ninoimager.Format
 				objBitmap.Dispose();
 			}
 
-			EmguImage roiBitmap = bitmap.Copy(this.VisibleArea);
+			Rectangle absArea = this.VisibleArea;
+			absArea.Offset(512, 128); // Only positive coordinate values
+			EmguImage roiBitmap = bitmap.Copy(absArea);
 			bitmap.Dispose();
 			return roiBitmap;
 		}

@@ -44,6 +44,8 @@ namespace Ninoimager
 				ImageInfo(args[1], args[2], args[3]);
 			else if (args[0] == "-t3" && args.Length == 5)
 				MapInfo(args[1], args[2], args[3], args[4]);
+			else if (args[0] == "-t4" && args.Length == 5)
+				SpriteInfo(args[1], args[2], args[3], args[4]);
 			else if (args[0] == "-c1")
 				TestReadWriteFormat(args[1], args[2]);
 			else if (args[0] == "-s1" && args.Length == 4)
@@ -272,6 +274,20 @@ namespace Ninoimager
 			Console.WriteLine("\t* Palette Mode: {0}", map.PaletteMode);
 
 			map.CreateBitmap(image, palette).Save(outputFile);
+		}
+
+		private static void SpriteInfo(string spriteFile, string imgFile, string palFile, string outputFile)
+		{
+			Console.WriteLine("Reading {0} as NCLR palette...", palFile);
+			Nclr palette = new Nclr(palFile);
+
+			Console.WriteLine("Reading {0} as NCGR image...", imgFile);
+			Ncgr image = new Ncgr(imgFile);
+
+			Console.WriteLine("Reading {0} as NCER sprite...", spriteFile);
+			Ncer sprite = new Ncer(spriteFile);
+
+			sprite.GetFrames()[0].CreateBitmap(image, palette).Save(outputFile);
 		}
 
 		private static void ExtractPack(string packFile, string outputImage)
