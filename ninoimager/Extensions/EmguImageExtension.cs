@@ -96,7 +96,7 @@ namespace Ninoimager
 					data[yImg, xImg, 0] = (byte)(pixels[y, x, 0] * alphaLay + data[yImg, xImg, 0] * alphaImg);
 					data[yImg, xImg, 1] = (byte)(pixels[y, x, 1] * alphaLay + data[yImg, xImg, 1] * alphaImg);
 					data[yImg, xImg, 2] = (byte)(pixels[y, x, 2] * alphaLay + data[yImg, xImg, 2] * alphaImg);
-					data[yImg, xImg, 3] = 255;
+					data[yImg, xImg, 3] = (byte)((alphaLay == data[yImg, xImg, 3] && alphaLay == 0) ? 0 : 255);
 				}
 			}
 		}

@@ -263,23 +263,8 @@ namespace Ninoimager.Format
 		/// </remarks>
 		/// <value>The tile number.</value>
 		public ushort TileNumber {
-			get {
-				ushort tileNumber = (ushort)(this.tileNumber * 4);
-				if (this.PaletteMode == PaletteMode.Palette256_1)
-					tileNumber *= 2;
-
-				return tileNumber;
-			}
-			set {
-				ushort tileNumber = (ushort)(value / 4);
-				if (this.PaletteMode == PaletteMode.Palette256_1)
-					tileNumber /= 2;
-
-				if (value >= 1024)
-					throw new ArgumentOutOfRangeException("Property value", value, "Out of range tile number.");
-
-				this.tileNumber = tileNumber;
-			}
+			get { return (ushort)(this.tileNumber * 2); }
+			set { this.tileNumber = (ushort)(value / 2); }
 		}
 
 		/// <summary>
@@ -450,10 +435,10 @@ namespace Ninoimager.Format
 			return new Rectangle(this.GetReferencePoint(), this.GetSize());
 		}
 
-		public EmguImage CreateBitmap(Image image, Palette palette)
+		public EmguImage CreateBitmap(Image image, Palette palette, int tileSize)
 		{
 			Size size = this.GetSize();
-			Image objImage = image.CreateSubImage(this.TileNumber, size);
+			Image objImage = image.CreateSubImage(this.TileNumber * tileSize, size);
 
 			EmguImage bitmap = null;
 			if (this.Mode == ObjMode.Bitmap)

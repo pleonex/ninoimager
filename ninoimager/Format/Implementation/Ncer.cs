@@ -145,7 +145,7 @@ namespace Ninoimager.Format
 				this.Frames = new Frame[numFrames];
 				for (int i = 0; i < numFrames; i++) {
 					strIn.Position = blockStart + frameOffset + i * frameInfoSize;
-					Frame frame = new Frame();
+					Frame frame = new Frame(this.TileSize);
 
 					ushort numObjs  = br.ReadUInt16();
 					ushort areaInfo = br.ReadUInt16();

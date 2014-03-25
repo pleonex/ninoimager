@@ -148,11 +148,9 @@ namespace Ninoimager.Format
 			return bmp;
 		}
 
-		public Image CreateSubImage(int tileNumber, Size size)
+		public Image CreateSubImage(int index, Size size)
 		{
-			int index  = tileNumber * tileSize.Width * tileSize.Height;
 			int length = size.Width * size.Height;
-
 			uint[] subImage = new uint[length];
 			Array.Copy(this.original, index, subImage, 0, length);
 

@@ -25,6 +25,7 @@ using Point     = System.Drawing.Point;
 using Size      = System.Drawing.Size;
 using Rectangle = System.Drawing.Rectangle;
 using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
+using Color     = Emgu.CV.Structure.Rgba;
 
 namespace Ninoimager.Format
 {
@@ -32,9 +33,11 @@ namespace Ninoimager.Format
 	{
 		private Obj[] objects;
 		private Rectangle visibleArea;
+		private int tileSize;
 
-		public Frame()
+		public Frame(int tileSize)
 		{
+			this.tileSize = tileSize;
 			this.objects = null;
 			this.visibleArea = new Rectangle();
 		}
@@ -61,13 +64,17 @@ namespace Ninoimager.Format
 			sortedObjs.Sort((a, b) => b.GetPriority().CompareTo(a.GetPriority()));
 
 			foreach (Obj obj in sortedObjs) {
-				EmguImage objBitmap = obj.CreateBitmap(image, palette);
+				EmguImage objBitmap = obj.CreateBitmap(image, palette, this.tileSize);
+
+				// Get first palette color
+				// !! DUE TO BUG IN EMGU.CV RED AND BLUE COMPONENTS ARE SWAPED IN RGBA FORMAT
+				Color transparent = palette.GetColor(obj.PaletteIndex, 0);
+				double temp = transparent.Red;
+				transparent.Red  = transparent.Blue;
+				transparent.Blue = temp;
 
 				// Set first palette color as transparent
-				var mask = objBitmap.InRange(
-					palette.GetColor(obj.PaletteIndex, 0),
-					palette.GetColor(obj.PaletteIndex, 0)
-				);
+				var mask = objBitmap.InRange(transparent, transparent);
 				objBitmap.SetValue(0, mask);
 
 				// Copy the object image to the frame
@@ -78,11 +85,11 @@ namespace Ninoimager.Format
 				objBitmap.Dispose();
 			}
 
-			Rectangle absArea = this.VisibleArea;
-			absArea.Offset(512, 128); // Only positive coordinate values
-			EmguImage roiBitmap = bitmap.Copy(absArea);
-			bitmap.Dispose();
-			return roiBitmap;
+			//Rectangle absArea = this.VisibleArea;
+			//absArea.Offset(512, 128); // Only positive coordinate values
+			//EmguImage roiBitmap = bitmap.Copy(absArea);
+			//bitmap.Dispose();
+			return bitmap;
 		}
 	}
 }
