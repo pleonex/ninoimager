@@ -161,16 +161,14 @@ namespace Ninoimager.Format
 
 		public Pixel[] GetTile(int index)
 		{
-			Pixel[] tile = new Pixel[this.tileSize.Width * this.tileSize.Height];
+			int tileLength = this.tileSize.Width * this.tileSize.Height;
+			Pixel[] tile = new Pixel[tileLength];
 
 			bool isIndexed = this.Format.IsIndexed();
-			int numTilesX = this.width / this.tileSize.Width;
-			Point tilePos = new Point(index % numTilesX, index / numTilesX);
 
 			for (int y = 0; y < this.tileSize.Height; y++) {
 				for (int x = 0; x < this.tileSize.Width; x++) {
-					// CHECK: Is this the same as encode data?
-					uint px = this.data[(y + tilePos.Y * tileSize.Height) * this.Width + (x + tilePos.X * tileSize.Width)];
+					uint px = this.original[y * this.tileSize.Width + x + index * tileLength];
 					tile[y * this.tileSize.Width + x] = new Pixel(
 						px & 0x00FFFFFF,
 						(px >> 24) & 0xFF,
