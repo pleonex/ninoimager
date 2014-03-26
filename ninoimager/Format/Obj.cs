@@ -70,8 +70,13 @@ namespace Ninoimager.Format
 			obj.Shape       = (ObjShape)   ((attr0 >> 14) & 0x0003);
 
 			// Attribute 1
-			obj.CoordX   = (short)(((attr1 >> 00) & 0x001FF) - 256);
-			obj.SizeMode = (byte)  ((attr1 >> 14) & 0x0003);
+			ushort tempX = (ushort)((attr1 >> 00) & 0x001FF);		// 9-bit signed (two's complement) value
+			if ((tempX >> 8) == 0)
+				obj.CoordX = (short)tempX;
+			else
+				obj.CoordX = (short)(((tempX ^ 0x1FF) + 1) * -1);	// (9-bit negation) + 1
+
+			obj.SizeMode = (byte) ((attr1 >> 14) & 0x0003);
 
 			// Attribute 2
 			obj.tileNumber   = (ushort)((attr2 >> 00) & 0x003FF);	// I don't use the property since is the raw value
@@ -263,8 +268,21 @@ namespace Ninoimager.Format
 		/// </remarks>
 		/// <value>The tile number.</value>
 		public ushort TileNumber {
-			get { return (ushort)(this.tileNumber * 2); }
-			set { this.tileNumber = (ushort)(value / 2); }
+			get {
+				// Since we convert from 4bpp to 8bpp in the image array, 
+				// the tile length will be always 64 instead of 32 in 4bpp (16 palettes of 16 colors)
+				if (this.PaletteMode == PaletteMode.Palette16_16)
+					return (ushort)(this.tileNumber * 2);
+				else
+					return this.tileNumber;
+			}
+			set {
+				// See getter method.
+				if (this.PaletteMode == PaletteMode.Palette16_16)
+					this.tileNumber = (ushort)(value / 2);
+				else
+					this.tileNumber = value;
+			}
 		}
 
 		/// <summary>
@@ -448,7 +466,7 @@ namespace Ninoimager.Format
 
 			if (!this.RotSca && this.HorizontalFlip)
 				bitmap = bitmap.Flip(Emgu.CV.CvEnum.FLIP.HORIZONTAL);
-			else if (!this.RotSca && this.VerticalFlip)
+			if (!this.RotSca && this.VerticalFlip)
 				bitmap = bitmap.Flip(Emgu.CV.CvEnum.FLIP.VERTICAL);
 
 			return bitmap;
