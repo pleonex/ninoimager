@@ -67,7 +67,6 @@
     <Compile Include="Extensions\EmguImageExtension.cs" />
     <Compile Include="Extensions\ColorExtension.cs" />
     <Compile Include="ColorConversion.cs" />
-    <Compile Include="Importer.cs" />
     <Compile Include="ImageProcessing\ColorQuantization.cs" />
     <Compile Include="ImageProcessing\Dithering.cs" />
     <Compile Include="ImageProcessing\NoDithering.cs" />
@@ -87,6 +86,9 @@
     <Compile Include="Format\Implementation\Ncer.cs" />
     <Compile Include="Format\Implementation\Labl.cs" />
     <Compile Include="Format\Implementation\Uext.cs" />
+    <Compile Include="BackgroundImporter.cs" />
+    <Compile Include="SpriteImporter.cs" />
+    <Compile Include="ImageProcessing\ObjectSplitter.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

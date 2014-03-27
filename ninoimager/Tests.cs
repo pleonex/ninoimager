@@ -327,7 +327,7 @@ namespace Ninoimager
 			EmguImage bmp = nscr.CreateBitmap(ncgr, nclr);
 			bmp.Save(mapFile + ".png");
 
-			Importer importer = new Importer();
+			BackgroundImporter importer = new BackgroundImporter();
 			importer.ImportBackground(bmp, newMapStr, newImgStr, newPalStr);
 
 			if (!Compare(oldPalStr, newPalStr)) {

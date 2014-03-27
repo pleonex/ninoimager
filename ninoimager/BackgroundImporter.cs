@@ -33,9 +33,9 @@ using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
 
 namespace Ninoimager
 {
-	public class Importer
+	public class BackgroundImporter
 	{
-		public Importer()
+		public BackgroundImporter()
 		{
 			/* Default parameters: 
 				+ Image will be HorizontalTiled

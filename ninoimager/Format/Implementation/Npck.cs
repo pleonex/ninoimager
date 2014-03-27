@@ -140,7 +140,7 @@ namespace Ninoimager.Format
 			MemoryStream ncgrStr = new MemoryStream();
 			MemoryStream nscrStr = new MemoryStream();
 
-			Importer importer = new Importer();
+			BackgroundImporter importer = new BackgroundImporter();
 			importer.ImportBackground(image, nscrStr, ncgrStr, nclrStr);
 
 			nclrStr.Position = ncgrStr.Position = nscrStr.Position = 0;
@@ -165,7 +165,7 @@ namespace Ninoimager.Format
 			MemoryStream nscrStr = new MemoryStream();
 
 			// Import image
-			Importer importer = new Importer();
+			BackgroundImporter importer = new BackgroundImporter();
 			importer.SetOriginalSettings(original[2], original[1], original[0]);
 			importer.ImportBackground(image, nscrStr, ncgrStr, nclrStr);
 
@@ -179,7 +179,7 @@ namespace Ninoimager.Format
 			for (int i = 0; i < images.Length; i++)
 				emguImgs[i] = new EmguImage(images[i]);
 
-			return ImportBackgroundImageSharePalette(emguImgs, new Importer());
+			return ImportBackgroundImageSharePalette(emguImgs, new BackgroundImporter());
 		}
 
 		public static Npck[] ImportBackgroundImageSharePalette(string[] images, Npck original)
@@ -188,12 +188,12 @@ namespace Ninoimager.Format
 			for (int i = 0; i < images.Length; i++)
 				emguImgs[i] = new EmguImage(images[i]);
 
-			Importer importer = new Importer();
+			BackgroundImporter importer = new BackgroundImporter();
 			importer.SetOriginalSettings(original[6], original[1], original[0]);
 			return ImportBackgroundImageSharePalette(emguImgs, importer);
 		}
 
-		public static Npck[] ImportBackgroundImageSharePalette(EmguImage[] images, Importer importer)
+		public static Npck[] ImportBackgroundImageSharePalette(EmguImage[] images, BackgroundImporter importer)
 		{
 			if (!(importer.Quantization is FixedPaletteQuantization)) {
 				// Concatenate images
@@ -234,7 +234,7 @@ namespace Ninoimager.Format
 			for (int i = 0; i < images.Length; i++)
 				emguImgs[i] = new EmguImage(images[i]);
 
-			return ImportBackgroundImageShareImage(emguImgs, new Importer());
+			return ImportBackgroundImageShareImage(emguImgs, new BackgroundImporter());
 		}
 
 		public static Npck[] ImportBackgroundImageShareImage(string[] images, Npck original)
@@ -243,12 +243,12 @@ namespace Ninoimager.Format
 			for (int i = 0; i < images.Length; i++)
 				emguImgs[i] = new EmguImage(images[i]);
 
-			Importer importer = new Importer();
+			BackgroundImporter importer = new BackgroundImporter();
 			importer.SetOriginalSettings(original[6], original[1], original[0]);
 			return ImportBackgroundImageShareImage(emguImgs, importer);
 		}
 
-		public static Npck[] ImportBackgroundImageShareImage(EmguImage[] images, Importer importer)
+		public static Npck[] ImportBackgroundImageShareImage(EmguImage[] images, BackgroundImporter importer)
 		{
 			Npck[] packs = new Npck[images.Length];
 
