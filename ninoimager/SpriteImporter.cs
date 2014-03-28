@@ -45,10 +45,11 @@ namespace Ninoimager
 	/// </description>
 	public class SpriteImporter
 	{
-		private List<Frame> frames;
+		private List<Tuple<Frame, EmguImage>> frameData;
 
 		public SpriteImporter()
 		{
+			this.frameData = new List<Tuple<Frame, EmguImage>>();
 		}
 
 		#region Propiedades
@@ -98,7 +99,7 @@ namespace Ninoimager
 			set;
 		}
 
-		public ObjectSplitter Splitter {
+		public ISplitable Splitter {
 			get;
 			set;
 		}
@@ -110,12 +111,10 @@ namespace Ninoimager
 
 		#endregion
 
-		public void AddFrame(EmguImage imgPath)
+		public void AddFrame(EmguImage image)
 		{
-			// Generate some-how the frame from the image file
-			Frame frame = null;
-			this.frames.Add(frame);
-			throw new NotImplementedException();
+			Frame frame = this.Splitter.Split(image);
+			this.frameData.Add(Tuple.Create(frame, image));
 		}
 
 		public void Generate(Stream paletteStr, Stream imageStr, Stream spriteStr)

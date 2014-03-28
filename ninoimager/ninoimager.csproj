@@ -88,7 +88,7 @@
     <Compile Include="Format\Implementation\Uext.cs" />
     <Compile Include="BackgroundImporter.cs" />
     <Compile Include="SpriteImporter.cs" />
-    <Compile Include="ImageProcessing\ObjectSplitter.cs" />
+    <Compile Include="ImageProcessing\ISplitable.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

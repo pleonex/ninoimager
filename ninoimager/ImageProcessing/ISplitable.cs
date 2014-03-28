@@ -20,11 +20,14 @@
 // <date>03/27/2014</date>
 // -----------------------------------------------------------------------
 using System;
+using Ninoimager.Format;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
 
-namespace Ninoimager
+namespace Ninoimager.ImageProcessing
 {
-	public abstract class ObjectSplitter
+	public interface ISplitable
 	{
+		Frame Split(EmguImage frame);
 	}
 }
 
