@@ -35,11 +35,16 @@ namespace Ninoimager.Format
 		private Rectangle visibleArea;
 		private int tileSize;
 
-		public Frame(int tileSize)
+		public Frame()
 		{
-			this.tileSize = tileSize;
-			this.objects = null;
+			this.tileSize    = 64;
+			this.objects     = null;
 			this.visibleArea = new Rectangle();
+		}
+
+		public int TileSize {
+			get { return this.tileSize; }
+			set { this.tileSize = value; }
 		}
 
 		public Rectangle VisibleArea {

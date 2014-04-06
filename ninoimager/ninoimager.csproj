@@ -89,6 +89,7 @@
     <Compile Include="BackgroundImporter.cs" />
     <Compile Include="SpriteImporter.cs" />
     <Compile Include="ImageProcessing\ISplitable.cs" />
+    <Compile Include="ImageProcessing\PaletteReducer.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

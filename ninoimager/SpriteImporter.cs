@@ -25,6 +25,7 @@ using System.IO;
 using Ninoimager.Format;
 using Ninoimager.ImageProcessing;
 using Size = System.Drawing.Size;
+using Color     = Emgu.CV.Structure.Rgba;
 using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
 
 namespace Ninoimager
@@ -94,12 +95,22 @@ namespace Ninoimager
 			set;
 		}
 
-		public int BlockSize {
+		public ObjMode ObjectMode {
+			get;
+			set;
+		}
+
+		public PaletteMode PaletteMode {
 			get;
 			set;
 		}
 
 		public ISplitable Splitter {
+			get;
+			set;
+		}
+
+		public PaletteReducer Reducer {
 			get;
 			set;
 		}
@@ -113,13 +124,104 @@ namespace Ninoimager
 
 		public void AddFrame(EmguImage image)
 		{
-			Frame frame = this.Splitter.Split(image);
+			Frame frame    = this.Splitter.Split(image);
+			frame.TileSize = this.TileSize.Width * this.TileSize.Height;
 			this.frameData.Add(Tuple.Create(frame, image));
 		}
 
 		public void Generate(Stream paletteStr, Stream imageStr, Stream spriteStr)
 		{
+			Pixel[] pixels;
+			Color[][] palettes;
+			this.CreateData(out pixels, out palettes);
+
+			// Generate palette, image and sprite
 			throw new NotImplementedException();
+		}
+
+		/// <summary>
+		/// Generate pixels, palette and update objects in frames.
+		/// </summary>
+		/// <param name="pixels">Pixels of frames.</param>
+		/// <param name="palettes">Palettes of frames.</param>
+		private void CreateData(out Pixel[] pixels, out Color[][] palettes)
+		{
+			// Create the ObjData. Quantizate images.
+			List<Color[]> palettesList = new List<Color[]>();
+			List<ObjectData> data = new List<ObjectData>();
+			foreach (Tuple<Frame, EmguImage> frame in this.frameData) {
+				EmguImage frameImg = frame.Item2;
+				Obj[] objects = frame.Item1.GetObjects();
+
+				foreach (Obj obj in objects) {
+					ObjectData objData = new ObjectData();
+					objData.Object = obj;
+					objData.Image  = frameImg.Copy(obj.GetArea());
+
+					// Update object
+					objData.Object.Mode        = this.ObjectMode;
+					objData.Object.PaletteMode = this.PaletteMode;
+
+					// Quantizate
+					this.Quantization.Quantizate(objData.Image);
+					objData.Pixels  = this.Quantization.GetPixels();
+					objData.Palette = this.Quantization.GetPalette();
+
+					palettesList.Add(objData.Palette);
+
+					data.Add(objData);
+				}
+			}
+
+			// Reduce palettes
+			this.Reducer.Clear();
+			this.Reducer.AddPaletteRange(palettesList.ToArray());
+			palettes = this.Reducer.GetPalettes;
+
+			// Approximate palettes removed and get the pixel array
+			List<Pixel> pixelList = new List<Pixel>();
+			for (int i = 0; i < data.Count; i++) {
+				int paletteIdx = this.Reducer.PaletteApproximation[i];
+				if (paletteIdx == -1)
+					continue;
+
+				// Quantizate again the image with the new palette
+				Color[] newPalette = palettes[paletteIdx];
+				FixedPaletteQuantization quantization = new FixedPaletteQuantization(newPalette);
+				quantization.Quantizate(data[i].Image);
+
+				// Update object
+				data[i].Object.PaletteIndex = (byte)paletteIdx;
+
+				// Add pixels to the list
+				data[i].Object.TileNumber = (ushort)pixelList.Count;
+				pixelList.AddRange(quantization.GetPixels());
+			}
+
+			pixels = pixelList.ToArray();
+		}
+
+		private class ObjectData
+		{
+			public Obj Object {
+				get;
+				set;
+			}
+
+			public EmguImage Image {
+				get;
+				set;
+			}
+
+			public Pixel[] Pixels {
+				get;
+				set;
+			}
+
+			public Color[] Palette {
+				get;
+				set;
+			}
 		}
 	}
 }
