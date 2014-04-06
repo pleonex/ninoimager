@@ -211,7 +211,7 @@ namespace Ninoimager
 			// Reduce palettes
 			this.Reducer.Clear();
 			this.Reducer.AddPaletteRange(palettesList.ToArray());
-			palettes = this.Reducer.GetPalettes;
+			palettes = this.Reducer.ReducedPalettes;
 
 			// Approximate palettes removed and get the pixel array
 			List<Pixel> pixelList = new List<Pixel>();

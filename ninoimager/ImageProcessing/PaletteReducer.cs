@@ -54,10 +54,14 @@ namespace Ninoimager
 			protected set { this.paletteApproximation = value; }
 		}
 
-		public Color[][] GetPalettes
+		public Color[][] ReducedPalettes
 		{
 			get { return (Color[][])this.reducedPalettes; }
 			protected set { this.reducedPalettes = value; }
+		}
+
+		protected List<Color[]> Palettes {
+			get { return this.palettes; }
 		}
 
 		public abstract void Reduce(int number);

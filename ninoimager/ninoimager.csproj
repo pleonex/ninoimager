@@ -91,6 +91,7 @@
     <Compile Include="ImageProcessing\ISplitable.cs" />
     <Compile Include="ImageProcessing\PaletteReducer.cs" />
     <Compile Include="ImageProcessing\NdsSplitter.cs" />
+    <Compile Include="ImageProcessing\SimilarDistanceReducer.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
