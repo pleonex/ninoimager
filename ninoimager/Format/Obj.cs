@@ -359,6 +359,28 @@ namespace Ninoimager.Format
 			}
 		}
 
+		public static bool IsValidSize(int width, int height)
+		{
+			return IsValidSize(new Size(width, height));
+		}
+
+		public static bool IsValidSize(Size size)
+		{
+			if (size.Width < 0 || size.Width > 64 || size.Width % 8 != 0)
+				return false;
+
+			if (size.Height < 0 || size.Height > 64 || size.Height % 8 != 0)
+				return false;
+
+			if (size.Width == 64 && (size.Height == 8 || size.Height == 16))
+				return false;
+
+			if ((size.Width == 8 || size.Width == 16) && size.Height == 64)
+				return false;
+
+			return true;
+		}
+
 		public Size GetSize()
 		{
 			int[,] SizeMatrix = new int[3, 4] {
@@ -375,6 +397,11 @@ namespace Ninoimager.Format
 			else if (this.Shape == ObjShape.Vertical)
 				size = new Size(SizeMatrix[2, this.SizeMode], SizeMatrix[1, this.SizeMode]);
 			return size;
+		}
+
+		public void SetSize(int width, int height)
+		{
+			this.SetSize(new Size(width, height));
 		}
 
 		public void SetSize(Size size)
