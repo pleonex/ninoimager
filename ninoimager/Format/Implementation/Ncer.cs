@@ -138,7 +138,7 @@ namespace Ninoimager.Format
 
 				this.UnknownOffset1 = br.ReadUInt32();	// Offset to unknown block
 				this.Unknown        = br.ReadUInt32();	// Unknown
-				this.UnknownOffset2 =br.ReadUInt32();	// Unknown offset
+				this.UnknownOffset2 = br.ReadUInt32();	// Unknown offset
 
 #if VERBOSE
 				if (this.UnknownOffset1 != 0)
@@ -199,12 +199,58 @@ namespace Ninoimager.Format
 
 			protected override void WriteData(Stream strOut)
 			{
-				throw new NotImplementedException();
+				BinaryWriter bw = new BinaryWriter(strOut);
+
+				// Write header
+				bw.Write((ushort)this.Frames.Length);
+				bw.Write((ushort)this.TypeFrame);
+				bw.Write((uint)0x18);	// Frame offset, after header, it's constante
+				bw.Write((uint)Math.Log(this.TileSize, 2) - 5);
+				bw.Write(this.UnknownOffset1);
+				bw.Write(this.Unknown);
+				bw.Write(this.UnknownOffset2);
+
+				// Write frame info
+				uint objOffset = 0;
+				foreach (Frame frame in this.Frames) {
+					// Get square sides
+					int squareSide = frame.VisibleArea.Width / 2;
+					squareSide >>= 4;
+
+					bw.Write((ushort)frame.NumObjects);
+					bw.Write((ushort)(squareSide | (this.TypeFrame << 11)));
+					bw.Write(objOffset);
+					objOffset += (uint)(0x06 * frame.NumObjects);
+
+					if (this.TypeFrame == 1) {
+						bw.Write((short)(frame.VisibleArea.X + frame.VisibleArea.Width));	// XEnd
+						bw.Write((short)(frame.VisibleArea.Y + frame.VisibleArea.Height));	// YEnd
+						bw.Write((short)frame.VisibleArea.X);	// XStart
+						bw.Write((short)frame.VisibleArea.Y);	// YStart
+					}
+				}
+
+				// Write object info
+				foreach (Frame frame in this.Frames) {
+					foreach (Obj obj in frame.GetObjects()) {
+						ushort[] values = obj.ToUshort();
+						bw.Write(values[0]);
+						bw.Write(values[1]);
+						bw.Write(values[2]);
+					}
+				}
 			}
 
 			protected override void UpdateSize()
 			{
-				throw new NotImplementedException();
+				this.Size = 8;		// Nitro header
+				this.Size += 0x18;	// Block header
+
+				int frameInfoSize = ((this.TypeFrame & 1) != 0) ? 0x10 : 0x08;
+				this.Size += frameInfoSize * this.Frames.Length;
+
+				foreach (Frame f in this.Frames)
+					this.Size += f.NumObjects * 0x06;
 			}
 		}
 	}

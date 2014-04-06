@@ -52,6 +52,10 @@ namespace Ninoimager.Format
 			set { this.visibleArea = value; }
 		}
 
+		public int NumObjects {
+			get { return this.objects.Length; }
+		}
+
 		public void SetObjects(Obj[] objs)
 		{
 			this.objects = (Obj[])objs.Clone();

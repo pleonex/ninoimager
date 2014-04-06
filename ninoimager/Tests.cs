@@ -25,6 +25,7 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using Ninoimager.Format;
+using Ninoimager.ImageProcessing;
 using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
 using Emgu.CV.Structure;
 
@@ -34,6 +35,14 @@ namespace Ninoimager
 	{
 		public static void RunTest(string[] args)
 		{
+			string pathFile = "/home/benito/tests/";
+			args = new string[] {
+				"-tis",
+				pathFile + "button_K_3.ncer",
+				pathFile + "button_K_1.ncgr",
+				pathFile + "button_K_0.nclr"
+			};
+
 			if (args.Length < 3)
 				return;
 
@@ -54,8 +63,10 @@ namespace Ninoimager
 				SpecificSearch(args[1], args[2]);
 			else if (args[0] == "-p1")
 				SelectImagesFiles(args[1], args[2]);
-			else if (args[0] == "-ti" && args.Length == 4)
-				ImportTest(args[1], args[2], args[3]);
+			else if (args[0] == "-tib" && args.Length == 4)
+				ImportTestBackground(args[1], args[2], args[3]);
+			else if (args[0] == "-tis" && args.Length == 4)
+				ImportTestSprite(args[1], args[2], args[3]);
 			else if (args[0] == "-pe")
 				ExtractPack(args[1], args[2]);
 			else if (args[0] == "-pi")
@@ -312,7 +323,7 @@ namespace Ninoimager
 			npck.Write(outputPack);
 		}
 
-		private static void ImportTest(string mapFile, string imgFile, string palFile)
+		private static void ImportTestBackground(string mapFile, string imgFile, string palFile)
 		{
 			FileStream   oldPalStr = new FileStream(palFile, FileMode.Open);
 			FileStream   oldImgStr = new FileStream(imgFile, FileMode.Open);
@@ -358,6 +369,69 @@ namespace Ninoimager
 			newPalStr.Close();
 			newImgStr.Close();
 			newMapStr.Close();
+		}
+
+		private static void ImportTestSprite(string sprFile, string imgFile, string palFile)
+		{
+			FileStream   oldPalStr = new FileStream(palFile, FileMode.Open);
+			FileStream   oldImgStr = new FileStream(imgFile, FileMode.Open);
+			FileStream   oldSprStr = new FileStream(sprFile, FileMode.Open);
+			MemoryStream newPalStr = new MemoryStream();
+			MemoryStream newImgStr = new MemoryStream();
+			MemoryStream newSprStr = new MemoryStream();
+
+			Nclr nclr = new Nclr(oldPalStr);
+			Ncgr ncgr = new Ncgr(oldImgStr);
+			Ncer ncer = new Ncer(oldSprStr);
+
+			SpriteImporter importer = new SpriteImporter();
+			importer.BgMode = BgMode.Text;
+			importer.Format = ColorFormat.Indexed_8bpp;
+			importer.ObjectMode    = ObjMode.Normal;
+			importer.PaletteMode   = PaletteMode.Palette16_16;
+			importer.PixelEncoding = PixelEncoding.HorizontalTiles;
+			importer.TileSize      = new System.Drawing.Size(64, 64);
+			importer.Quantization  = new NdsQuantization();
+			importer.Reducer       = new SimilarDistanceReducer();
+			importer.Splitter      = new NdsSplitter(1);
+
+			for (int i = 0; i < ncer.NumFrames; i++) {
+				EmguImage bmp = ncer.CreateBitmap(0, ncgr, nclr);
+				bmp.Save(sprFile + i.ToString() + ".png");
+				importer.AddFrame(bmp);
+			}
+
+			importer.Generate(newSprStr, newImgStr, newPalStr);
+
+			if (!Compare(oldPalStr, newPalStr)) {
+				string newPalFile = palFile + ".new";
+				WriteStream(newPalFile, newPalStr);
+				Console.WriteLine("Palette different... Written to {0}", newPalFile);
+			}
+			if (!Compare(oldImgStr, newImgStr)) {
+				string newImgFile = imgFile + ".new";
+				WriteStream(newImgFile, newImgStr);
+				Console.WriteLine("Image different...   Written to {0}", newImgFile);
+			}
+			if (!Compare(oldSprStr, newSprStr)) {
+				string newSprFile = sprFile + ".new";
+				WriteStream(newSprFile, newSprStr);
+				Console.WriteLine("Sprite different...  Written to {0}", newSprFile);
+			}
+
+			newPalStr.Position = newImgStr.Position = newSprStr.Position = 0;
+			nclr = new Nclr(newPalStr);
+			ncgr = new Ncgr(newImgStr);
+			ncer = new Ncer(newSprStr);
+			for (int i = 0; i < ncer.NumFrames; i++)
+				ncer.CreateBitmap(i, ncgr, nclr).Save(sprFile + i.ToString() + "m.png");
+
+			oldPalStr.Close();
+			oldImgStr.Close();
+			oldSprStr.Close();
+			newPalStr.Close();
+			newImgStr.Close();
+			newSprStr.Close();
 		}
 
 		private static void TestConvertColors(string inputImage, string outputImage)

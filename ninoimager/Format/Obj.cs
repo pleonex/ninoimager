@@ -498,5 +498,46 @@ namespace Ninoimager.Format
 
 			return bitmap;
 		}
+
+		public ushort[] ToUshort()
+		{
+			ushort attr0 = 0;
+			ushort attr1 = 0;
+			ushort attr2 = 0;
+
+			// Attribute 0
+			attr0 |= (ushort)((this.coordY                    & 0x00FF) << 00);
+			attr0 |= (ushort)((Convert.ToInt32(this.RotSca)   & 0x0001) << 08);
+			attr0 |= (ushort)(((int)this.Mode                 & 0x0003) << 10);
+			attr0 |= (ushort)((Convert.ToInt32(this.IsMosaic) & 0x0001) << 12);
+			attr0 |= (ushort)(((int)this.PaletteMode          & 0x0001) << 13);
+			attr0 |= (ushort)(((int)this.Shape                & 0x0003) << 14);
+
+			// Attribute 1
+			ushort tempX = (ushort)((this.CoordX & 0x01FF) << 00);
+			if (this.CoordX >= 0)
+				attr1 |= tempX;
+			else
+				attr1 |= (ushort)(((tempX * -1) - 1) ^ 0x1FF);
+
+			attr1 |= (ushort)((this.SizeMode & 0x0003) << 14);
+
+			// Attribute 2
+			attr2 |= (ushort)((this.tileNumber   & 0x03FF) << 00);	// I don't use the property since is the raw value
+			attr2 |= (ushort)((this.ObjPriority  & 0x0003) << 10);
+			attr2 |= (ushort)((this.PaletteIndex & 0x000F) << 12);
+
+			// Rotation / Scaling mode
+			if (this.RotSca) {
+				attr0 |= (ushort)((Convert.ToInt32(this.DoubleSize)     & 0x0001) << 09);
+				attr1 |= (ushort)((this.RotScaGroup                     & 0x001F) << 09);
+			} else {
+				attr0 |= (ushort)((Convert.ToInt32(this.IsDisabled)     & 0x0001) << 09);
+				attr1 |= (ushort)((Convert.ToInt32(this.HorizontalFlip) & 0x0001) << 12);
+				attr1 |= (ushort)((Convert.ToInt32(this.VerticalFlip)   & 0x0001) << 13);
+			}
+
+			return new ushort[] { attr0, attr1, attr2 };
+		}
 	}
 }
