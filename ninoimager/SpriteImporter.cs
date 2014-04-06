@@ -135,8 +135,39 @@ namespace Ninoimager
 			Color[][] palettes;
 			this.CreateData(out pixels, out palettes);
 
-			// Generate palette, image and sprite
-			throw new NotImplementedException();
+			// Get frame list
+			Frame[] frames = new Frame[this.frameData.Count];
+			for (int i = 0; i < this.frameData.Count; i++)
+				frames[i] = this.frameData[i].Item1;
+
+			// Create palette format
+			Nclr nclr = new Nclr() {
+				Extended = false,
+				Format   = this.Format
+			};
+			nclr.SetPalette(palettes);
+
+			// Create image format
+			Ncgr ncgr = new Ncgr() {
+				RegDispcnt  = this.DispCnt,
+				Unknown     = this.UnknownChar,
+				InvalidSize = true
+			};
+			ncgr.SetData(pixels, this.PixelEncoding, this.Format, this.TileSize);
+
+			// Create sprite format
+			Ncer ncer = new Ncer() {
+				TileSize = this.TileSize.Width * this.TileSize.Height
+			};
+			ncer.SetFrames(frames);
+
+			// Write data
+			if (paletteStr != null)
+				nclr.Write(paletteStr);
+			if (imageStr != null)
+				ncgr.Write(imageStr);
+			if (spriteStr != null)
+				ncer.Write(spriteStr);
 		}
 
 		/// <summary>
@@ -146,6 +177,8 @@ namespace Ninoimager
 		/// <param name="palettes">Palettes of frames.</param>
 		private void CreateData(out Pixel[] pixels, out Color[][] palettes)
 		{
+			int maxColors = 1 << this.Format.Bpp();
+
 			// Create the ObjData. Quantizate images.
 			List<Color[]> palettesList = new List<Color[]>();
 			List<ObjectData> data = new List<ObjectData>();
@@ -166,6 +199,8 @@ namespace Ninoimager
 					this.Quantization.Quantizate(objData.Image);
 					objData.Pixels  = this.Quantization.GetPixels();
 					objData.Palette = this.Quantization.GetPalette();
+					if (objData.Palette.Length > maxColors)
+						throw new FormatException(string.Format("The image has more than {0} colors", maxColors));
 
 					palettesList.Add(objData.Palette);
 

@@ -53,6 +53,11 @@ namespace Ninoimager.Format
 			this.GetInfo();
 		}
 
+		public int TileSize {
+			get;
+			set;
+		}
+
 		public NitroFile NitroData {
 			get { return this.nitro; }
 		}
@@ -71,13 +76,15 @@ namespace Ninoimager.Format
 
 		private void GetInfo()
 		{
-			this.cebk = this.nitro.GetBlock<Cebk>(0);
+			this.cebk     = this.nitro.GetBlock<Cebk>(0);
+			this.TileSize = this.cebk.TileSize;
 			this.SetFrames(this.cebk.Frames);
 		}
 
 		private void SetInfo()
 		{
-			this.cebk.Frames = this.GetFrames();
+			this.cebk.Frames   = this.GetFrames();
+			this.cebk.TileSize = this.TileSize;
 		}
 
 		// CElls and BanKs

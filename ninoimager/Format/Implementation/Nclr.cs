@@ -61,8 +61,13 @@ namespace Ninoimager.Format
 		}
 
 		public bool Extended {
-			get { return (this.pltt.ExtendedPalette == 0); }
+			get { return this.pltt.ExtendedPalette == 0; }
 			set { this.pltt.ExtendedPalette = (value ? 1u : 0u); }
+		}
+
+		public ColorFormat Format {
+			get { return this.pltt.Depth; }
+			set { this.pltt.Depth = value; }
 		}
 
 		public void Write(string fileOut)
