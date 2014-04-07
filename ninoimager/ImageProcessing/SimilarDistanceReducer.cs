@@ -43,6 +43,7 @@ namespace Ninoimager.ImageProcessing
 			// Get difference between palettes and sort to get similar palettes first
 			List<Difference> distances = new List<Difference>(this.CalculateDistances());
 			distances.Sort((a, b) => b.Distance.CompareTo(a.Distance));
+			distances.Reverse();
 
 			int[] paletteApprox = new int[this.Palettes.Count];
 			for (int i = 0; i < paletteApprox.Length; i++)
