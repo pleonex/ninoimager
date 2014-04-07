@@ -24,7 +24,8 @@ using System.Collections.Generic;
 using System.IO;
 using Ninoimager.Format;
 using Ninoimager.ImageProcessing;
-using Size = System.Drawing.Size;
+using Size      = System.Drawing.Size;
+using Rectangle = System.Drawing.Rectangle;
 using Color     = Emgu.CV.Structure.Rgba;
 using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
 
@@ -125,7 +126,7 @@ namespace Ninoimager
 		public void AddFrame(EmguImage image)
 		{
 			Frame frame    = this.Splitter.Split(image);
-			frame.TileSize = this.TileSize.Width * this.TileSize.Height;
+			frame.TileSize = 128;//this.TileSize.Width * this.TileSize.Height;
 			this.frameData.Add(Tuple.Create(frame, image));
 		}
 
@@ -153,11 +154,15 @@ namespace Ninoimager
 				Unknown     = this.UnknownChar,
 				InvalidSize = true
 			};
+			ncgr.Width  = (pixels.Length > 256) ? 256 : pixels.Length;
+			ncgr.Height = (int)Math.Ceiling(pixels.Length / (double)ncgr.Width);
+			if (ncgr.Height % this.TileSize.Height != 0)
+				ncgr.Height += this.TileSize.Height - (ncgr.Height % this.TileSize.Height);
 			ncgr.SetData(pixels, this.PixelEncoding, this.Format, this.TileSize);
 
 			// Create sprite format
 			Ncer ncer = new Ncer() {
-				TileSize = this.TileSize.Width * this.TileSize.Height
+				TileSize = 128
 			};
 			ncer.SetFrames(frames);
 
@@ -177,6 +182,7 @@ namespace Ninoimager
 		/// <param name="palettes">Palettes of frames.</param>
 		private void CreateData(out Pixel[] pixels, out Color[][] palettes)
 		{
+			int tileSize = 128;
 			int maxColors = 1 << this.Format.Bpp();
 
 			// Create the ObjData. Quantizate images.
@@ -189,7 +195,10 @@ namespace Ninoimager
 				foreach (Obj obj in objects) {
 					ObjectData objData = new ObjectData();
 					objData.Object = obj;
-					objData.Image  = frameImg.Copy(obj.GetArea());
+
+					Rectangle area = obj.GetArea();
+					area.Offset(256, 128);
+					objData.Image = frameImg.Copy(area);
 
 					// Update object
 					objData.Object.Mode        = this.ObjectMode;
@@ -211,6 +220,7 @@ namespace Ninoimager
 			// Reduce palettes
 			this.Reducer.Clear();
 			this.Reducer.AddPaletteRange(palettesList.ToArray());
+			this.Reducer.Reduce(16);
 			palettes = this.Reducer.ReducedPalettes;
 
 			// Approximate palettes removed and get the pixel array
@@ -229,7 +239,7 @@ namespace Ninoimager
 				data[i].Object.PaletteIndex = (byte)paletteIdx;
 
 				// Add pixels to the list
-				data[i].Object.TileNumber = (ushort)pixelList.Count;
+				data[i].Object.TileNumber = (ushort)(pixelList.Count / tileSize);
 				pixelList.AddRange(quantization.GetPixels());
 			}
 

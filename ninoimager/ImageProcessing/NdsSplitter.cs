@@ -59,8 +59,8 @@ namespace Ninoimager.ImageProcessing
 
 			// Update coordinates. Sets to absolute values.
 			foreach (Obj obj in objs) {
-				obj.CoordX = (short)(obj.CoordX + startPos.X);
-				obj.CoordY = (sbyte)(obj.CoordY + startPos.Y);
+				obj.CoordX = (short)(obj.CoordX + startPos.X - 256);
+				obj.CoordY = (sbyte)(obj.CoordY + startPos.Y - 128);
 			}
 
 			// Return new frame
@@ -78,6 +78,7 @@ namespace Ninoimager.ImageProcessing
 			if (width != 0 && height != 0) {
 				// Create object
 				Obj obj = new Obj();
+				obj.Id     = (ushort)objList.Count;
 				obj.CoordX = (short)x;
 				obj.CoordY = (sbyte)y;
 				obj.SetSize(width, height);
@@ -89,11 +90,11 @@ namespace Ninoimager.ImageProcessing
 			}
 
 			// Go to right
-			if (frame.Width - (x + width) <= 0)
+			if (frame.Width - (x + width) > 0)
 				this.CreateObjects(frame, objList, x + width, y, height);
 
 			// Go to down
-			if (maxHeight - (y + height) <= 0)
+			if (maxHeight - (y + height) > 0)
 				this.CreateObjects(frame, objList, x, y + height, maxHeight - (y + height));
 		}
 
@@ -147,6 +148,9 @@ namespace Ninoimager.ImageProcessing
 			int width  = SearchNoTransparentPoint(image, 2) - xStart;
 			int height = SearchNoTransparentPoint(image, 3) - yStart;
 
+			width  += 8 - (width  % 8);
+			height += 8 - (height % 8);
+
 			if (xStart == -1)
 				return new Point(0, 0);
 
@@ -164,10 +168,10 @@ namespace Ninoimager.ImageProcessing
 			if (direction == 0) {
 				for (int y = 0; y < image.Height && !stop; y++) {
 					for (int x = 0; x < image.Width && !stop; x++) {
-						if (imageData[y, x, 3] != 0)
+						if (imageData[y, x, 3] == 0)
 							continue;
 
-						point = y - (y % 8);
+						point = y;
 						stop  = true;
 					}
 				}
@@ -176,34 +180,34 @@ namespace Ninoimager.ImageProcessing
 			} else if (direction == 1) {
 				for (int x = 0; x < image.Width && !stop; x++) {
 					for (int y = 0; y < image.Height && !stop; y++) {
-						if (imageData[y, x, 3] != 0)
+						if (imageData[y, x, 3] == 0)
 							continue;
 
-						point = x - (x % 8);
+						point = x;
 						stop  = true;
 					}
 				}
 
 				// Get right most
 			} else if (direction == 2) {
-				for (int x = image.Width; x > 0 && !stop; x--) {
+				for (int x = image.Width - 1; x > 0 && !stop; x--) {
 					for (int y = 0; y < image.Height && !stop; y++) {
-						if (imageData[y, x, 3] != 0)
+						if (imageData[y, x, 3] == 0)
 							continue;
 
-						point = x + (8 - (x % 8));
+						point = x;
 						stop  = true;
 					}
 				}
 
 				// Get bottom most
 			} else if (direction == 3) {
-				for (int y = image.Height; y > 0 && !stop; y--) {
+				for (int y = image.Height - 1; y > 0 && !stop; y--) {
 					for (int x = 0; x < image.Width && !stop; x++) {
-						if (imageData[y, x, 3] != 0)
+						if (imageData[y, x, 3] == 0)
 							continue;
 
-						point = y + (8 - (y % 8));
+						point = y;
 						stop  = true;
 					}
 				}
@@ -215,7 +219,8 @@ namespace Ninoimager.ImageProcessing
 			return point;
 		}
 
-		private static bool IsTransparent(EmguImage image, int xStart, int xRange, int yStart, int yRange)
+		private static bool IsTransparent(EmguImage image, int xStart, int xRange,
+			int yStart, int yRange)
 		{
 			bool isTransparent = true;
 			int xEnd = (xStart + xRange > image.Width)  ? image.Width  : xStart + xRange;

@@ -35,14 +35,6 @@ namespace Ninoimager
 	{
 		public static void RunTest(string[] args)
 		{
-			string pathFile = "/home/benito/tests/";
-			args = new string[] {
-				"-tis",
-				pathFile + "button_K_3.ncer",
-				pathFile + "button_K_1.ncgr",
-				pathFile + "button_K_0.nclr"
-			};
-
 			if (args.Length < 3)
 				return;
 
@@ -396,13 +388,14 @@ namespace Ninoimager
 			importer.Splitter      = new NdsSplitter(1);
 
 			for (int i = 0; i < ncer.NumFrames; i++) {
-				EmguImage bmp = ncer.CreateBitmap(0, ncgr, nclr);
+				EmguImage bmp = ncer.CreateBitmap(i, ncgr, nclr);
 				bmp.Save(sprFile + i.ToString() + ".png");
 				importer.AddFrame(bmp);
 			}
 
-			importer.Generate(newSprStr, newImgStr, newPalStr);
+			importer.Generate(newPalStr, newImgStr, newSprStr);
 
+			/*
 			if (!Compare(oldPalStr, newPalStr)) {
 				string newPalFile = palFile + ".new";
 				WriteStream(newPalFile, newPalStr);
@@ -418,6 +411,7 @@ namespace Ninoimager
 				WriteStream(newSprFile, newSprStr);
 				Console.WriteLine("Sprite different...  Written to {0}", newSprFile);
 			}
+			*/
 
 			newPalStr.Position = newImgStr.Position = newSprStr.Position = 0;
 			nclr = new Nclr(newPalStr);

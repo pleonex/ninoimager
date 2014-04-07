@@ -518,7 +518,7 @@ namespace Ninoimager.Format
 			if (this.CoordX >= 0)
 				attr1 |= tempX;
 			else
-				attr1 |= (ushort)(((tempX * -1) - 1) ^ 0x1FF);
+				attr1 |= (ushort)((((tempX * -1) - 1) ^ 0x01FF) & 0x01FF);
 
 			attr1 |= (ushort)((this.SizeMode & 0x0003) << 14);
 

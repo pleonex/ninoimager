@@ -37,7 +37,7 @@ namespace Ninoimager.Format
 
 		public Frame()
 		{
-			this.tileSize    = 64;
+			this.tileSize    = 128;
 			this.objects     = null;
 			this.visibleArea = new Rectangle();
 		}
