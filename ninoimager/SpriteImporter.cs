@@ -244,7 +244,7 @@ namespace Ninoimager
 					// Get the pixel
 					data[i].Pixels = quantization.GetPixels();
 				} else {
-					paletteIdx = i;
+					paletteIdx = Array.FindIndex(palettes, p => p == palettesList[i] );
 				}
 
 				// Update object

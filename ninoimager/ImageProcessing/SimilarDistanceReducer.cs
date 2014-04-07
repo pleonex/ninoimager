@@ -104,7 +104,7 @@ namespace Ninoimager.ImageProcessing
 		private Difference[] CalculateDistances()
 		{
 			int numDiff = 0;
-			for (int i = 1; i <= this.Palettes.Count; i++)
+			for (int i = 1; i < this.Palettes.Count; i++)
 				numDiff += i;
 
 			Difference[] distances = new Difference[numDiff];
@@ -116,7 +116,7 @@ namespace Ninoimager.ImageProcessing
 
 			int idx = 0;
 			for (int i = 0; i < this.Palettes.Count; i++) {
-				for (int j = i; j < this.Palettes.Count; j++, idx++) {
+				for (int j = i + 1; j < this.Palettes.Count; j++, idx++) {
 					distances[idx] = new Difference();
 					distances[idx].Palette1 = i;
 					distances[idx].Palette2 = j;
