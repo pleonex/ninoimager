@@ -35,7 +35,7 @@ namespace Ninoimager.ImageProcessing
 				this.ReducedPalettes = this.Palettes.ToArray();
 				int[] rangeArray = new int[this.Palettes.Count];
 				for (int i = 0; i < rangeArray.Length; i++)
-					rangeArray[i] = i;
+					rangeArray[i] = -1;
 				this.PaletteApproximation = rangeArray;
 				return;
 			}

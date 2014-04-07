@@ -46,7 +46,7 @@ namespace Ninoimager.ImageProcessing
 			// Normalize palette
 			this.SortPalette();
 			this.AddBackdropColor();
-			//this.FillPalette();
+			this.FillPalette();	// Especially useful when format is 16/16 to divide palettes.
 		}
 
 		public Color BackdropColor {

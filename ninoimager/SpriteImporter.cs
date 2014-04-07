@@ -106,6 +106,11 @@ namespace Ninoimager
 			set;
 		}
 
+		public Color TransparentColor {
+			get;
+			set;
+		}
+
 		public ISplitable Splitter {
 			get;
 			set;
@@ -128,6 +133,9 @@ namespace Ninoimager
 			Frame frame    = this.Splitter.Split(image);
 			frame.TileSize = 128;//this.TileSize.Width * this.TileSize.Height;
 			this.frameData.Add(Tuple.Create(frame, image));
+
+			var mask = image.InRange(new Color(0, 0, 0, 0), new Color(255, 255, 255, 0));
+			image.SetValue(this.TransparentColor, mask);
 		}
 
 		public void Generate(Stream paletteStr, Stream imageStr, Stream spriteStr)
@@ -227,20 +235,24 @@ namespace Ninoimager
 			List<Pixel> pixelList = new List<Pixel>();
 			for (int i = 0; i < data.Count; i++) {
 				int paletteIdx = this.Reducer.PaletteApproximation[i];
-				if (paletteIdx == -1)
-					continue;
+				if (paletteIdx != -1) {
+					// Quantizate again the image with the new palette
+					Color[] newPalette = palettes[paletteIdx];
+					FixedPaletteQuantization quantization = new FixedPaletteQuantization(newPalette);
+					quantization.Quantizate(data[i].Image);
 
-				// Quantizate again the image with the new palette
-				Color[] newPalette = palettes[paletteIdx];
-				FixedPaletteQuantization quantization = new FixedPaletteQuantization(newPalette);
-				quantization.Quantizate(data[i].Image);
+					// Get the pixel
+					data[i].Pixels = quantization.GetPixels();
+				} else {
+					paletteIdx = i;
+				}
 
 				// Update object
 				data[i].Object.PaletteIndex = (byte)paletteIdx;
 
 				// Add pixels to the list
 				data[i].Object.TileNumber = (ushort)(pixelList.Count / tileSize);
-				pixelList.AddRange(quantization.GetPixels());
+				pixelList.AddRange(data[i].Pixels);
 			}
 
 			pixels = pixelList.ToArray();
