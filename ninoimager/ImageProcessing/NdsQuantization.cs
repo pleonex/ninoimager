@@ -31,10 +31,12 @@ namespace Ninoimager.ImageProcessing
 	/// </summary>
 	public class NdsQuantization : BasicQuantization
 	{
+		private ColorFormat format;
+
 		public NdsQuantization()
 		{
 			this.BackdropColor = new Color(0, 0, 0, 255);	// Black
-			this.Format = ColorFormat.Indexed_8bpp;
+			this.Format        = ColorFormat.Indexed_8bpp;
 		}
 
 		public override void Quantizate(EmguImage image)
@@ -44,7 +46,7 @@ namespace Ninoimager.ImageProcessing
 			// Normalize palette
 			this.SortPalette();
 			this.AddBackdropColor();
-			this.FillPalette();
+			//this.FillPalette();
 		}
 
 		public Color BackdropColor {
@@ -53,8 +55,11 @@ namespace Ninoimager.ImageProcessing
 		}
 
 		public ColorFormat Format {
-			get;
-			set;
+			get { return this.format; }
+			set {
+				this.format = value;
+				this.MaxColors = (1 << this.format.Bpp()) - 1;	// Reserve space for BackdropColor
+			}
 		}
 
 		private void AddBackdropColor()

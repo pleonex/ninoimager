@@ -23,15 +23,27 @@ using System;
 using System.Collections.Generic;
 using Ninoimager.Format;
 using Color     = Emgu.CV.Structure.Rgba;
+using LabColor  = Emgu.CV.Structure.Lab;
 using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
 
 namespace Ninoimager.ImageProcessing
 {
 	public class BasicQuantization : ColorQuantization
 	{
+		public BasicQuantization()
+		{
+			this.MaxColors = 256;
+		}
+
+		public int MaxColors {
+			get;
+			set;
+		}
+
 		public override void Quantizate(EmguImage image)
 		{
 			List<Color> listColor = new List<Color>();
+			NearestNeighbour<LabColor> nearestNeighbour = null;
 
 			int width = image.Width;
 			int height = image.Height;
@@ -41,13 +53,26 @@ namespace Ninoimager.ImageProcessing
 				for (int x = 0; x < width; x++) {
 					// Get the color without the alpha channel and add to the list
 					Color color   = image[y, x];
+					color = new Color(color.Red, color.Green, color.Blue, color.Alpha);
 					Color noTrans = color;
 					noTrans.Alpha = 255;
 
-					if (!listColor.Contains(noTrans))
-						listColor.Add(noTrans);
+					int colorIndex;
+					if (listColor.Count < this.MaxColors) {
+						if (!listColor.Contains(noTrans))
+							listColor.Add(noTrans);
+						colorIndex = listColor.IndexOf(noTrans);
+					} else {
+						// Create the labpalette if so
+						if (nearestNeighbour == null) {
+							LabColor[] labPalette = ColorConversion.ToLabPalette<Color>(listColor.ToArray());
+							nearestNeighbour = new ExhaustivePaletteSearch();
+							nearestNeighbour.Initialize(labPalette);
+						}
 
-					int colorIndex = listColor.IndexOf(noTrans);
+						LabColor labNoTrans = ColorConversion.ToLabPalette<Color>(new Color[] { noTrans })[0];
+						colorIndex = nearestNeighbour.Search(labNoTrans);
+					}
 
 					// Finally set the color
 					int index = this.PixelEncoding.GetIndex(x, y, width, height, this.TileSize);
