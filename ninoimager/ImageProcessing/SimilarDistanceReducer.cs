@@ -129,13 +129,20 @@ namespace Ninoimager.ImageProcessing
 
 		private double CalculateDistance(LabColor[] palette1, LabColor[] palette2)
 		{
-			double distance = 0;
+			double totalDistance = 0;
 
-			for (int i = 0; i < palette1.Length; i++)
-				for (int j = 0; j < palette2.Length; j++)
-					distance += palette1[i].GetDistanceSquared(palette2[j]);
+			for (int i = 0; i < palette1.Length; i++) {
+				double minColorDistance = -1;
+				for (int j = 0; j < palette2.Length; j++) {
+					double distance = palette1[i].GetDistanceSquared(palette2[j]);
+					if (minColorDistance == -1 || distance < minColorDistance)
+						minColorDistance = distance;
+				}
 
-			return distance;
+				totalDistance += minColorDistance;
+			}
+
+			return totalDistance;
 		}
 
 		private class Difference
