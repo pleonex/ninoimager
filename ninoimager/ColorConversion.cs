@@ -64,10 +64,17 @@ namespace Ninoimager
 
 			// Copy colors into matSrc
 			for (int i = 0; i < colors.Length; i++) {
-				if (dimensionSrc > 0) matSrc.Data[0, i * dimensionSrc + 0] = (byte)colors[i].MCvScalar.v0;
-				if (dimensionSrc > 1) matSrc.Data[0, i * dimensionSrc + 1] = (byte)colors[i].MCvScalar.v1;
-				if (dimensionSrc > 2) matSrc.Data[0, i * dimensionSrc + 2] = (byte)colors[i].MCvScalar.v2;
-				if (dimensionSrc > 3) matSrc.Data[0, i * dimensionSrc + 3] = (byte)colors[i].MCvScalar.v3;
+				Emgu.CV.Structure.MCvScalar colorComp = colors[i].MCvScalar;
+				if (typeof(Rgba).IsAssignableFrom(typeof(ColorSrc))) {
+					double swap  = colorComp.v0;
+					colorComp.v0 = colorComp.v2;
+					colorComp.v2 = swap;
+				}
+
+				if (dimensionSrc > 0) matSrc.Data[0, i * dimensionSrc + 0] = (byte)colorComp.v0;
+				if (dimensionSrc > 1) matSrc.Data[0, i * dimensionSrc + 1] = (byte)colorComp.v1;
+				if (dimensionSrc > 2) matSrc.Data[0, i * dimensionSrc + 2] = (byte)colorComp.v2;
+				if (dimensionSrc > 3) matSrc.Data[0, i * dimensionSrc + 3] = (byte)colorComp.v3;
 			}
 
 			// Convert colors

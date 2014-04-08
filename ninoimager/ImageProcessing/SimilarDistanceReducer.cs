@@ -50,19 +50,25 @@ namespace Ninoimager.ImageProcessing
 				paletteApprox[i] = -2;
 
 			// Start removing similar palettes.
+			int numApproxPalettes  = 0;
 			List<Color[]> palettes = new List<Color[]>();
 			while (palettes.Count < number && distances.Count > 0) {
 				Difference diff = distances[0];
 
-				if (paletteApprox[diff.Palette1] == -2 && paletteApprox[diff.Palette2] == -2) {
-					palettes.Add(this.Palettes[diff.Palette1]);
-					paletteApprox[diff.Palette1] = -1;
-					paletteApprox[diff.Palette2] = palettes.Count - 1;
-				} else {
-					this.UpdateApproximation(palettes, paletteApprox, diff.Palette1, diff.Palette2);
+				if (paletteApprox[diff.Palette1] == -2) {
+					palettes.Add(this.Palettes[diff.Palette2]);
+					paletteApprox[diff.Palette2] = -1;
+					paletteApprox[diff.Palette1] = palettes.Count - 1;
+					numApproxPalettes += 2;
 				}
 
 				distances.RemoveAt(0);
+
+				// Check if the non-added palettes still need to be approximated
+				if (palettes.Count + (this.Palettes.Count - numApproxPalettes) <= number) {
+					this.AddRemainingPalettes(palettes, paletteApprox);
+					distances.Clear();
+				}
 			}
 
 			// Since we are going to the same but starting from the end -> reverse the list
@@ -70,7 +76,7 @@ namespace Ninoimager.ImageProcessing
 
 			// Continue approximating
 			while (distances.Count > 0) {
-				for (int i = distances.Count - 1; i > 0; i--) {
+				for (int i = distances.Count - 1; i >= 0; i--) {
 					Difference diff = distances[i];
 					if (this.UpdateApproximation(palettes, paletteApprox, diff.Palette1, diff.Palette2))
 						distances.RemoveAt(i);
@@ -81,9 +87,20 @@ namespace Ninoimager.ImageProcessing
 			this.ReducedPalettes      = palettes.ToArray();
 		}
 
+		private void AddRemainingPalettes(List<Color[]> palettes, int[] paletteApprox)
+		{
+			for (int i = 0; i < paletteApprox.Length; i++) {
+				if (paletteApprox[i] != -2)
+					continue;
+
+				palettes.Add(this.Palettes[i]);
+				paletteApprox[i] = -1;
+			}
+		}
+
 		private bool UpdateApproximation(List<Color[]> palettes, int[] paletteApprox, int pal1, int pal2)
 		{
-			if (paletteApprox[pal1] == -2 && paletteApprox[pal2] == -2)
+			if (paletteApprox[pal2] == -2)
 				return false;
 
 			// If Pal1 has not been used and Pal2 is approximate... Copy approximation
@@ -92,12 +109,6 @@ namespace Ninoimager.ImageProcessing
 			// If Pal1 has not been used and Pal2 is copied... Set its index
 			else if (paletteApprox[pal1] == -2 && paletteApprox[pal2] == -1)
 				paletteApprox[pal1] = palettes.IndexOf(this.Palettes[pal2]);
-			// If Pal2 has not been used and Pal1 is approximate... Copy approximation
-			else if (paletteApprox[pal2] == -2 && paletteApprox[pal1] != -1)
-				paletteApprox[pal2] = paletteApprox[pal1];
-			// If Pal2 has not been used and Pal1 is copied... Set its index
-			else if (paletteApprox[pal2] == -2 && paletteApprox[pal1] == -1)
-				paletteApprox[pal2] = palettes.IndexOf(this.Palettes[pal1]);
 
 			return true;
 		}
