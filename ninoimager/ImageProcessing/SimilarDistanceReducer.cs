@@ -59,7 +59,7 @@ namespace Ninoimager.ImageProcessing
 					palettes.Add(this.Palettes[diff.Palette2]);
 					paletteApprox[diff.Palette2] = -1;
 					paletteApprox[diff.Palette1] = palettes.Count - 1;
-					numApproxPalettes += 2;
+					numApproxPalettes++;
 				}
 
 				distances.RemoveAt(0);
@@ -115,10 +115,7 @@ namespace Ninoimager.ImageProcessing
 
 		private Difference[] CalculateDistances()
 		{
-			int numDiff = 0;
-			for (int i = 1; i < this.Palettes.Count; i++)
-				numDiff += i;
-
+			int numDiff = this.Palettes.Count * this.Palettes.Count - this.Palettes.Count;
 			Difference[] distances = new Difference[numDiff];
 
 			// Convert palettes to labcolor space to compute difference
@@ -128,11 +125,15 @@ namespace Ninoimager.ImageProcessing
 
 			int idx = 0;
 			for (int i = 0; i < this.Palettes.Count; i++) {
-				for (int j = i + 1; j < this.Palettes.Count; j++, idx++) {
+				for (int j = 0; j < this.Palettes.Count; j++) {
+					if (i == j)
+						continue;
+
 					distances[idx] = new Difference();
 					distances[idx].Palette1 = i;
 					distances[idx].Palette2 = j;
 					distances[idx].Distance = this.CalculateDistance(palettes[i], palettes[j]);
+					idx++;
 				}
 			}
 
