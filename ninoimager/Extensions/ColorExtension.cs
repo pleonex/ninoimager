@@ -73,9 +73,9 @@ namespace Ninoimager
 		public static Color ToArgbColor(this uint argb)
 		{
 			return new Color(
-				(argb >> 16) & 0xFF,
-				(argb >> 08) & 0xFF,
 				(argb >> 00) & 0xFF,
+				(argb >> 08) & 0xFF,
+				(argb >> 16) & 0xFF,
 				(argb >> 24) & 0xFF
 			);
 		}
