@@ -52,6 +52,21 @@ namespace Ninoimager
 		public SpriteImporter()
 		{
 			this.frameData = new List<Tuple<Frame, EmguImage>>();
+
+			// Default settings
+			this.BgMode = BgMode.Text;
+			this.Format = ColorFormat.Indexed_4bpp;
+			this.ObjectMode    = ObjMode.Normal;
+			this.PaletteMode   = PaletteMode.Palette16_16;
+			this.PixelEncoding = PixelEncoding.HorizontalTiles;
+			this.TileSize      = new System.Drawing.Size(64, 64);
+			this.TransparentColor = new Color(128, 0, 128, 255);
+			this.Quantization     = new NdsQuantization() { 
+				BackdropColor = this.TransparentColor,
+				Format = ColorFormat.Indexed_4bpp
+			};
+			this.Reducer       = new SimilarDistanceReducer();
+			this.Splitter      = new NdsSplitter(1);
 		}
 
 		#region Propiedades

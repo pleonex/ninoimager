@@ -26,8 +26,9 @@ using System.Reflection;
 using System.Text;
 using Ninoimager.Format;
 using Ninoimager.ImageProcessing;
-using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
 using Emgu.CV.Structure;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
+using Color     = Emgu.CV.Structure.Rgba;
 
 namespace Ninoimager
 {
@@ -378,12 +379,16 @@ namespace Ninoimager
 
 			SpriteImporter importer = new SpriteImporter();
 			importer.BgMode = BgMode.Text;
-			importer.Format = ColorFormat.Indexed_8bpp;
+			importer.Format = ColorFormat.Indexed_4bpp;
 			importer.ObjectMode    = ObjMode.Normal;
 			importer.PaletteMode   = PaletteMode.Palette16_16;
 			importer.PixelEncoding = PixelEncoding.HorizontalTiles;
 			importer.TileSize      = new System.Drawing.Size(64, 64);
-			importer.Quantization  = new NdsQuantization();
+			importer.TransparentColor = new Color(128, 0, 128, 255);
+			importer.Quantization     = new NdsQuantization() { 
+				BackdropColor = importer.TransparentColor,
+				Format = ColorFormat.Indexed_4bpp
+			};
 			importer.Reducer       = new SimilarDistanceReducer();
 			importer.Splitter      = new NdsSplitter(1);
 

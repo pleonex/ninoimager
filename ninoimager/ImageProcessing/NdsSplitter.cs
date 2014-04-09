@@ -59,8 +59,8 @@ namespace Ninoimager.ImageProcessing
 
 			// Update coordinates. Sets to absolute values.
 			foreach (Obj obj in objs) {
-				obj.CoordX = (short)(obj.CoordX + startPos.X - 256);
-				obj.CoordY = (sbyte)(obj.CoordY + startPos.Y - 128);
+				obj.CoordX = (short)(obj.CoordX + startPos.X);
+				obj.CoordY = (sbyte)(obj.CoordY + startPos.Y);
 			}
 
 			// Return new frame
@@ -79,8 +79,8 @@ namespace Ninoimager.ImageProcessing
 				// Create object
 				Obj obj = new Obj();
 				obj.Id     = (ushort)objList.Count;
-				obj.CoordX = (short)x;
-				obj.CoordY = (sbyte)y;
+				obj.CoordX = (short)(x - 256);
+				obj.CoordY = (sbyte)(y - 128);
 				obj.SetSize(width, height);
 				objList.Add(obj);
 			} else {

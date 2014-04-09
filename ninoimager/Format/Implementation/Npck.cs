@@ -32,22 +32,43 @@ namespace Ninoimager.Format
 	{
 		private const string Header = "NPCK";
 
+		public Npck()
+		{
+		}
+
 		public Npck(string fileIn)
 			: base(fileIn)
 		{
 		}
 
-		public Npck(Stream nscrStr, Stream ncgrStr, Stream nclrStr)
+		public static Npck FromSpriteStreams(Stream ncerStr, Stream ncgrStr, Stream nclrStr)
 		{
-			this.AddSubfile(nclrStr);
-			this.AddSubfile(ncgrStr);
-			this.AddSubfile(null);		// NCBR (NCGR lineal)
-			this.AddSubfile(null);		// NCER
-			this.AddSubfile(null);		// Unknown
-			this.AddSubfile(null);		// NANR
-			this.AddSubfile(nscrStr);
-			this.AddSubfile(null);		// Unknown
-			this.AddSubfile(null);		// Unknown
+			Npck npck = new Npck();
+			npck.AddSubfile(nclrStr);
+			npck.AddSubfile(ncgrStr);
+			npck.AddSubfile(null);		// NCBR (NCGR lineal)
+			npck.AddSubfile(ncerStr);
+			npck.AddSubfile(null);		// Unknown
+			npck.AddSubfile(null);		// NANR
+			npck.AddSubfile(null);		// NSCR
+			npck.AddSubfile(null);		// Unknown
+			npck.AddSubfile(null);		// Unknown
+			return npck;
+		}
+
+		public static Npck FromBackgroundStreams(Stream nscrStr, Stream ncgrStr, Stream nclrStr)
+		{
+			Npck npck = new Npck();
+			npck.AddSubfile(nclrStr);
+			npck.AddSubfile(ncgrStr);
+			npck.AddSubfile(null);		// NCBR (NCGR lineal)
+			npck.AddSubfile(null);		// NCER
+			npck.AddSubfile(null);		// Unknown
+			npck.AddSubfile(null);		// NANR
+			npck.AddSubfile(nscrStr);
+			npck.AddSubfile(null);		// Unknown
+			npck.AddSubfile(null);		// Unknown
+			return npck;
 		}
 
 		protected override void Read(Stream strIn)
@@ -129,6 +150,21 @@ namespace Ninoimager.Format
 			return nscr.CreateBitmap(ncgr, nclr);
 		}
 
+		public EmguImage[] GetSpriteImage()
+		{
+			if (this.NumSubfiles != 9 || this[0] == null || this[1] == null || this[6] == null)
+				throw new FormatException("The pack does not contain a background image.");
+
+			Nclr nclr = new Nclr(this[0]);
+			Ncgr ncgr = new Ncgr(this[1]);
+			Ncer ncer = new Ncer(this[3]);
+
+			EmguImage[] images = new EmguImage[ncer.NumFrames];
+			for (int i = 0; i < ncer.NumFrames; i++)
+				images[i] = ncer.CreateBitmap(i, ncgr, nclr);
+			return images;
+		}
+
 		public static Npck ImportBackgroundImage(string image)
 		{
 			return ImportBackgroundImage(new EmguImage(image));
@@ -144,7 +180,7 @@ namespace Ninoimager.Format
 			importer.ImportBackground(image, nscrStr, ncgrStr, nclrStr);
 
 			nclrStr.Position = ncgrStr.Position = nscrStr.Position = 0;
-			return new Npck(nscrStr, ncgrStr, nclrStr);
+			return Npck.FromBackgroundStreams(nscrStr, ncgrStr, nclrStr);
 		}
 
 		public static Npck ImportBackgroundImage(string image, Npck original)
@@ -170,7 +206,7 @@ namespace Ninoimager.Format
 			importer.ImportBackground(image, nscrStr, ncgrStr, nclrStr);
 
 			nclrStr.Position = ncgrStr.Position = nscrStr.Position = 0;
-			return new Npck(nscrStr, ncgrStr, nclrStr);
+			return Npck.FromBackgroundStreams(nscrStr, ncgrStr, nclrStr);
 		}
 
 		public static Npck[] ImportBackgroundImageSharePalette(string[] images)
@@ -220,9 +256,9 @@ namespace Ninoimager.Format
 
 				// Only first pack file has palette file
 				if (i == 0)
-					packs[i] = new Npck(nscrStr, ncgrStr, nclrStr);
+					packs[i] = Npck.FromBackgroundStreams(nscrStr, ncgrStr, nclrStr);
 				else
-					packs[i] = new Npck(nscrStr, ncgrStr, null);
+					packs[i] = Npck.FromBackgroundStreams(nscrStr, ncgrStr, null);
 			}
 
 			return packs;
@@ -283,13 +319,47 @@ namespace Ninoimager.Format
 
 				// Only first pack file has palette and image files
 				if (i == 0)
-					packs[i] = new Npck(nscrStr, ncgrStr, nclrStr);
+					packs[i] = Npck.FromBackgroundStreams(nscrStr, ncgrStr, nclrStr);
 				else
-					packs[i] = new Npck(nscrStr, null, null);
+					packs[i] = Npck.FromBackgroundStreams(nscrStr, null, null);
 			}
 
 			combinedImg.Dispose();
 			return packs;
+		}
+
+		public static Npck ImportSpriteImage(string[] images)
+		{
+			EmguImage[] emguImages = new EmguImage[images.Length];
+			for (int i = 0; i < images.Length; i++) {
+				emguImages[i] = new EmguImage(images[i]);
+				var mask = emguImages[i].InRange(new Color(20, 20, 20, 255), new Color(20, 20, 20, 255));
+				emguImages[i].SetValue(0, mask);
+			}
+
+			return ImportSpriteImage(emguImages);
+		}
+
+		public static Npck ImportSpriteImage(EmguImage[] images)
+		{
+			MemoryStream nclrStr = new MemoryStream();
+			MemoryStream ncgrStr = new MemoryStream();
+			MemoryStream ncerStr = new MemoryStream();
+
+			SpriteImporter importer = new SpriteImporter();
+			foreach (EmguImage image in images)
+				importer.AddFrame(image);
+
+			importer.Generate(nclrStr, ncgrStr, ncerStr);
+
+			nclrStr.Position = ncgrStr.Position = ncerStr.Position = 0;
+
+			Nclr nclr = new Nclr(nclrStr);
+			Ncgr ncgr = new Ncgr(ncgrStr);
+			Ncer ncer = new Ncer(ncerStr);
+
+			nclrStr.Position = ncgrStr.Position = ncerStr.Position = 0;
+			return Npck.FromSpriteStreams(ncerStr, ncgrStr, nclrStr);
 		}
 	}
 }

@@ -29,6 +29,10 @@ namespace Ninoimager.Format
 	{
 		private List<Stream> subfiles = new List<Stream>();
 
+		public Pack()
+		{
+		}
+
 		public Pack(Stream str)
 		{
 			this.Read(str);

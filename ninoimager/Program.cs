@@ -34,9 +34,18 @@ namespace Ninoimager
 	public static class MainClass
 	{
 		private static readonly Regex BgRegex = new Regex(@"(.+)_6\.nscrm\.png$", RegexOptions.Compiled);
+		private static readonly Regex SpRegex = new Regex(@"(.+)_3\.ncer_(.+)m\.png$", RegexOptions.Compiled);
 
 		public static void Main(string[] args)
 		{
+			string offset = "UI/Common/";
+			args = new string[] {
+				"-isp",
+				"/home/benito/Dropbox/Ninokuni español/Imágenes/Originales definitivas/" + offset,
+				"/home/benito/Dropbox/Ninokuni español/Imágenes/N2D/" + offset,
+				"modime.xml"
+			};
+
 			Console.WriteLine("ninoimager ~~ Image importer and exporter for Ni no kuni DS");
 			Console.WriteLine("V {0} ~~ by pleoNeX ~~", Assembly.GetExecutingAssembly().GetName().Version);
 			Console.WriteLine();
@@ -45,15 +54,83 @@ namespace Ninoimager
 			watch.Start();
 
 			if ((args.Length == 4 || args.Length == 5) && args[0] == "-ibg")
-				SearchAndImportBg(args[1], args[2], args[3], (args.Length == 5)? args[4] : string.Empty);
+				SearchAndImportBg(args[1], args[2], args[3], (args.Length == 5) ? args[4] : string.Empty);
+			else if (args.Length == 4 && args[0] == "-isp")
+				SearchAndImportSp(args[1], args[2], args[3]);
 			else if (args.Length == 2 && args[0] == "-efr")
-				SearchAndExport(args[1]);
+				SearchAndExportBg(args[1]);
 			else
 				Tests.RunTest(args);
 
 			watch.Stop();
 			Console.WriteLine();
 			Console.WriteLine("It tooks: {0}", watch.Elapsed);
+		}
+
+		private static void SearchAndImportSp(string baseDir, string outDir, string modimeXml)
+		{
+			Console.WriteLine("@ Batch import");
+			Console.WriteLine("From: {0}", baseDir);
+			Console.WriteLine("To:   {0}", outDir);
+			Console.WriteLine();
+
+			List<string> imported = new List<string>();
+
+			// Import single images
+			SingleImportSp(baseDir, outDir, imported);
+
+			// Create a new XML document with data of the modime XMLs
+			CreateModimeXml(imported.ToArray(), modimeXml);
+		}
+
+		private static void SingleImportSp(string baseDir, string outputDir, List<string> importedList)
+		{
+			Dictionary<string, List<string>> spriteGroups = new Dictionary<string, List<string>>();
+
+			foreach (string imgFile in Directory.EnumerateFiles(baseDir, "*.png", SearchOption.AllDirectories)) {
+				Match match = SpRegex.Match(imgFile);
+				if (!match.Success)
+					continue;
+
+				// Get relative path
+				string imagePath = match.Groups[1].Value;
+				string relative  = imagePath.Replace(baseDir, "");
+				if (relative[0] == Path.DirectorySeparatorChar)
+					relative = relative.Substring(1);
+
+				if (!spriteGroups.ContainsKey(relative))
+					spriteGroups.Add(relative, new List<string>());
+
+				spriteGroups[relative].Add(imgFile);
+			}
+
+			foreach (string relative in spriteGroups.Keys) {
+				// Get output paths
+				string original = Path.Combine(outputDir, relative) + ".n2d";
+				string outFile  = Path.Combine(outputDir, relative) + "_new.n2d";
+
+				// Check if it has been already imported
+				if (importedList.Contains(relative))
+					continue;
+
+				// Try to import
+				try {
+					Npck ori  = new Npck(original);
+					Npck npck = Npck.ImportSpriteImage(spriteGroups[relative].ToArray());
+
+					npck[5] = ori[5];	// TEMP: Need to generate own NANR file
+					npck.Write(outFile);
+
+					npck.CloseAll();
+				} catch (Exception ex) {
+					Console.WriteLine("## Error ## Importing:  {0}", relative);
+					Console.WriteLine("\t" + ex.Message);
+					continue;
+				}
+
+				importedList.Add(relative);
+				Console.WriteLine("Written with success... {0}", relative);
+			}
 		}
 
 		private static void SearchAndImportBg(string baseDir, string outDir, string modimeXml, string multiXml)
@@ -68,16 +145,16 @@ namespace Ninoimager
 			List<string> imported = new List<string>();
 
 			// First import "special files" that share palette and images data with other N2D files
-			MultiImport(baseDir, outDir, imported, multiXml);
+			MultiImportBg(baseDir, outDir, imported, multiXml);
 
 			// Then import other images
-			SingleImport(baseDir, outDir, imported);
+			SingleImportBg(baseDir, outDir, imported);
 
 			// Create a new XML document with data of the modime XMLs
 			CreateModimeXml(imported.ToArray(), modimeXml);
 		}
 
-		private static void MultiImport(string baseDir, string outputDir, List<string> importedList, string xml)
+		private static void MultiImportBg(string baseDir, string outputDir, List<string> importedList, string xml)
 		{
 			if (string.IsNullOrEmpty(xml))
 				return;
@@ -132,7 +209,7 @@ namespace Ninoimager
 			}
 		}
 
-		private static void SingleImport(string baseDir, string outputDir, List<string> importedList)
+		private static void SingleImportBg(string baseDir, string outputDir, List<string> importedList)
 		{
 			foreach (string imgFile in Directory.EnumerateFiles(baseDir, "*.png", SearchOption.AllDirectories)) {
 				Match match = BgRegex.Match(imgFile);
@@ -205,7 +282,7 @@ namespace Ninoimager
 			xml.Save(outputXml);
 		}
 
-		private static void SearchAndExport(string baseDir)
+		private static void SearchAndExportBg(string baseDir)
 		{
 			foreach (string file in Directory.EnumerateFiles(baseDir, "*.n2d", SearchOption.AllDirectories)) {	
 				string relativePath = file.Replace(baseDir, "");
