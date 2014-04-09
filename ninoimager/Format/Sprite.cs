@@ -20,7 +20,7 @@
 // <date>03/21/2014</date>
 // -----------------------------------------------------------------------
 using System;
-using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Bgra, System.Byte>;
 
 namespace Ninoimager.Format
 {

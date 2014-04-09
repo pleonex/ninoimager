@@ -22,9 +22,9 @@
 using System;
 using System.Collections.Generic;
 using Ninoimager.Format;
-using Color     = Emgu.CV.Structure.Rgba;
+using Color     = Emgu.CV.Structure.Bgra;
 using LabColor  = Emgu.CV.Structure.Lab;
-using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Bgra, System.Byte>;
 
 namespace Ninoimager.ImageProcessing
 {
@@ -53,7 +53,6 @@ namespace Ninoimager.ImageProcessing
 				for (int x = 0; x < width; x++) {
 					// Get the color without the alpha channel and add to the list
 					Color color   = image[y, x];
-					color = new Color(color.Red, color.Green, color.Blue, color.Alpha);
 					Color noTrans = color;
 					noTrans.Alpha = 255;
 

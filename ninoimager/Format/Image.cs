@@ -22,8 +22,8 @@
 using System;
 using Point     = System.Drawing.Point;
 using Size      = System.Drawing.Size;
-using Color     = Emgu.CV.Structure.Rgba;
-using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
+using Color     = Emgu.CV.Structure.Bgra;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Bgra, System.Byte>;
 
 namespace Ninoimager.Format
 {

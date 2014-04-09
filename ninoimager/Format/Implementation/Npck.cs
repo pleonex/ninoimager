@@ -23,8 +23,8 @@ using System;
 using System.IO;
 using System.Linq;
 using Ninoimager.ImageProcessing;
-using Color     = Emgu.CV.Structure.Rgba;
-using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
+using Color     = Emgu.CV.Structure.Bgra;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Bgra, System.Byte>;
 
 namespace Ninoimager.Format
 {
@@ -333,8 +333,8 @@ namespace Ninoimager.Format
 			EmguImage[] emguImages = new EmguImage[images.Length];
 			for (int i = 0; i < images.Length; i++) {
 				emguImages[i] = new EmguImage(images[i]);
-				var mask = emguImages[i].InRange(new Color(20, 20, 20, 255), new Color(20, 20, 20, 255));
-				emguImages[i].SetValue(0, mask);
+				var mask = emguImages[i].InRange(emguImages[i][0, 0], emguImages[i][0, 0]);
+				emguImages[i].SetValue(0, mask); 
 			}
 
 			return ImportSpriteImage(emguImages);
@@ -357,6 +357,7 @@ namespace Ninoimager.Format
 			Nclr nclr = new Nclr(nclrStr);
 			Ncgr ncgr = new Ncgr(ncgrStr);
 			Ncer ncer = new Ncer(ncerStr);
+			ncer.CreateBitmap(0, ncgr, nclr).Save("test.png");
 
 			nclrStr.Position = ncgrStr.Position = ncerStr.Position = 0;
 			return Npck.FromSpriteStreams(ncerStr, ncgrStr, nclrStr);

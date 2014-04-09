@@ -27,8 +27,8 @@ using System.Text;
 using Ninoimager.Format;
 using Ninoimager.ImageProcessing;
 using Emgu.CV.Structure;
-using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
-using Color     = Emgu.CV.Structure.Rgba;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Bgra, System.Byte>;
+using Color     = Emgu.CV.Structure.Bgra;
 
 namespace Ninoimager
 {

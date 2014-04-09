@@ -24,8 +24,8 @@ using System.Collections.Generic;
 using Point     = System.Drawing.Point;
 using Size      = System.Drawing.Size;
 using Rectangle = System.Drawing.Rectangle;
-using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
-using Color     = Emgu.CV.Structure.Rgba;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Bgra, System.Byte>;
+using Color     = Emgu.CV.Structure.Bgra;
 
 namespace Ninoimager.Format
 {
@@ -76,11 +76,7 @@ namespace Ninoimager.Format
 				EmguImage objBitmap = obj.CreateBitmap(image, palette, this.tileSize);
 
 				// Get first palette color
-				// !! DUE TO BUG IN EMGU.CV RED AND BLUE COMPONENTS ARE SWAPED IN RGBA FORMAT
 				Color transparent = palette.GetColor(obj.PaletteIndex, 0);
-				double temp = transparent.Red;
-				transparent.Red  = transparent.Blue;
-				transparent.Blue = temp;
 
 				// Set first palette color as transparent
 				var mask = objBitmap.InRange(transparent, transparent);

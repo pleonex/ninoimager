@@ -23,7 +23,7 @@ using System;
 using Size  = System.Drawing.Size;
 using Point = System.Drawing.Point;
 using Rectangle = System.Drawing.Rectangle;
-using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Bgra, System.Byte>;
 
 namespace Ninoimager.Format
 {

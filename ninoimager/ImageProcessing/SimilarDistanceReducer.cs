@@ -22,7 +22,7 @@
 using System;
 using System.Collections.Generic;
 using LabColor = Emgu.CV.Structure.Lab;
-using Color    = Emgu.CV.Structure.Rgba;
+using Color    = Emgu.CV.Structure.Bgra;
 
 namespace Ninoimager.ImageProcessing
 {

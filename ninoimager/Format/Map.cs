@@ -22,7 +22,7 @@
 using System;
 using System.Collections.Generic;
 using Size      = System.Drawing.Size;
-using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Bgra, System.Byte>;
 
 namespace Ninoimager.Format
 {

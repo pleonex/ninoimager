@@ -21,8 +21,8 @@
 // -----------------------------------------------------------------------
 using System;
 using Rectangle = System.Drawing.Rectangle;
-using Color     = Emgu.CV.Structure.Rgba;
-using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
+using Color     = Emgu.CV.Structure.Bgra;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Bgra, System.Byte>;
 
 namespace Ninoimager
 {
@@ -30,9 +30,9 @@ namespace Ninoimager
 	{
 		public static void SetPixel(this EmguImage img, int x, int y, Color color)
 		{
-			img.Data[y, x, 0] = (byte)color.Red;
+			img.Data[y, x, 0] = (byte)color.Blue;
 			img.Data[y, x, 1] = (byte)color.Green;
-			img.Data[y, x, 2] = (byte)color.Blue;
+			img.Data[y, x, 2] = (byte)color.Red;
 			img.Data[y, x, 3] = (byte)color.Alpha;
 		}
 
@@ -63,9 +63,9 @@ namespace Ninoimager
 			for (int y = yStart; y < yEnd; y++) {
 				for (int x = xStart; x < xEnd; x++) {
 					int cIdx = (y - yStart) * area.Width + (x - xStart);
-					data[y, x, 0] = (byte)pixels[cIdx].Red;
+					data[y, x, 0] = (byte)pixels[cIdx].Blue;
 					data[y, x, 1] = (byte)pixels[cIdx].Green;
-					data[y, x, 2] = (byte)pixels[cIdx].Blue;
+					data[y, x, 2] = (byte)pixels[cIdx].Red;
 					data[y, x, 3] = (byte)pixels[cIdx].Alpha;
 				}
 			}
