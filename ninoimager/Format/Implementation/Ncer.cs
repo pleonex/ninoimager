@@ -58,6 +58,11 @@ namespace Ninoimager.Format
 			set;
 		}
 
+		public bool IsRectangularArea {
+			get { return this.cebk.TypeFrame == 1; }
+			set { this.cebk.TypeFrame = Convert.ToUInt16(value); }
+		}
+
 		public NitroFile NitroData {
 			get { return this.nitro; }
 		}

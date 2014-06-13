@@ -60,7 +60,8 @@ namespace Ninoimager
 			this.PaletteMode   = PaletteMode.Palette16_16;
 			this.PixelEncoding = PixelEncoding.HorizontalTiles;
 			this.TileSize      = new System.Drawing.Size(64, 64);
-			this.TransparentColor = new Color(128, 0, 128, 255);
+			this.TransparentColor   = new Color(128, 0, 128, 255);
+			this.UseRectangularArea = true;
 			this.Quantization     = new NdsQuantization() { 
 				BackdropColor = this.TransparentColor,
 				Format = ColorFormat.Indexed_4bpp
@@ -126,6 +127,11 @@ namespace Ninoimager
 			set;
 		}
 
+		public bool UseRectangularArea {
+			get;
+			set;
+		}
+
 		public ISplitable Splitter {
 			get;
 			set;
@@ -185,7 +191,8 @@ namespace Ninoimager
 
 			// Create sprite format
 			Ncer ncer = new Ncer() {
-				TileSize = 128
+				TileSize = 128,
+				IsRectangularArea = this.UseRectangularArea
 			};
 			ncer.SetFrames(frames);
 
