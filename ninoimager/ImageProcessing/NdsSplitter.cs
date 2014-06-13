@@ -95,8 +95,8 @@ namespace Ninoimager.ImageProcessing
 				this.CreateObjects(frame, objList, x + width, y, height);
 
 			// Go to down
-			if (maxHeight - (y + height) > 0)
-				this.CreateObjects(frame, objList, x, y + height, maxHeight - (y + height));
+			if (maxHeight - height > 0)
+				this.CreateObjects(frame, objList, x, y + height, maxHeight - height);
 		}
 
 		private void GetObjectSize(EmguImage frame, int x, int y, int maxWidth, int maxHeight,
@@ -127,7 +127,7 @@ namespace Ninoimager.ImageProcessing
 				// Get object height
 				height = 0;
 				for (int i = 0; i < this.splitMode.GetLength(0) && height == 0; i++) {
-					if (this.splitMode[i, 0] >= maxHeight - y)
+					if (this.splitMode[i, 0] >= maxHeight)
 						continue;
 
 					if (!Obj.IsValidSize(width, this.splitMode[i, 1]))
@@ -160,7 +160,6 @@ namespace Ninoimager.ImageProcessing
 				return new Point(0, 0);
 
 			image = image.Copy(new Rectangle(xStart, yStart, width, height));
-            image.Save("test.png");
 			return new Point(xStart, yStart);
 		}
 
