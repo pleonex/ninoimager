@@ -144,18 +144,23 @@ namespace Ninoimager.ImageProcessing
 
 		private static Point TrimImage(ref EmguImage image)
 		{
+            // Get border points to get dimensions
 			int xStart = SearchNoTransparentPoint(image, 1);
 			int yStart = SearchNoTransparentPoint(image, 0);
-			int width  = SearchNoTransparentPoint(image, 2) - xStart;
-			int height = SearchNoTransparentPoint(image, 3) - yStart;
+            int width  = SearchNoTransparentPoint(image, 2) - xStart + 1;
+            int height = SearchNoTransparentPoint(image, 3) - yStart + 1;
 
-			width  += 8 - (width  % 8);
-			height += 8 - (height % 8);
+            // Size must be multiple of 8 due to Obj size
+            if (width % 8 != 0)
+			    width  += 8 - (width  % 8);
+            if (height % 8 != 0)
+			    height += 8 - (height % 8);
 
 			if (xStart == -1)
 				return new Point(0, 0);
 
 			image = image.Copy(new Rectangle(xStart, yStart, width, height));
+            image.Save("test.png");
 			return new Point(xStart, yStart);
 		}
 
