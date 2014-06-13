@@ -66,6 +66,7 @@ namespace Ninoimager.ImageProcessing
 			// Return new frame
 			Frame f = new Frame();
 			f.SetObjects(objs.ToArray());
+			f.VisibleArea = new Rectangle(startPos.X - 256, startPos.Y - 128, frame.Width - 1, frame.Height - 1);
 			return f;
 		}
 
