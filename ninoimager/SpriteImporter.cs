@@ -56,6 +56,7 @@ namespace Ninoimager
 			// Default settings
 			this.BgMode = BgMode.Text;
 			this.Format = ColorFormat.Indexed_4bpp;
+            this.DispCnt       = 0x00200010;
 			this.ObjectMode    = ObjMode.Normal;
 			this.PaletteMode   = PaletteMode.Palette16_16;
 			this.PixelEncoding = PixelEncoding.HorizontalTiles;

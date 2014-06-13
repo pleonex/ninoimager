@@ -333,8 +333,6 @@ namespace Ninoimager.Format
 			EmguImage[] emguImages = new EmguImage[images.Length];
 			for (int i = 0; i < images.Length; i++) {
 				emguImages[i] = new EmguImage(images[i]);
-				var mask = emguImages[i].InRange(emguImages[i][0, 0], emguImages[i][0, 0]);
-				emguImages[i].SetValue(0, mask); 
 			}
 
 			return ImportSpriteImage(emguImages);
@@ -353,11 +351,10 @@ namespace Ninoimager.Format
 			importer.Generate(nclrStr, ncgrStr, ncerStr);
 
 			nclrStr.Position = ncgrStr.Position = ncerStr.Position = 0;
-
 			Nclr nclr = new Nclr(nclrStr);
 			Ncgr ncgr = new Ncgr(ncgrStr);
 			Ncer ncer = new Ncer(ncerStr);
-			ncer.CreateBitmap(0, ncgr, nclr).Save("test.png");
+            ncer.CreateBitmap(0, ncgr, nclr).Save("test.png");
 
 			nclrStr.Position = ncgrStr.Position = ncerStr.Position = 0;
 			return Npck.FromSpriteStreams(ncerStr, ncgrStr, nclrStr);
