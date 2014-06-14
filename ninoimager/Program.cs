@@ -38,13 +38,13 @@ namespace Ninoimager
 
 		public static void Main(string[] args)
 		{
-			string offset = "UI/Common/";
-			args = new string[] {
-				"-isp",
-				"/home/benito/Dropbox/Ninokuni español/Imágenes/Originales definitivas/" + offset,
-				"/home/benito/Dropbox/Ninokuni español/Imágenes/N2D/" + offset,
-				"modime.xml"
-			};
+            string offset = "UI/Common/";
+            args = new string[] {
+                "-isp",
+                "/home/benito/Dropbox/Ninokuni español/Imágenes/Originales definitivas/" + offset,
+                "/home/benito/Dropbox/Ninokuni español/Imágenes/N2D/" + offset,
+                "modime.xml"
+            };
 
 			Console.WriteLine("ninoimager ~~ Image importer and exporter for Ni no kuni DS");
 			Console.WriteLine("V {0} ~~ by pleoNeX ~~", Assembly.GetExecutingAssembly().GetName().Version);
@@ -85,7 +85,8 @@ namespace Ninoimager
 
 		private static void SingleImportSp(string baseDir, string outputDir, List<string> importedList)
 		{
-			Dictionary<string, List<string>> spriteGroups = new Dictionary<string, List<string>>();
+            Dictionary<string, SortedList<int, string>> spriteGroups = 
+                new Dictionary<string, SortedList<int, string>>();
 
 			foreach (string imgFile in Directory.EnumerateFiles(baseDir, "*.png", SearchOption.AllDirectories)) {
 				Match match = SpRegex.Match(imgFile);
@@ -94,14 +95,14 @@ namespace Ninoimager
 
 				// Get relative path
 				string imagePath = match.Groups[1].Value;
+                int imageIndex   = Convert.ToInt32(match.Groups[2].Value);
 				string relative  = imagePath.Replace(baseDir, "");
 				if (relative[0] == Path.DirectorySeparatorChar)
 					relative = relative.Substring(1);
 
 				if (!spriteGroups.ContainsKey(relative))
-					spriteGroups.Add(relative, new List<string>());
-
-				spriteGroups[relative].Add(imgFile);
+                    spriteGroups.Add(relative, new SortedList<int, string>());
+                spriteGroups[relative].Add(imageIndex, imgFile);
 			}
 
 			foreach (string relative in spriteGroups.Keys) {
@@ -116,7 +117,7 @@ namespace Ninoimager
 				// Try to import
 				try {
 					Npck ori  = new Npck(original);
-					Npck npck = Npck.ImportSpriteImage(spriteGroups[relative].ToArray());
+                    Npck npck = Npck.ImportSpriteImage(spriteGroups[relative].Values.ToArray());
 
 					npck[5] = ori[5];	// TEMP: Need to generate own NANR file
 					npck.Write(outFile);
@@ -125,6 +126,9 @@ namespace Ninoimager
 				} catch (Exception ex) {
 					Console.WriteLine("## Error ## Importing:  {0}", relative);
 					Console.WriteLine("\t" + ex.Message);
+                    #if DEBUG
+                    Console.WriteLine(ex.ToString());
+                    #endif
 					continue;
 				}
 
