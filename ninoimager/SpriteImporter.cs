@@ -48,6 +48,7 @@ namespace Ninoimager
 	public class SpriteImporter
 	{
 		private List<Tuple<Frame, EmguImage>> frameData;
+        private ColorFormat format;
 
 		public SpriteImporter()
 		{
@@ -55,10 +56,10 @@ namespace Ninoimager
 
 			// Default settings
 			this.BgMode = BgMode.Text;
-            this.Format = ColorFormat.Indexed_8bpp;
+			this.Format = ColorFormat.Indexed_4bpp;
             this.DispCnt       = 0x00200010;
 			this.ObjectMode    = ObjMode.Normal;
-            this.PaletteMode   = PaletteMode.Palette256_1;
+			this.PaletteMode   = PaletteMode.Palette16_16;
 			this.TileSize      = new System.Drawing.Size(64, 64);
 			this.TransparentColor   = new Color(128, 0, 128, 255);
 			this.UseRectangularArea = true;
@@ -98,8 +99,13 @@ namespace Ninoimager
 		}
 
 		public ColorFormat Format {
-			get;
-			set;
+            get { return this.format; }
+            set {
+                this.format = value;
+                NdsQuantization ndsQuant = this.Quantization as NdsQuantization;
+                if (ndsQuant != null)
+                    ndsQuant.Format = value;
+            }
 		}
 
 		public Size TileSize {
@@ -224,7 +230,8 @@ namespace Ninoimager
 		private void CreateData(out Pixel[] pixels, out Color[][] palettes)
 		{
 			int tileSize = 128;
-			int maxColors = 1 << this.Format.Bpp();
+            int maxColors   = 1 << this.Format.Bpp();
+            int numPalettes = (maxColors <= 16) ? 16 : 1;
 
 			// Create the ObjData. Quantizate images.
 			List<Color[]> palettesList = new List<Color[]>();
@@ -261,7 +268,7 @@ namespace Ninoimager
 			// Reduce palettes
 			this.Reducer.Clear();
 			this.Reducer.AddPaletteRange(palettesList.ToArray());
-			this.Reducer.Reduce(1);
+            this.Reducer.Reduce(numPalettes);
 			palettes = this.Reducer.ReducedPalettes;
 
 			// Approximate palettes removed and get the pixel array

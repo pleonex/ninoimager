@@ -117,12 +117,11 @@ namespace Ninoimager
 				// Try to import
 				try {
 					Npck ori  = new Npck(original);
-                    Npck npck = Npck.ImportSpriteImage(spriteGroups[relative].Values.ToArray());
+                    Npck npck = Npck.ImportSpriteImage(spriteGroups[relative].Values.ToArray(), ori);
 
-					npck[5] = ori[5];	// TEMP: Need to generate own NANR file
 					npck.Write(outFile);
-
 					npck.CloseAll();
+                    ori.CloseAll();
 				} catch (Exception ex) {
 					Console.WriteLine("## Error ## Importing:  {0}", relative);
 					Console.WriteLine("\t" + ex.Message);

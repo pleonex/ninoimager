@@ -329,17 +329,17 @@ namespace Ninoimager.Format
 			return packs;
 		}
 
-		public static Npck ImportSpriteImage(string[] images)
+        public static Npck ImportSpriteImage(string[] images, Npck original)
 		{
 			EmguImage[] emguImages = new EmguImage[images.Length];
 			for (int i = 0; i < images.Length; i++) {
 				emguImages[i] = new EmguImage(images[i]);
 			}
 
-			return ImportSpriteImage(emguImages);
+            return ImportSpriteImage(emguImages, original);
 		}
 
-		public static Npck ImportSpriteImage(EmguImage[] images)
+        public static Npck ImportSpriteImage(EmguImage[] images, Npck original)
 		{
 			MemoryStream nclrStr = new MemoryStream();
             MemoryStream ncgrLinealStr = new MemoryStream();
@@ -350,10 +350,25 @@ namespace Ninoimager.Format
 			foreach (EmguImage image in images)
 				importer.AddFrame(image);
 
+            // Set old settings
+            if (original[0] != null) {
+                Nclr nclr = new Nclr(original[0]);
+                if (nclr.NumPalettes == 1) {
+                    importer.Format = ColorFormat.Indexed_8bpp;
+                    importer.PaletteMode = PaletteMode.Palette256_1;
+                } else {
+                    importer.Format = ColorFormat.Indexed_4bpp;
+                    importer.PaletteMode = PaletteMode.Palette16_16;
+                }
+            }
+
             importer.Generate(nclrStr, ncgrLinealStr, ncgrTiledStr, ncerStr);
 
             nclrStr.Position = ncgrTiledStr.Position = ncgrLinealStr.Position = ncerStr.Position = 0;
-            return Npck.FromSpriteStreams(ncerStr, ncgrLinealStr, ncgrTiledStr, nclrStr);
+            Npck npck = Npck.FromSpriteStreams(ncerStr, ncgrLinealStr, ncgrTiledStr, nclrStr);
+
+            npck[5] = original[5];  // TEMP: Need to generate own NANR file.
+            return npck;
 		}
 	}
 }
