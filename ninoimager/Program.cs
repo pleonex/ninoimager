@@ -34,11 +34,11 @@ namespace Ninoimager
 	public static class MainClass
 	{
 		private static readonly Regex BgRegex = new Regex(@"(.+)_6\.nscrm\.png$", RegexOptions.Compiled);
-		private static readonly Regex SpRegex = new Regex(@"(.+)_3\.ncer_(.+)m\.png$", RegexOptions.Compiled);
+        private static readonly Regex SpRegex = new Regex(@"(.+)_3\.ncer_(\d+)m\.png$", RegexOptions.Compiled);
 
 		public static void Main(string[] args)
 		{
-            string offset = "UI/Common/";
+            string offset = "";
             args = new string[] {
                 "-isp",
                 "/home/benito/Dropbox/Ninokuni español/Imágenes/Originales definitivas/" + offset,
@@ -63,7 +63,6 @@ namespace Ninoimager
 				Tests.RunTest(args);
 
 			watch.Stop();
-			Console.WriteLine();
 			Console.WriteLine("It tooks: {0}", watch.Elapsed);
 		}
 
@@ -85,9 +84,11 @@ namespace Ninoimager
 
 		private static void SingleImportSp(string baseDir, string outputDir, List<string> importedList)
 		{
+            int count = 0;
             Dictionary<string, SortedList<int, string>> spriteGroups = 
                 new Dictionary<string, SortedList<int, string>>();
 
+            Console.Write("Searching for images... ");
 			foreach (string imgFile in Directory.EnumerateFiles(baseDir, "*.png", SearchOption.AllDirectories)) {
 				Match match = SpRegex.Match(imgFile);
 				if (!match.Success)
@@ -103,37 +104,45 @@ namespace Ninoimager
 				if (!spriteGroups.ContainsKey(relative))
                     spriteGroups.Add(relative, new SortedList<int, string>());
                 spriteGroups[relative].Add(imageIndex, imgFile);
+                count++;
 			}
 
+            Console.WriteLine("Found {0} images", count);
+            Console.WriteLine("Starting importing...");
 			foreach (string relative in spriteGroups.Keys) {
 				// Get output paths
 				string original = Path.Combine(outputDir, relative) + ".n2d";
 				string outFile  = Path.Combine(outputDir, relative) + "_new.n2d";
+                string[] imgs   = spriteGroups[relative].Values.ToArray();
 
 				// Check if it has been already imported
 				if (importedList.Contains(relative))
 					continue;
 
 				// Try to import
+                Console.Write("|-Importing {0,-40} {1,2} | ", relative, imgs.Length);
 				try {
-					Npck ori  = new Npck(original);
-                    Npck npck = Npck.ImportSpriteImage(spriteGroups[relative].Values.ToArray(), ori);
-
+                    Npck ori  = new Npck(original);
+                    Npck npck = Npck.ImportSpriteImage(imgs, ori);
 					npck.Write(outFile);
+
 					npck.CloseAll();
                     ori.CloseAll();
 				} catch (Exception ex) {
-					Console.WriteLine("## Error ## Importing:  {0}", relative);
-					Console.WriteLine("\t" + ex.Message);
+                    Console.WriteLine("Error: {0}", ex.Message);
                     #if DEBUG
                     Console.WriteLine(ex.ToString());
                     #endif
+                    count -= imgs.Length;
 					continue;
 				}
 
 				importedList.Add(relative);
-				Console.WriteLine("Written with success... {0}", relative);
+                Console.WriteLine("Successfully");
 			}
+
+            Console.WriteLine();
+            Console.WriteLine("Imported {0} images successfully!", count);
 		}
 
 		private static void SearchAndImportBg(string baseDir, string outDir, string modimeXml, string multiXml)
