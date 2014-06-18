@@ -41,12 +41,13 @@ namespace Ninoimager.Format
 		{
 		}
 
-		public static Npck FromSpriteStreams(Stream ncerStr, Stream ncgrStr, Stream nclrStr)
+        public static Npck FromSpriteStreams(Stream ncerStr, Stream ncgrLinealStr,
+            Stream ncgrTiledStr, Stream nclrStr)
 		{
 			Npck npck = new Npck();
 			npck.AddSubfile(nclrStr);
-			npck.AddSubfile(ncgrStr);
-			npck.AddSubfile(null);		// NCBR (NCGR lineal)
+            npck.AddSubfile(ncgrTiledStr);
+            npck.AddSubfile(ncgrLinealStr);
 			npck.AddSubfile(ncerStr);
 			npck.AddSubfile(null);		// Unknown
 			npck.AddSubfile(null);		// NANR
@@ -341,23 +342,18 @@ namespace Ninoimager.Format
 		public static Npck ImportSpriteImage(EmguImage[] images)
 		{
 			MemoryStream nclrStr = new MemoryStream();
-			MemoryStream ncgrStr = new MemoryStream();
+            MemoryStream ncgrLinealStr = new MemoryStream();
+            MemoryStream ncgrTiledStr = new MemoryStream();;
 			MemoryStream ncerStr = new MemoryStream();
 
 			SpriteImporter importer = new SpriteImporter();
 			foreach (EmguImage image in images)
 				importer.AddFrame(image);
 
-			importer.Generate(nclrStr, ncgrStr, ncerStr);
+            importer.Generate(nclrStr, ncgrLinealStr, ncgrTiledStr, ncerStr);
 
-			nclrStr.Position = ncgrStr.Position = ncerStr.Position = 0;
-			Nclr nclr = new Nclr(nclrStr);
-			Ncgr ncgr = new Ncgr(ncgrStr);
-			Ncer ncer = new Ncer(ncerStr);
-            ncer.CreateBitmap(0, ncgr, nclr).Save("test.png");
-
-			nclrStr.Position = ncgrStr.Position = ncerStr.Position = 0;
-			return Npck.FromSpriteStreams(ncerStr, ncgrStr, nclrStr);
+            nclrStr.Position = ncgrTiledStr.Position = ncgrLinealStr.Position = ncerStr.Position = 0;
+            return Npck.FromSpriteStreams(ncerStr, ncgrLinealStr, ncgrTiledStr, nclrStr);
 		}
 	}
 }

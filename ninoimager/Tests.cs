@@ -36,6 +36,44 @@ namespace Ninoimager
 	{
 		public static void RunTest(string[] args)
 		{
+			string pathFile = "/home/benito/tests/";
+            /*args = new string[] {
+                "-tis",
+                pathFile + "button_K_3.ncer",
+                pathFile + "button_K_1.ncgr",
+                pathFile + "button_K_0.nclr"
+            };*/
+			/*args = new string[] {
+				"-tis",
+				pathFile + "ug_hero.NCER",
+				pathFile + "ug_boygirl.NCGR",
+				pathFile + "ug_boygirl.NCLR"
+			};*/
+			/*args = new string[] {
+				"-tis",
+				pathFile + "m2d_ability_menu_obj_00.NCER",
+				pathFile + "m2d_ability_menu_obj_00.NCGR.lz",
+				pathFile + "m2d_common.NCLR"
+			};*/
+			/*args = new string[] {
+				"-tis",
+				pathFile + "c2d_99_00_11.NCER",
+				pathFile + "c2d_99_00_11.NCGR.lz",
+				pathFile + "m2d_common.NCLR"
+			};*/
+            /*args = new string[] {
+				"-tis",
+				pathFile + "titlebutton_3.ncer",
+				pathFile + "titlebutton_1.ncgr",
+				pathFile + "titlebutton_0.nclr"
+            };*/
+			args = new string[] {
+				"-tis",
+				pathFile + "CESA02_3.ncer",
+				pathFile + "CESA02_1.ncgr",
+				pathFile + "CESA02_0.nclr"
+			};
+
 			if (args.Length < 3)
 				return;
 
@@ -370,8 +408,9 @@ namespace Ninoimager
 			FileStream   oldImgStr = new FileStream(imgFile, FileMode.Open);
 			FileStream   oldSprStr = new FileStream(sprFile, FileMode.Open);
 			MemoryStream newPalStr = new MemoryStream();
-			MemoryStream newImgStr = new MemoryStream();
-			MemoryStream newSprStr = new MemoryStream();
+            MemoryStream newImgLinealStr = new MemoryStream();
+            MemoryStream newImgTiledStr = new MemoryStream();
+            MemoryStream newSprStr = new MemoryStream();
 
 			Nclr nclr = new Nclr(oldPalStr);
 			Ncgr ncgr = new Ncgr(oldImgStr);
@@ -382,15 +421,14 @@ namespace Ninoimager
 			importer.Format = ColorFormat.Indexed_4bpp;
 			importer.ObjectMode    = ObjMode.Normal;
 			importer.PaletteMode   = PaletteMode.Palette16_16;
-			importer.PixelEncoding = PixelEncoding.HorizontalTiles;
 			importer.TileSize      = new System.Drawing.Size(64, 64);
 			importer.TransparentColor = new Color(128, 0, 128, 255);
 			importer.Quantization     = new NdsQuantization() { 
 				BackdropColor = importer.TransparentColor,
 				Format = ColorFormat.Indexed_4bpp
 			};
-			importer.Reducer       = new SimilarDistanceReducer();
-			importer.Splitter      = new NdsSplitter(1);
+			importer.Reducer  = new SimilarDistanceReducer();
+			importer.Splitter = new NdsSplitter(1);
 
 			for (int i = 0; i < ncer.NumFrames; i++) {
 				EmguImage bmp = ncer.CreateBitmap(i, ncgr, nclr);
@@ -398,7 +436,7 @@ namespace Ninoimager
 				importer.AddFrame(bmp);
 			}
 
-			importer.Generate(newPalStr, newImgStr, newSprStr);
+            importer.Generate(newPalStr, newImgLinealStr, newImgTiledStr, newSprStr);
 
 			/*
 			if (!Compare(oldPalStr, newPalStr)) {
@@ -418,9 +456,9 @@ namespace Ninoimager
 			}
 			*/
 
-			newPalStr.Position = newImgStr.Position = newSprStr.Position = 0;
+            newPalStr.Position = newImgLinealStr.Position = newImgTiledStr.Position = newSprStr.Position = 0;
 			nclr = new Nclr(newPalStr);
-			ncgr = new Ncgr(newImgStr);
+            ncgr = new Ncgr(newImgTiledStr);
 			ncer = new Ncer(newSprStr);
 			for (int i = 0; i < ncer.NumFrames; i++)
 				ncer.CreateBitmap(i, ncgr, nclr).Save(sprFile + i.ToString() + "m.png");
@@ -429,7 +467,8 @@ namespace Ninoimager
 			oldImgStr.Close();
 			oldSprStr.Close();
 			newPalStr.Close();
-			newImgStr.Close();
+            newImgTiledStr.Close();
+            newImgLinealStr.Close();
 			newSprStr.Close();
 		}
 

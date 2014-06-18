@@ -55,17 +55,16 @@ namespace Ninoimager
 
 			// Default settings
 			this.BgMode = BgMode.Text;
-			this.Format = ColorFormat.Indexed_4bpp;
+            this.Format = ColorFormat.Indexed_8bpp;
             this.DispCnt       = 0x00200010;
 			this.ObjectMode    = ObjMode.Normal;
-			this.PaletteMode   = PaletteMode.Palette16_16;
-			this.PixelEncoding = PixelEncoding.HorizontalTiles;
+            this.PaletteMode   = PaletteMode.Palette256_1;
 			this.TileSize      = new System.Drawing.Size(64, 64);
 			this.TransparentColor   = new Color(128, 0, 128, 255);
 			this.UseRectangularArea = true;
 			this.Quantization     = new NdsQuantization() { 
 				BackdropColor = this.TransparentColor,
-				Format = ColorFormat.Indexed_4bpp
+                Format = this.Format
 			};
 			this.Reducer       = new SimilarDistanceReducer();
 			this.Splitter      = new NdsSplitter(1);
@@ -99,11 +98,6 @@ namespace Ninoimager
 		}
 
 		public ColorFormat Format {
-			get;
-			set;
-		}
-
-		public PixelEncoding PixelEncoding {
 			get;
 			set;
 		}
@@ -160,7 +154,7 @@ namespace Ninoimager
 			image.SetValue(this.TransparentColor, mask);
 		}
 
-		public void Generate(Stream paletteStr, Stream imageStr, Stream spriteStr)
+        public void Generate(Stream paletteStr, Stream imgLinealStr, Stream imgTiledStr, Stream spriteStr)
 		{
 			Pixel[] pixels;
 			Color[][] palettes;
@@ -179,16 +173,30 @@ namespace Ninoimager
 			nclr.SetPalette(palettes);
 
 			// Create image format
-			Ncgr ncgr = new Ncgr() {
+            Ncgr ncgrLineal = new Ncgr() {
 				RegDispcnt  = this.DispCnt,
 				Unknown     = this.UnknownChar,
 				InvalidSize = true
 			};
-			ncgr.Width  = (pixels.Length > 256) ? 256 : pixels.Length;
-			ncgr.Height = (int)Math.Ceiling(pixels.Length / (double)ncgr.Width);
-			if (ncgr.Height % this.TileSize.Height != 0)
-				ncgr.Height += this.TileSize.Height - (ncgr.Height % this.TileSize.Height);
-			ncgr.SetData(pixels, this.PixelEncoding, this.Format, this.TileSize);
+            ncgrLineal.Width  = (pixels.Length > 256) ? 256 : pixels.Length;
+            ncgrLineal.Height = (int)Math.Ceiling(pixels.Length / (double)ncgrLineal.Width);
+
+            // Set pixels in lineal
+            Pixel[] pixelsLineal = new Pixel[ncgrLineal.Width * ncgrLineal.Height];
+            PixelEncoding.HorizontalTiles.Codec(pixels, pixelsLineal, true, ncgrLineal.Width, ncgrLineal.Height, this.TileSize);
+            ncgrLineal.SetData(pixelsLineal, PixelEncoding.Lineal, this.Format, this.TileSize);
+
+            Ncgr ncgrTiled = new Ncgr() {
+                RegDispcnt  = this.DispCnt,
+                Unknown     = this.UnknownChar,
+                InvalidSize = true
+            };
+            ncgrTiled.Width  = (pixels.Length > 256) ? 256 : pixels.Length;
+            ncgrTiled.Height = (int)Math.Ceiling(pixels.Length / (double)ncgrTiled.Width);
+            if (ncgrTiled.Height % this.TileSize.Height != 0)
+                ncgrTiled.Height += this.TileSize.Height - (ncgrTiled.Height % this.TileSize.Height);
+            ncgrTiled.SetData(pixels, PixelEncoding.HorizontalTiles, this.Format, this.TileSize);
+
 
 			// Create sprite format
 			Ncer ncer = new Ncer() {
@@ -200,8 +208,10 @@ namespace Ninoimager
 			// Write data
 			if (paletteStr != null)
 				nclr.Write(paletteStr);
-			if (imageStr != null)
-				ncgr.Write(imageStr);
+            if (imgLinealStr != null)
+                ncgrLineal.Write(imgLinealStr);
+            if (imgTiledStr != null)
+                ncgrTiled.Write(imgTiledStr);
 			if (spriteStr != null)
 				ncer.Write(spriteStr);
 		}
@@ -251,7 +261,7 @@ namespace Ninoimager
 			// Reduce palettes
 			this.Reducer.Clear();
 			this.Reducer.AddPaletteRange(palettesList.ToArray());
-			this.Reducer.Reduce(16);
+			this.Reducer.Reduce(1);
 			palettes = this.Reducer.ReducedPalettes;
 
 			// Approximate palettes removed and get the pixel array
