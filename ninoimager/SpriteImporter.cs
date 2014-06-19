@@ -226,6 +226,7 @@ namespace Ninoimager
         private void CreateData(out Pixel[] pixelsLin, out Pixel[] pixelsHori, out Color[][] palettes)
 		{
 			int tileSize = 128;
+            int fullTileSize = (this.PaletteMode == PaletteMode.Palette16_16) ? tileSize * 2 : tileSize;
             int maxColors   = 1 << this.Format.Bpp();
             int numPalettes = (maxColors <= 16) ? 16 : 1;
 
@@ -288,11 +289,18 @@ namespace Ninoimager
 
 				// Update object
 				data[i].Object.PaletteIndex = (byte)paletteIdx;
-
+                
 				// Add pixels to the list
                 data[i].Object.TileNumber = (ushort)(pixelLinList.Count / tileSize);
                 pixelLinList.AddRange(data[i].PixelsLineal);
                 pixelHoriList.AddRange(data[i].PixelsHorizontal);
+
+                // Pad to tilesize to increment at least one tilenumber next time
+                while (pixelLinList.Count % fullTileSize != 0)
+                    pixelLinList.Add(new Pixel(0, 0, true));
+
+                while (pixelHoriList.Count % fullTileSize != 0)
+                    pixelHoriList.Add(new Pixel(0, 0, true));
 			}
 
             pixelsLin  = pixelLinList.ToArray();
