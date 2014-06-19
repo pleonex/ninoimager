@@ -74,15 +74,9 @@ namespace Ninoimager.ImageProcessing
             this.Palette = palette;
 
 			// and increment the index of every pixels by 1
-            Pixel[] pixels = this.GetPixels(PixelEncoding.Lineal);
-			for (int i = 0; i < pixels.Length; i++) {
+            Pixel[] pixels = this.Pixels;
+			for (int i = 0; i < pixels.Length; i++)
 				pixels[i] = pixels[i].ChangeInfo(pixels[i].Info + 1);
-			}
-
-            pixels = this.GetPixels(PixelEncoding.HorizontalTiles);
-            for (int i = 0; i < pixels.Length; i++) {
-                pixels[i] = pixels[i].ChangeInfo(pixels[i].Info + 1);
-            }
 		}
 
 		private void SortPalette()
@@ -94,21 +88,13 @@ namespace Ninoimager.ImageProcessing
             this.Palette = palette;
 
 			// Update pixel index
-            Pixel[] pixels = this.GetPixels(PixelEncoding.Lineal);
+            Pixel[] pixels = this.Pixels;
 			for (int i = 0; i < pixels.Length; i++) {
 				Color oldColor = messyPalette[pixels[i].Info];
 				int newIndex = Array.FindIndex<Color>(palette, c => c.Equals(oldColor));
 
 				pixels[i] = pixels[i].ChangeInfo((uint)newIndex);
 			}
-
-            pixels = this.GetPixels(PixelEncoding.HorizontalTiles);
-            for (int i = 0; i < pixels.Length; i++) {
-                Color oldColor = messyPalette[pixels[i].Info];
-                int newIndex = Array.FindIndex<Color>(palette, c => c.Equals(oldColor));
-
-                pixels[i] = pixels[i].ChangeInfo((uint)newIndex);
-            }
 		}
 
 		private void FillPalette()

@@ -29,11 +29,6 @@ namespace Ninoimager.ImageProcessing
 {
 	public abstract class ColorQuantization
 	{
-        private Pixel[] pixelsLineal;
-        private Pixel[] pixelsHorizontal;
-        private int width;
-        private int height;
-
 		public ColorQuantization()
 		{
             this.Dithering = new NoDithering<byte>();
@@ -52,17 +47,18 @@ namespace Ninoimager.ImageProcessing
 
 		public void Quantizate(EmguImage image)
         {
-            this.width  = image.Width;
-            this.height = image.Height;
+            this.Width  = image.Width;
+            this.Height = image.Height;
 
-            this.pixelsLineal     = new Pixel[width * height];
-            this.pixelsHorizontal = new Pixel[width * height];
+            this.Pixels = new Pixel[this.Width * this.Height];
             this.PreQuantization(image);
 
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++) {
+            for (int y = 0; y < this.Height; y++) {
+                for (int x = 0; x < this.Width; x++) {
                     Pixel px = this.QuantizatePixel(x, y);
-                    this.SetPixel(x, y, px);
+
+                    int idx = y * this.Width + x;
+                    this.Pixels[idx] = px;
                 }
             }
 
@@ -77,21 +73,24 @@ namespace Ninoimager.ImageProcessing
 
         public Pixel[] GetPixels(PixelEncoding enc)
 		{
-            if (enc == PixelEncoding.HorizontalTiles)
-                return this.pixelsHorizontal;
-            else if (enc == PixelEncoding.Lineal)
-                return this.pixelsLineal;
-            else
-                return null;
+            Pixel[] encoded = new Pixel[this.Width * this.Height];
+            enc.Codec<Pixel>(this.Pixels, encoded, false, this.Width, this.Height, this.TileSize);
+            return encoded;
 		}
 
-        private void SetPixel(int x, int y, Pixel px)
-        {
-            int horizoIdx = PixelEncoding.HorizontalTiles.GetIndex(x, y, width, height, this.TileSize);
-            this.pixelsHorizontal[horizoIdx] = px;
+        public int Width {
+            get;
+            private set;
+        }
 
-            int linealIdx = PixelEncoding.Lineal.GetIndex(x, y, width, height, new Size(width, height));
-            this.pixelsLineal[linealIdx] = px;
+        public int Height {
+            get;
+            private set;
+        }
+
+        protected Pixel[] Pixels {
+            get;
+            private set;
         }
 
         public Color[] Palette {
