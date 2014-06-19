@@ -42,7 +42,7 @@ namespace Ninoimager.Format
 		}
 
         public static Npck FromSpriteStreams(Stream ncerStr, Stream ncgrLinealStr,
-            Stream ncgrTiledStr, Stream nclrStr)
+            Stream ncgrTiledStr, Stream nclrStr, Stream nanrStr)
 		{
 			Npck npck = new Npck();
 			npck.AddSubfile(nclrStr);
@@ -50,7 +50,7 @@ namespace Ninoimager.Format
             npck.AddSubfile(ncgrLinealStr);
 			npck.AddSubfile(ncerStr);
 			npck.AddSubfile(null);		// Unknown
-			npck.AddSubfile(null);		// NANR
+            npck.AddSubfile(nanrStr);
 			npck.AddSubfile(null);		// NSCR
 			npck.AddSubfile(null);		// Unknown
 			npck.AddSubfile(null);		// Unknown
@@ -336,7 +336,12 @@ namespace Ninoimager.Format
 				emguImages[i] = new EmguImage(images[i]);
 			}
 
-            return ImportSpriteImage(emguImages, original);
+            Npck npck = ImportSpriteImage(emguImages, original);
+
+            foreach (EmguImage img in emguImages)
+                img.Dispose();
+
+            return npck;
 		}
 
         public static Npck ImportSpriteImage(EmguImage[] images, Npck original)
@@ -347,8 +352,24 @@ namespace Ninoimager.Format
 			MemoryStream ncerStr = new MemoryStream();
 
 			SpriteImporter importer = new SpriteImporter();
-			foreach (EmguImage image in images)
-				importer.AddFrame(image);
+            foreach (EmguImage image in images)
+            	importer.AddFrame(image);
+
+            // TEMP: Check if the files were present
+            if (original[0] == null)
+                Console.Write("(Warning: No palette) ");
+            if (original[1] == null) {
+                //Console.Write("(Warning: No HImage) ");
+                ncgrTiledStr = null;
+            }
+            if (original[2] == null) {
+                //Console.Write("(Warning: No LImage) ");
+                ncgrLinealStr = null;
+            }
+            if (original[3] == null)
+                Console.Write("(Warning: No sprite) ");
+            if (original[5] == null)
+                Console.Write("(Warning: No animation) ");
 
             // Set old settings
             if (original[0] != null) {
@@ -364,11 +385,14 @@ namespace Ninoimager.Format
 
             importer.Generate(nclrStr, ncgrLinealStr, ncgrTiledStr, ncerStr);
 
-            nclrStr.Position = ncgrTiledStr.Position = ncgrLinealStr.Position = ncerStr.Position = 0;
-            Npck npck = Npck.FromSpriteStreams(ncerStr, ncgrLinealStr, ncgrTiledStr, nclrStr);
+            nclrStr.Position = 0;
+            ncerStr.Position = 0;
+            if (ncgrTiledStr != null)
+                ncgrTiledStr.Position = 0;
+            if (ncgrLinealStr != null)
+                ncgrLinealStr.Position = 0;
 
-            npck[5] = original[5];  // TEMP: Need to generate own NANR file.
-            return npck;
+            return Npck.FromSpriteStreams(ncerStr, ncgrLinealStr, ncgrTiledStr, nclrStr, original[5]);
 		}
 	}
 }
