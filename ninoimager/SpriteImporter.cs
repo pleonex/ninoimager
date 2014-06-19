@@ -61,7 +61,7 @@ namespace Ninoimager
 			this.ObjectMode    = ObjMode.Normal;
 			this.PaletteMode   = PaletteMode.Palette16_16;
 			this.TileSize      = new System.Drawing.Size(64, 64);
-			this.TransparentColor   = new Color(128, 0, 128, 255);
+            this.TransparentColor   = new Color(248, 0, 248, 255);
 			this.UseRectangularArea = true;
 			this.Quantization     = new NdsQuantization() { 
 				BackdropColor = this.TransparentColor,

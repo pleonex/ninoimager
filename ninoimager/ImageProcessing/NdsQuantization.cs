@@ -20,6 +20,7 @@
 // <date>02/22/2014</date>
 // -----------------------------------------------------------------------
 using System;
+using System.Linq;
 using Ninoimager.Format;
 using Color     = Emgu.CV.Structure.Bgra;
 using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Bgra, System.Byte>;
@@ -44,8 +45,13 @@ namespace Ninoimager.ImageProcessing
             base.PostQuantization();
 
             // Normalize palette
-            this.SortPalette();
-            this.AddBackdropColor();
+            //this.SortPalette();
+
+            if (this.Palette.Contains(this.BackdropColor))
+                this.MoveBackdropColor();
+            else
+                this.AddBackdropColor();
+
             this.FillPalette(); // Especially useful when format is 16/16 to divide palettes.
         }
 
@@ -78,6 +84,28 @@ namespace Ninoimager.ImageProcessing
 			for (int i = 0; i < pixels.Length; i++)
 				pixels[i] = pixels[i].ChangeInfo(pixels[i].Info + 1);
 		}
+
+        private void MoveBackdropColor()
+        {
+            // Move the backdrop color to the first position
+            int idx = Array.FindIndex<Color>(this.Palette, c => c.Equals(this.BackdropColor));
+            if (idx == -1)
+                return;
+
+            // Swap color
+            Color swap = this.Palette[0];
+            this.Palette[0]   = this.Palette[idx];
+            this.Palette[idx] = swap;
+
+            // Change pixel info
+            Pixel[] pixels = this.Pixels;
+            for (int i = 0; i < pixels.Length; i++) {
+                if (pixels[i].Info == idx)
+                    pixels[i] = pixels[i].ChangeInfo(0);
+                else if (pixels[i].Info == 0)
+                    pixels[i] = pixels[i].ChangeInfo((uint)idx);
+            }
+        }
 
 		private void SortPalette()
 		{
