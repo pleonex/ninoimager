@@ -30,6 +30,10 @@ namespace Ninoimager.ImageProcessing
 {
 	public class BasicQuantization : ColorQuantization
 	{
+        private List<Color> listColor;
+        private NearestNeighbour<LabColor> nearestNeighbour;
+        private EmguImage image;
+
 		public BasicQuantization()
 		{
 			this.MaxColors = 256;
@@ -40,47 +44,44 @@ namespace Ninoimager.ImageProcessing
 			set;
 		}
 
-		public override void Quantizate(EmguImage image)
-		{
-			List<Color> listColor = new List<Color>();
-			NearestNeighbour<LabColor> nearestNeighbour = null;
+        protected override void PreQuantization(EmguImage image)
+        {
+            this.listColor = new List<Color>();
+            this.nearestNeighbour = null;
+            this.image = image;
+        }
 
-			int width = image.Width;
-			int height = image.Height;
-			this.pixels = new Pixel[width * height];
+        protected override Pixel QuantizatePixel(int x, int y)
+        {
+            // Get the color without the alpha channel and add to the list
+            Color color   = image[y, x];
+            Color noTrans = color;
+            noTrans.Alpha = 255;
 
-			for (int y = 0; y < height; y++) {
-				for (int x = 0; x < width; x++) {
-					// Get the color without the alpha channel and add to the list
-					Color color   = image[y, x];
-					Color noTrans = color;
-					noTrans.Alpha = 255;
+            int colorIndex;
+            if (listColor.Count < this.MaxColors) {
+                if (!listColor.Contains(noTrans))
+                    listColor.Add(noTrans);
+                colorIndex = listColor.IndexOf(noTrans);
+            } else {
+                // Create the labpalette if so
+                if (nearestNeighbour == null) {
+                    LabColor[] labPalette = ColorConversion.ToLabPalette<Color>(listColor.ToArray());
+                    nearestNeighbour = new ExhaustivePaletteSearch();
+                    nearestNeighbour.Initialize(labPalette);
+                }
 
-					int colorIndex;
-					if (listColor.Count < this.MaxColors) {
-						if (!listColor.Contains(noTrans))
-							listColor.Add(noTrans);
-						colorIndex = listColor.IndexOf(noTrans);
-					} else {
-						// Create the labpalette if so
-						if (nearestNeighbour == null) {
-							LabColor[] labPalette = ColorConversion.ToLabPalette<Color>(listColor.ToArray());
-							nearestNeighbour = new ExhaustivePaletteSearch();
-							nearestNeighbour.Initialize(labPalette);
-						}
+                LabColor labNoTrans = ColorConversion.ToLabPalette<Color>(new Color[] { noTrans })[0];
+                colorIndex = nearestNeighbour.Search(labNoTrans);
+            }
 
-						LabColor labNoTrans = ColorConversion.ToLabPalette<Color>(new Color[] { noTrans })[0];
-						colorIndex = nearestNeighbour.Search(labNoTrans);
-					}
+            return new Pixel((uint)colorIndex, (uint)color.Alpha, true);
+        }
 
-					// Finally set the color
-					int index = this.PixelEncoding.GetIndex(x, y, width, height, this.TileSize);
-					this.pixels[index] = new Pixel((uint)colorIndex, (uint)color.Alpha, true);
-				}
-			}
-
-			this.palette = listColor.ToArray();
-		}
+        protected override void PostQuantization()
+        {
+            this.Palette = listColor.ToArray();
+        }
 	}
 }
 

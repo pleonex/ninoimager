@@ -162,9 +162,10 @@ namespace Ninoimager
 
         public void Generate(Stream paletteStr, Stream imgLinealStr, Stream imgTiledStr, Stream spriteStr)
 		{
-			Pixel[] pixels;
+            Pixel[] pixelsLin;
+            Pixel[] pixelsHori;
 			Color[][] palettes;
-			this.CreateData(out pixels, out palettes);
+            this.CreateData(out pixelsLin, out pixelsHori, out palettes);
 
 			// Get frame list
 			Frame[] frames = new Frame[this.frameData.Count];
@@ -184,25 +185,20 @@ namespace Ninoimager
 				Unknown     = this.UnknownChar,
 				InvalidSize = true
 			};
-            ncgrLineal.Width  = (pixels.Length > 256) ? 256 : pixels.Length;
-            ncgrLineal.Height = (int)Math.Ceiling(pixels.Length / (double)ncgrLineal.Width);
-
-            // Set pixels in lineal
-            Pixel[] pixelsLineal = new Pixel[ncgrLineal.Width * ncgrLineal.Height];
-            PixelEncoding.HorizontalTiles.Codec(pixels, pixelsLineal, true, ncgrLineal.Width, ncgrLineal.Height, this.TileSize);
-            ncgrLineal.SetData(pixelsLineal, PixelEncoding.Lineal, this.Format, this.TileSize);
+            ncgrLineal.Width  = (pixelsLin.Length > 256) ? 256 : pixelsLin.Length;
+            ncgrLineal.Height = (int)Math.Ceiling(pixelsLin.Length / (double)ncgrLineal.Width);
+            ncgrLineal.SetData(pixelsLin, PixelEncoding.Lineal, this.Format, this.TileSize);
 
             Ncgr ncgrTiled = new Ncgr() {
                 RegDispcnt  = this.DispCnt,
                 Unknown     = this.UnknownChar,
                 InvalidSize = true
             };
-            ncgrTiled.Width  = (pixels.Length > 256) ? 256 : pixels.Length;
-            ncgrTiled.Height = (int)Math.Ceiling(pixels.Length / (double)ncgrTiled.Width);
+            ncgrTiled.Width  = ncgrLineal.Width;
+            ncgrTiled.Height = ncgrLineal.Height;
             if (ncgrTiled.Height % this.TileSize.Height != 0)
                 ncgrTiled.Height += this.TileSize.Height - (ncgrTiled.Height % this.TileSize.Height);
-            ncgrTiled.SetData(pixels, PixelEncoding.HorizontalTiles, this.Format, this.TileSize);
-
+            ncgrTiled.SetData(pixelsHori, PixelEncoding.HorizontalTiles, this.Format, this.TileSize);
 
 			// Create sprite format
 			Ncer ncer = new Ncer() {
@@ -227,7 +223,7 @@ namespace Ninoimager
 		/// </summary>
 		/// <param name="pixels">Pixels of frames.</param>
 		/// <param name="palettes">Palettes of frames.</param>
-		private void CreateData(out Pixel[] pixels, out Color[][] palettes)
+        private void CreateData(out Pixel[] pixelsLin, out Pixel[] pixelsHori, out Color[][] palettes)
 		{
 			int tileSize = 128;
             int maxColors   = 1 << this.Format.Bpp();
@@ -254,8 +250,9 @@ namespace Ninoimager
 
 					// Quantizate
 					this.Quantization.Quantizate(objData.Image);
-					objData.Pixels  = this.Quantization.GetPixels();
-					objData.Palette = this.Quantization.GetPalette();
+                    objData.PixelsLineal     = this.Quantization.GetPixels(PixelEncoding.Lineal);
+                    objData.PixelsHorizontal = this.Quantization.GetPixels(PixelEncoding.HorizontalTiles);
+					objData.Palette = this.Quantization.Palette;
 					if (objData.Palette.Length > maxColors)
 						throw new FormatException(string.Format("The image has more than {0} colors", maxColors));
 
@@ -272,7 +269,8 @@ namespace Ninoimager
 			palettes = this.Reducer.ReducedPalettes;
 
 			// Approximate palettes removed and get the pixel array
-			List<Pixel> pixelList = new List<Pixel>();
+            List<Pixel> pixelLinList  = new List<Pixel>();
+            List<Pixel> pixelHoriList = new List<Pixel>();
 			for (int i = 0; i < data.Count; i++) {
 				int paletteIdx = this.Reducer.PaletteApproximation[i];
 				if (paletteIdx != -1) {
@@ -282,7 +280,8 @@ namespace Ninoimager
 					quantization.Quantizate(data[i].Image);
 
 					// Get the pixel
-					data[i].Pixels = quantization.GetPixels();
+                    data[i].PixelsLineal     = quantization.GetPixels(PixelEncoding.Lineal);
+                    data[i].PixelsHorizontal = quantization.GetPixels(PixelEncoding.HorizontalTiles);
 				} else {
 					paletteIdx = Array.FindIndex(palettes, p => p == palettesList[i] );
 				}
@@ -291,11 +290,13 @@ namespace Ninoimager
 				data[i].Object.PaletteIndex = (byte)paletteIdx;
 
 				// Add pixels to the list
-				data[i].Object.TileNumber = (ushort)(pixelList.Count / tileSize);
-				pixelList.AddRange(data[i].Pixels);
+                data[i].Object.TileNumber = (ushort)(pixelLinList.Count / tileSize);
+                pixelLinList.AddRange(data[i].PixelsLineal);
+                pixelHoriList.AddRange(data[i].PixelsHorizontal);
 			}
 
-			pixels = pixelList.ToArray();
+            pixelsLin  = pixelLinList.ToArray();
+            pixelsHori = pixelHoriList.ToArray();
 		}
 
 		private class ObjectData
@@ -310,10 +311,15 @@ namespace Ninoimager
 				set;
 			}
 
-			public Pixel[] Pixels {
+            public Pixel[] PixelsLineal {
 				get;
 				set;
 			}
+
+            public Pixel[] PixelsHorizontal {
+                get;
+                set;
+            }
 
 			public Color[] Palette {
 				get;

@@ -166,8 +166,8 @@ namespace Ninoimager
 
 			// Quantizate image -> get pixels and palette
 			this.Quantization.Quantizate(newImg);
-			Pixel[] pixels  = this.Quantization.GetPixels();
-			Color[] palette = this.Quantization.GetPalette();
+            Pixel[] pixels  = this.Quantization.GetPixels(this.PixelEncoding);
+			Color[] palette = this.Quantization.Palette;
 			if (palette.Length > maxColors)
 				throw new FormatException(string.Format("The image has more than {0} colors", maxColors));
 
@@ -220,8 +220,8 @@ namespace Ninoimager
 
 			// Quantizate image -> get pixels
 			this.Quantization.Quantizate(newImg);
-			Pixel[] pixels  = this.Quantization.GetPixels();
-			if (this.Quantization.GetPalette().Length > maxColors)
+            Pixel[] pixels  = this.Quantization.GetPixels(this.PixelEncoding);
+			if (this.Quantization.Palette.Length > maxColors)
 				throw new FormatException(string.Format("The image has more than {0} colors", maxColors));
 
 			// Create map

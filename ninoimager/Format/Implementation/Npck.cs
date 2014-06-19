@@ -240,7 +240,7 @@ namespace Ninoimager.Format
 
 				NdsQuantization quantization = new NdsQuantization();
 				quantization.Quantizate(combinedImg);
-				importer.Quantization = new FixedPaletteQuantization(quantization.GetPalette());
+				importer.Quantization = new FixedPaletteQuantization(quantization.Palette);
 
 				combinedImg.Dispose();
 			}
@@ -298,7 +298,7 @@ namespace Ninoimager.Format
 				// Get quantization to share palette
 				NdsQuantization quantization = new NdsQuantization();
 				quantization.Quantizate(combinedImg);
-				importer.Quantization = new FixedPaletteQuantization(quantization.GetPalette());
+				importer.Quantization = new FixedPaletteQuantization(quantization.Palette);
 			}
 
 			// Get the palette and image file that it's shared
