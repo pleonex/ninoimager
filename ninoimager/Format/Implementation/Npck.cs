@@ -93,12 +93,23 @@ namespace Ninoimager.Format
 					this.AddSubfile(null);
 				} else {
 					MemoryStream subfile = new MemoryStream();
-					this.AddSubfile(subfile);
 
 					strIn.Position = fileOffset + subfileOffset;
 					for (int p = 0; p < subfileSize; p++)
 						subfile.WriteByte(br.ReadByte());
 					subfile.Position = 0;
+
+                    // Check compression
+                    int compr = subfile.ReadByte();
+                    subfile.Position = 0;
+                    if (compr == 0x11) {
+                        MemoryStream decodedSubFile = new MemoryStream();
+                        Lzx.Decode(subfile, (int)subfileSize, decodedSubFile);
+                        subfile.Close();
+                        subfile = decodedSubFile;
+                    }
+
+                    this.AddSubfile(subfile);
 				}
 			}
 		}
@@ -329,14 +340,14 @@ namespace Ninoimager.Format
 			return packs;
 		}
 
-        public static Npck ImportSpriteImage(string[] images, Npck original)
+        public static Npck ImportSpriteImage(string[] images, int[] frames, Npck original)
 		{
 			EmguImage[] emguImages = new EmguImage[images.Length];
 			for (int i = 0; i < images.Length; i++) {
 				emguImages[i] = new EmguImage(images[i]);
 			}
 
-            Npck npck = ImportSpriteImage(emguImages, original);
+            Npck npck = ImportSpriteImage(emguImages, frames, original);
 
             foreach (EmguImage img in emguImages)
                 img.Dispose();
@@ -344,16 +355,41 @@ namespace Ninoimager.Format
             return npck;
 		}
 
-        public static Npck ImportSpriteImage(EmguImage[] images, Npck original)
-		{
-			MemoryStream nclrStr = new MemoryStream();
+        public static Npck ImportSpriteImage(EmguImage[] images, int[] frames, Npck original)
+        {
+            SpriteImporter importer = new SpriteImporter();
+            MemoryStream nclrStr = new MemoryStream();
             MemoryStream ncgrLinealStr = new MemoryStream();
-            MemoryStream ncgrTiledStr = new MemoryStream();;
-			MemoryStream ncerStr = new MemoryStream();
+            MemoryStream ncgrTiledStr = new MemoryStream();
+            MemoryStream ncerStr = new MemoryStream();
 
-			SpriteImporter importer = new SpriteImporter();
-            foreach (EmguImage image in images)
-            	importer.AddFrame(image);
+            // Create sprites images to import
+            // those sprite that have not been exported (they didn't have text)
+            if (original[0] != null) {
+                Nclr nclr = new Nclr(original[0]);
+                Ncgr ncgr = new Ncgr(original[1] == null ? original[2] : original[1]);
+                Ncer ncer = new Ncer(original[3]);
+
+                // Set old settings
+                if (nclr.NumPalettes == 1) {
+                    importer.Format = ColorFormat.Indexed_8bpp;
+                    importer.PaletteMode = PaletteMode.Palette256_1;
+                } else {
+                    importer.Format = ColorFormat.Indexed_4bpp;
+                    importer.PaletteMode = PaletteMode.Palette16_16;
+                }
+
+                int idx = 0;
+                for (int i = 0; i < ncer.NumFrames; i++) {
+                    if (frames.Contains(i))
+                        importer.AddFrame(images[idx++]);
+                    else if (ncer != null)
+                        importer.AddFrame(ncer.CreateBitmap(i, ncgr, nclr), ncer.GetFrame(i));
+                }
+            } else {
+                foreach (EmguImage img in images)
+                    importer.AddFrame(img);
+            }
 
             // TEMP: Check if the files were present
             if (original[0] == null)
@@ -370,19 +406,7 @@ namespace Ninoimager.Format
                 Console.Write("(Warning: No sprite) ");
             if (original[5] == null)
                 Console.Write("(Warning: No animation) ");
-
-            // Set old settings
-            if (original[0] != null) {
-                Nclr nclr = new Nclr(original[0]);
-                if (nclr.NumPalettes == 1) {
-                    importer.Format = ColorFormat.Indexed_8bpp;
-                    importer.PaletteMode = PaletteMode.Palette256_1;
-                } else {
-                    importer.Format = ColorFormat.Indexed_4bpp;
-                    importer.PaletteMode = PaletteMode.Palette16_16;
-                }
-            }
-
+                
             importer.Generate(nclrStr, ncgrLinealStr, ncgrTiledStr, ncerStr);
 
             nclrStr.Position = 0;

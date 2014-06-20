@@ -160,6 +160,13 @@ namespace Ninoimager
 			image.SetValue(this.TransparentColor, mask);
 		}
 
+        public void AddFrame(EmguImage image, Frame frame)
+        {
+            this.frameData.Add(Tuple.Create(frame, image));
+            var mask = image.InRange(new Color(0, 0, 0, 0), new Color(255, 255, 255, 0));
+            image.SetValue(this.TransparentColor, mask);
+        }
+
         public void Generate(Stream paletteStr, Stream imgLinealStr, Stream imgTiledStr, Stream spriteStr)
 		{
             Pixel[] pixelsLin;

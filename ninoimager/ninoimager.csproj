@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
-    <ProductVersion>10.0.0</ProductVersion>
+    <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{70F94E6B-0E3B-4EB5-B86A-E88204E1BD58}</ProjectGuid>
     <OutputType>Exe</OutputType>
@@ -92,6 +92,7 @@
     <Compile Include="ImageProcessing\PaletteReducer.cs" />
     <Compile Include="ImageProcessing\NdsSplitter.cs" />
     <Compile Include="ImageProcessing\SimilarDistanceReducer.cs" />
+    <Compile Include="Format\Implementation\Lzx.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

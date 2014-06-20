@@ -120,11 +120,11 @@ namespace Ninoimager
 					continue;
 
 				// Try to import
-                Console.Write("|-Importing {0,-40} {1,2} | ", relative, imgs.Length);
+                Console.Write("|-Importing {0,-45} {1,2} | ", relative, imgs.Length);
 				try {
                     Npck ori  = new Npck(original);
-                    Npck npck = Npck.ImportSpriteImage(imgs, ori);
-					npck.Write(outFile);
+                    Npck npck = Npck.ImportSpriteImage(imgs, spriteGroups[relative].Keys.ToArray(), ori);
+                    npck.Write(outFile);
 
 					npck.CloseAll();
                     ori.CloseAll();

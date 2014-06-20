@@ -42,6 +42,11 @@ namespace Ninoimager.Format
 			this.frames = (Frame[])frames.Clone();
 		}
 
+        public Frame GetFrame(int i)
+        {
+            return this.frames[i];
+        }
+
 		public Frame[] GetFrames()
 		{
 			return (Frame[])this.frames.Clone();
