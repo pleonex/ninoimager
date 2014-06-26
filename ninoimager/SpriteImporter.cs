@@ -296,23 +296,48 @@ namespace Ninoimager
 
 				// Update object
 				data[i].Object.PaletteIndex = (byte)paletteIdx;
-                
+
+                // Search the data into the array to ensure there is no duplicated tiles
+                int tileNumber = SearchTile(pixelLinList, data[i].PixelsLineal, tileSize);
+                data[i].Object.TileNumber = (ushort)tileNumber;
+
 				// Add pixels to the list
-                data[i].Object.TileNumber = (ushort)(pixelLinList.Count / tileSize);
-                pixelLinList.AddRange(data[i].PixelsLineal);
-                pixelHoriList.AddRange(data[i].PixelsHorizontal);
+                if (tileNumber == -1) {
+                    data[i].Object.TileNumber = (ushort)(pixelLinList.Count / tileSize);
+                    pixelLinList.AddRange(data[i].PixelsLineal);
+                    pixelHoriList.AddRange(data[i].PixelsHorizontal);
 
-                // Pad to tilesize to increment at least one tilenumber next time
-                while (pixelLinList.Count % fullTileSize != 0)
-                    pixelLinList.Add(new Pixel(0, 0, true));
+                    // Pad to tilesize to increment at least one tilenumber next time
+                    while (pixelLinList.Count % fullTileSize != 0)
+                        pixelLinList.Add(new Pixel(0, 0, true));
 
-                while (pixelHoriList.Count % fullTileSize != 0)
-                    pixelHoriList.Add(new Pixel(0, 0, true));
+                    while (pixelHoriList.Count % fullTileSize != 0)
+                        pixelHoriList.Add(new Pixel(0, 0, true));
+                }
 			}
 
             pixelsLin  = pixelLinList.ToArray();
             pixelsHori = pixelHoriList.ToArray();
 		}
+
+        private static int SearchTile(List<Pixel> pixels, Pixel[] tiles, int tileSize)
+        {
+            int tileNumber = -1;
+
+            for (int tilePos = 0; tilePos + tileSize < pixels.Count && tileNumber == -1;
+                 tilePos += tileSize) {
+                if (tilePos + tiles.Length > pixels.Count)
+                    break;
+
+                tileNumber = tilePos;
+                for (int i = 0; i < tiles.Length && tileNumber != -1; i++) {
+                    if (!pixels[tilePos + i].Equals(tiles[i]))
+                        tileNumber = -1;
+                }
+            }
+
+            return tileNumber;
+        }
 
 		private class ObjectData
 		{

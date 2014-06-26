@@ -1,19 +1,19 @@
 // -----------------------------------------------------------------------
 // <copyright file="BasicPaletteReducer.cs" company="none">
-// Copyright (C) 2014 
+// Copyright (C) 2014
 //
 //   This program is free software: you can redistribute it and/or modify
-//   it under the terms of the GNU General Public License as published by 
+//   it under the terms of the GNU General Public License as published by
 //   the Free Software Foundation, either version 3 of the License, or
 //   (at your option) any later version.
 //
-//   This program is distributed in the hope that it will be useful, 
+//   This program is distributed in the hope that it will be useful,
 //   but WITHOUT ANY WARRANTY; without even the implied warranty of
 //   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//   GNU General Public License for more details. 
+//   GNU General Public License for more details.
 //
 //   You should have received a copy of the GNU General Public License
-//   along with this program.  If not, see "http://www.gnu.org/licenses/". 
+//   along with this program.  If not, see "http://www.gnu.org/licenses/".
 // </copyright>
 // <author>pleoNeX</author>
 // <email>benito356@gmail.com</email>
@@ -53,9 +53,14 @@ namespace Ninoimager.ImageProcessing
 			int numApproxPalettes  = 0;
 			List<Color[]> palettes = new List<Color[]>();
 			while (palettes.Count < number && distances.Count > 0) {
-				Difference diff = distances[0];
-
+                Difference diff = distances[0];
 				if (paletteApprox[diff.Palette1] == -2) {
+					// TODO: Check that there is not another equal palette
+					// TODO: Check that Palette2 has not been already approx.
+					//       in that case, don't add palette again.
+					// TODO: Create method AddPalette to try to add colors to
+					//       another palette instead of adding full palette.
+					//       Start with similar palette to get similar colors.
 					palettes.Add(this.Palettes[diff.Palette2]);
 					paletteApprox[diff.Palette2] = -1;
 					paletteApprox[diff.Palette1] = palettes.Count - 1;
@@ -64,11 +69,12 @@ namespace Ninoimager.ImageProcessing
 
 				distances.RemoveAt(0);
 
-				// Check if the non-added palettes still need to be approximated
-				if (palettes.Count + (this.Palettes.Count - numApproxPalettes) <= number) {
-					this.AddRemainingPalettes(palettes, paletteApprox);
-					distances.Clear();
-				}
+                // Check if the non-added palettes still need to be approximated
+                if (palettes.Count + (this.Palettes.Count - numApproxPalettes) <= number) {
+                    this.AddRemainingPalettes(palettes, paletteApprox);
+                    distances.Clear();
+                    break;
+                }
 			}
 
 			// Since we are going to the same but starting from the end -> reverse the list
@@ -177,4 +183,3 @@ namespace Ninoimager.ImageProcessing
 		}
 	}
 }
-
