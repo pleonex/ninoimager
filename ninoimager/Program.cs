@@ -119,6 +119,11 @@ namespace Ninoimager
 				if (importedList.Contains(relative))
 					continue;
 
+                // If original file does not exist, skip
+                // Odd way to import manually images and skip them here
+                if (!File.Exists(original))
+                    continue;
+
 				// Try to import
                 Console.Write("|-Importing {0,-45} {1,2} | ", relative, imgs.Length);
 				try {

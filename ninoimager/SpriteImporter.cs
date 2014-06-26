@@ -324,12 +324,14 @@ namespace Ninoimager
         {
             int tileNumber = -1;
 
-            for (int tilePos = 0; tilePos + tileSize < pixels.Count && tileNumber == -1;
+            for (int tilePos = 0;
+                 tilePos + tileSize < pixels.Count && tileNumber == -1;
                  tilePos += tileSize) {
+
                 if (tilePos + tiles.Length > pixels.Count)
                     break;
 
-                tileNumber = tilePos;
+                tileNumber = tilePos / tileSize;
                 for (int i = 0; i < tiles.Length && tileNumber != -1; i++) {
                     if (!pixels[tilePos + i].Equals(tiles[i]))
                         tileNumber = -1;
