@@ -371,13 +371,11 @@ namespace Ninoimager.Format
                 Ncer ncer = new Ncer(original[3]);
 
                 // Set old settings
-                if (nclr.NumPalettes == 1) {
-                    importer.Format = ColorFormat.Indexed_8bpp;
+                importer.Format = nclr.Format;
+                if (nclr.Format == ColorFormat.Indexed_8bpp)
                     importer.PaletteMode = PaletteMode.Palette256_1;
-                } else {
-                    importer.Format = ColorFormat.Indexed_4bpp;
+                else
                     importer.PaletteMode = PaletteMode.Palette16_16;
-                }
 
                 int idx = 0;
                 for (int i = 0; i < ncer.NumFrames; i++) {
