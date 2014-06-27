@@ -29,43 +29,90 @@ namespace Ninoimager.ImageProcessing
 {
 	public class SimilarDistanceReducer : PaletteReducer
 	{
-        private List<Color[]> reducedPalettes;
+        private Difference[,] distancesMatrix;
         private List<Difference> distances;
-        private int[] paletteApprox;
+        private int[] paletteEquivalent;
 
         public override void Reduce(int number)
         {
             if (this.Palettes.Count == 0 || number <= 0)
                 return;
 
-            this.Preprocess();
+            #if DEBUG
+            System.Diagnostics.Stopwatch watcher = new System.Diagnostics.Stopwatch();
+            watcher.Start();
+            #endif
 
+            this.Preprocess();
+            this.Process(number);
+            this.Postprocess();
+
+            #if DEBUG
+            watcher.Stop();
+            Console.Write("(Time: {0, 5}) ", watcher.ElapsedMilliseconds);
+            #endif
+        }
+       
+        private void Preprocess()
+        {
+            // Initialize the approximation matrix to state not process.
+            this.paletteEquivalent = new int[this.Palettes.Count];
+            for (int i = 0; i < this.paletteEquivalent.Length; i++)
+                this.paletteEquivalent[i] = -2;
+
+            // Get distance between each palette
+            this.distancesMatrix = CalculateDistances(this.Palettes.ToArray());
+
+            // Copy it to a list
+            this.distances = new List<Difference>(this.Palettes.Count * this.Palettes.Count);
+            for (int i = 0; i < this.Palettes.Count; i++) {
+                for (int j = 0; j < this.Palettes.Count; j++) {
+                    if (i != j)
+                        this.distances.Add(this.distancesMatrix[i, j]);
+                }
+            }
+
+            // Sort them to get similar palettes first
+            this.distances.Sort((a, b) => b.Distance.CompareTo(a.Distance));
+            this.distances.Reverse();
+
+            // Remove palettes that are equals
+            this.RemoveRepeatedPalettes();
+
+            // TODO: Create method AddPalette to try to add colors to
+            //       another palette instead of adding full palette.
+            //       Start with palette that contains most colors
+        }
+
+        private void Process(int number)
+        {
             // Start removing similar palettes.
-            while (this.reducedPalettes.Count < number && distances.Count > 0) {
-                // A queue look better
+            int uniquePalettes      = this.CountUniquePalettes();
+            int unprocessedPalettes = this.CountUnprocessedPalettes();
+            while (uniquePalettes < number && distances.Count > 0) {
+                // TODO: A queue look better
                 Difference diff = distances[0];
                 distances.RemoveAt(0);
 
                 // If the source palette has not been approximated yet
-                if (paletteApprox[diff.SrcPalette] == -2) {
-                    // Get the index of the approximated palette
-                    // it won't be always the DstPalette because that palette
-                    // can be already approximated
-                    int newPaletteIdx = this.paletteApprox[diff.DstPalette];    // Approximated
-                    if (newPaletteIdx == -2) {
-                        this.reducedPalettes.Add(this.Palettes[diff.DstPalette]);   // Added
-                        newPaletteIdx = this.reducedPalettes.Count - 1;
-                    } else if (newPaletteIdx == -1) {   // Unique
-                        newPaletteIdx = this.reducedPalettes.IndexOf(this.Palettes[diff.DstPalette]);
+                if (this.paletteEquivalent[diff.SrcPalette] == -2) {
+                    // If the destination palette has not been processed set as unique
+                    if (this.paletteEquivalent[diff.DstPalette] == -2) {
+                        this.paletteEquivalent[diff.DstPalette] = -1;
+                        uniquePalettes++;
                     }
 
-                    // Update paletteApprox array
-                    paletteApprox[diff.DstPalette] = -1;
-                    paletteApprox[diff.SrcPalette] = newPaletteIdx;
+                    // If the destionation palette has not been approximate, set it
+                    int newIdx = this.paletteEquivalent[diff.DstPalette];
+                    if (newIdx == -1)
+                        newIdx = diff.DstPalette;
+
+                    this.paletteEquivalent[diff.SrcPalette] = newIdx;
+                    unprocessedPalettes++;
                 }
 
                 // Check if the non-added palettes still need to be approximated
-                if (this.reducedPalettes.Count + this.CountUnprocessedPalettes() <= number) {
+                if (uniquePalettes + unprocessedPalettes <= number) {
                     this.AddRemainingPalettes();
                     distances.Clear();
                     break;
@@ -83,52 +130,65 @@ namespace Ninoimager.ImageProcessing
                         distances.RemoveAt(i);
                 }
             }
+        }
 
-            this.Postprocess();
+        private void Postprocess()
+        {
+            #if DEBUG
+            Console.Write("(Cost: {0, 5}) ", this.CalculateCost());
+            #endif
+
+            // Add unique palettes and set approximations to them
+            int[] paletteApprox = new int[this.paletteEquivalent.Length];
+            List<Color[]> reducedPalettes = new List<Color[]>();
+
+            for (int i = 0; i < this.paletteEquivalent.Length; i++) {
+                if (this.paletteEquivalent[i] == -2) {
+                    Console.Write("(Warning: Error 0 in SimilarDistanceReducer) ");
+                    continue;
+                }
+
+                // Get the index of the new palette or '-1' if it's unique
+                int palIdx = this.paletteEquivalent[i];
+                Color[] pal = (palIdx == -1) ? this.Palettes[i] : this.Palettes[palIdx];
+
+                // Get the index in of the palette in the final output list of palettes
+                // or add it if it has not been added yet.
+                int newIdx = reducedPalettes.IndexOf(pal);
+                if (newIdx == -1) {
+                    reducedPalettes.Add(pal);
+                    newIdx = reducedPalettes.Count - 1;
+                } 
+
+                paletteApprox[i] = (palIdx == -1) ? -1 : newIdx;
+            }
+
+            this.PaletteApproximation = paletteApprox;
+            this.ReducedPalettes      = reducedPalettes.ToArray();
         }
 
         private int CountUnprocessedPalettes()
         {
+            return this.CountPaletteEquivalent(-2);
+        }
+
+        private int CountUniquePalettes()
+        {
+            return this.CountPaletteEquivalent(-1);
+        }
+
+        private int CountPaletteEquivalent(int equiva)
+        {
             int unprocessed = 0;
-            for (int i = 0; i < this.paletteApprox.Length; i++)
-                if (this.paletteApprox[i] == -2)
+            for (int i = 0; i < this.paletteEquivalent.Length; i++)
+                if (this.paletteEquivalent[i] == equiva)
                     unprocessed++;
 
             return unprocessed;
         }
 
-        private void Preprocess()
-        {
-            // TODO: Create method AddPalette to try to add colors to
-            //       another palette instead of adding full palette.
-            //       Start with palette that contains most colors
-
-
-            // Get distance between each palette
-            this.distances = new List<Difference>(CalculateDistances(this.Palettes.ToArray()));
-
-            // Sort them to get similar palettes first
-            this.distances.Sort((a, b) => b.Distance.CompareTo(a.Distance));
-            this.distances.Reverse();
-
-            // Initialize the approximation matrix to state not process.
-            this.paletteApprox = new int[this.Palettes.Count];
-            for (int i = 0; i < this.paletteApprox.Length; i++)
-                this.paletteApprox[i] = -2;
-
-            // Initilize output palettes
-            this.reducedPalettes = new List<Color[]>();
-
-            // Remove palettes that are equals
-            this.RemoveRepeatedPalettes();
-        }
-
         private void RemoveRepeatedPalettes()
         {
-            int[] approx = new int[this.Palettes.Count];
-            for (int i = 0; i < approx.Length; i++)
-                approx[i] = -2;
-
             while (this.distances.Count > 0 &&  this.distances[0].Distance == 0) {
                 // Remove all entries in the list with DstPalette the number of this
                 // DstPalette, since it will be the same behaviour as DstPalette = this SrcPalette
@@ -137,8 +197,8 @@ namespace Ninoimager.ImageProcessing
                 int removePalette = this.distances[0].SrcPalette;
 
                 // The approximation will be the other palette (they are equals!)
-                approx[samePalette]   = -1;
-                approx[removePalette] = samePalette;
+                this.paletteEquivalent[samePalette]   = -1;
+                this.paletteEquivalent[removePalette] = samePalette;
                 this.distances.RemoveAt(0);
 
                 for (int i = this.distances.Count - 1; i >= 0; i--) {
@@ -149,64 +209,53 @@ namespace Ninoimager.ImageProcessing
                     this.distances.RemoveAt(i);
                 }
 
-                for (int i = 0; i < approx.Length; i++)
-                    if (approx[i] == removePalette)
-                        approx[i] = samePalette;
+                for (int i = 0; i < this.paletteEquivalent.Length; i++)
+                    if (this.paletteEquivalent[i] == removePalette)
+                        this.paletteEquivalent[i] = samePalette;
             }
-
-            for (int i = 0; i < approx.Length; i++) {
-                if (approx[i] == -2)
-                    continue;
-
-                int palIdx = approx[i];
-                Color[] pal = (palIdx == -1) ? this.Palettes[i] : this.Palettes[palIdx];
-                int newIdx = this.reducedPalettes.IndexOf(pal);
-                if (newIdx == -1) {
-                    this.reducedPalettes.Add(pal);
-                    newIdx = this.reducedPalettes.Count - 1;
-                } 
-
-                this.paletteApprox[i] = (palIdx == -1) ? -1 : newIdx;
-            }
-        }
-
-        private void Postprocess()
-        {
-            this.PaletteApproximation = paletteApprox;
-            this.ReducedPalettes      = this.reducedPalettes.ToArray();
         }
 
         private void AddRemainingPalettes()
 		{
-            for (int i = 0; i < this.paletteApprox.Length; i++) {
-                if (this.paletteApprox[i] != -2)
-					continue;
-
-                this.reducedPalettes.Add(this.Palettes[i]);
-                this.paletteApprox[i] = -1;
-			}
+            for (int i = 0; i < this.paletteEquivalent.Length; i++)
+                if (this.paletteEquivalent[i] == -2)
+                    this.paletteEquivalent[i] = -1;
 		}
 
         private bool UpdateApproximation(int srcPal, int dstPal)
 		{
-            if (paletteApprox[dstPal] == -2)
+            // Since we can set it as unique, we can do nothing
+            if (this.paletteEquivalent[dstPal] == -2)
 				return false;
 
-            // If srcPal has not been used and dstPal is approximate... Copy approximation
-            if (paletteApprox[srcPal] == -2 && paletteApprox[dstPal] != -1)
-                paletteApprox[srcPal] = paletteApprox[dstPal];
-            // If srcPal has not been used and dstPal is copied... Set its index
-            else if (paletteApprox[srcPal] == -2 && paletteApprox[dstPal] == -1)
-                paletteApprox[srcPal] = this.reducedPalettes.IndexOf(this.Palettes[dstPal]);
+            // Already processed
+            if (this.paletteEquivalent[srcPal] != -2)
+                return true;
+
+            // If dstPal is approximate... Copy approximation
+            if (this.paletteEquivalent[dstPal] != -1)
+                this.paletteEquivalent[srcPal] = this.paletteEquivalent[dstPal];
+            // If dstPal is unique... Set to it
+            else if (this.paletteEquivalent[dstPal] == -1)
+                this.paletteEquivalent[srcPal] = dstPal;
 
 			return true;
 		}
 
-        private static Difference[] CalculateDistances(Color[][] palettes)
+        private double CalculateCost()
+        {
+            double cost = 0;
+            for (int i = 0; i < this.paletteEquivalent.Length; i++)
+                if (this.paletteEquivalent[i] != -1)
+                    cost += this.distancesMatrix[i, this.paletteEquivalent[i]].Distance;
+
+            return cost;
+        }
+
+        private static Difference[,] CalculateDistances(Color[][] palettes)
 		{
             // Combination of each palette with each palette except with itself (diagonal)
-            int numDiff = palettes.Length * palettes.Length - palettes.Length;
-			Difference[] distances = new Difference[numDiff];
+            Difference[,] distances = new Difference[palettes.Length, palettes.Length];
 
 			// Convert palettes to labcolor space to compute difference
             LabColor[][] labPalettes = new LabColor[palettes.Length][];
@@ -214,17 +263,15 @@ namespace Ninoimager.ImageProcessing
                 labPalettes[i] = ColorConversion.ToLabPalette<Color>(palettes[i]);
 
             // Compute every possible difference
-			int idx = 0;
             for (int i = 0; i < palettes.Length; i++) {
                 for (int j = 0; j < palettes.Length; j++) {
 					if (i == j)
 						continue;
 
-					distances[idx] = new Difference();
-					distances[idx].SrcPalette = i;
-					distances[idx].DstPalette = j;
-                    distances[idx].Distance   = CalculateDistance(labPalettes[i], labPalettes[j]);
-					idx++;
+                    distances[i, j] = new Difference();
+                    distances[i, j].SrcPalette = i;
+                    distances[i, j].DstPalette = j;
+                    distances[i, j].Distance   = CalculateDistance(labPalettes[i], labPalettes[j]);
 				}
 			}
 
