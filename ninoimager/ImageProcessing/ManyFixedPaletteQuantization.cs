@@ -42,6 +42,11 @@ namespace Ninoimager.ImageProcessing
 				labPalettes[i] = ColorConversion.ToLabPalette<Color>(palettes[i]);
 		}
 
+		public int SelectedPalette {
+			get;
+			private set;
+		}
+
 		protected override void PreQuantization(Emgu.CV.Image<Color, byte> image)
 		{
 			// Extract a palette from the image
@@ -52,18 +57,17 @@ namespace Ninoimager.ImageProcessing
 
 			// Compare all possible palettes to get the similar one
 			double minDistance = Double.MaxValue;
-			int palIdx = -1;
 			for (int i = 0; i < palettes.Length; i++) {
 				double distance = PaletteDistance.CalculateDistance(
 					compareLabPalette, this.labPalettes[i]);
 				if (distance < minDistance) {
-					palIdx = i;
+					this.SelectedPalette = i;
 					minDistance = distance;
 				}
 			}
 
 			// Set the palette...
-			this.Palette = this.palettes[palIdx];
+			this.Palette = this.palettes[this.SelectedPalette];
 
 			// ... and run the FixedPaletteQuantization
 			base.PreQuantization(image);

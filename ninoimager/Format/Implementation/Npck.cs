@@ -371,6 +371,8 @@ namespace Ninoimager.Format
                 Ncer ncer = new Ncer(original[3]);
 
                 // Set old settings
+				importer.Quantization = new ManyFixedPaletteQuantization(nclr.GetPalettes());
+				importer.OriginalPalettes = nclr.GetPalettes();
                 importer.Format = nclr.Format;
                 if (nclr.Format == ColorFormat.Indexed_8bpp)
                     importer.PaletteMode = PaletteMode.Palette256_1;

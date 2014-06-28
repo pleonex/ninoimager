@@ -133,6 +133,11 @@ namespace Ninoimager
 			set;
 		}
 
+		public Color[][] OriginalPalettes {
+			get;
+			set;
+		}
+
 		public ISplitable Splitter {
 			get;
 			set;
@@ -264,57 +269,70 @@ namespace Ninoimager
 					if (objData.Palette.Length > maxColors)
 						throw new FormatException(string.Format("The image has more than {0} colors", maxColors));
 
+					ManyFixedPaletteQuantization manyFixed = this.Quantization as ManyFixedPaletteQuantization;
+					if (this.OriginalPalettes != null && manyFixed != null)
+						objData.Object.PaletteIndex = (byte)manyFixed.SelectedPalette;
+
 					palettesList.Add(objData.Palette);
 
 					data.Add(objData);
 				}
 			}
 
-			// Reduce palettes
-			this.Reducer.Clear();
-			this.Reducer.MaxColors = maxColors;
-			this.Reducer.AddPaletteRange(palettesList.ToArray());
-            this.Reducer.Reduce(numPalettes);
-			palettes = this.Reducer.ReducedPalettes;
+			// Reduce palettes if necessary
+			if (this.OriginalPalettes == null) {
+				this.Reducer.Clear();
+				this.Reducer.MaxColors = maxColors;
+				this.Reducer.AddPaletteRange(palettesList.ToArray());
+				this.Reducer.Reduce(numPalettes);
+				palettes = this.Reducer.ReducedPalettes;
 
-			// Approximate palettes removed and get the pixel array
-            List<Pixel> pixelLinList  = new List<Pixel>();
-            List<Pixel> pixelHoriList = new List<Pixel>();
-			for (int i = 0; i < data.Count; i++) {
-				int paletteIdx = this.Reducer.PaletteApproximation[i];
-				if (paletteIdx >= 0) {
-					// Quantizate again the image with the new palette
-					Color[] newPalette = palettes[paletteIdx];
-					FixedPaletteQuantization quantization = new FixedPaletteQuantization(newPalette);
-					quantization.Quantizate(data[i].Image);
+				// Approximate palettes removed
+				for (int i = 0; i < data.Count; i++) {
+					int paletteIdx = this.Reducer.PaletteApproximation[i];
+					if (paletteIdx >= 0) {
+						// Quantizate again the image with the new palette
+						Color[] newPalette = palettes[paletteIdx];
+						FixedPaletteQuantization quantization = new FixedPaletteQuantization(newPalette);
+						quantization.Quantizate(data[i].Image);
 
-					// Get the pixel
-                    data[i].PixelsLineal     = quantization.GetPixels(PixelEncoding.Lineal);
-                    data[i].PixelsHorizontal = quantization.GetPixels(PixelEncoding.HorizontalTiles);
-				} else {
-					paletteIdx = (paletteIdx + 1) * -1;
+						// Get the pixel
+						data[i].PixelsLineal     = quantization.GetPixels(PixelEncoding.Lineal);
+						data[i].PixelsHorizontal = quantization.GetPixels(PixelEncoding.HorizontalTiles);
+					} else {
+						paletteIdx = (paletteIdx + 1) * -1;
+					}
+
+					// Update object
+					data[i].Object.PaletteIndex = (byte)paletteIdx;
 				}
+			} else {
+				if (this.OriginalPalettes.Length > numPalettes)
+					throw new FormatException("More original palettes than allowed");
 
-				// Update object
-				data[i].Object.PaletteIndex = (byte)paletteIdx;
+				palettes = this.OriginalPalettes;
+			}
 
-                // Search the data into the array to ensure there is no duplicated tiles
-                int tileNumber = SearchTile(pixelLinList, data[i].PixelsLineal, tileSize);
-                data[i].Object.TileNumber = (ushort)tileNumber;
+			List<Pixel> pixelLinList  = new List<Pixel>();
+			List<Pixel> pixelHoriList = new List<Pixel>();
+			for (int i = 0; i < data.Count; i++) {
+				// Search the data into the array to ensure there is no duplicated tiles
+				int tileNumber = SearchTile(pixelLinList, data[i].PixelsLineal, tileSize);
+				data[i].Object.TileNumber = (ushort)tileNumber;
 
 				// Add pixels to the list
-                if (tileNumber == -1) {
-                    data[i].Object.TileNumber = (ushort)(pixelLinList.Count / tileSize);
-                    pixelLinList.AddRange(data[i].PixelsLineal);
-                    pixelHoriList.AddRange(data[i].PixelsHorizontal);
+				if (tileNumber == -1) {
+					data[i].Object.TileNumber = (ushort)(pixelLinList.Count / tileSize);
+					pixelLinList.AddRange(data[i].PixelsLineal);
+					pixelHoriList.AddRange(data[i].PixelsHorizontal);
 
-                    // Pad to tilesize to increment at least one tilenumber next time
-                    while (pixelLinList.Count % fullTileSize != 0)
-                        pixelLinList.Add(new Pixel(0, 0, true));
+					// Pad to tilesize to increment at least one tilenumber next time
+					while (pixelLinList.Count % fullTileSize != 0)
+						pixelLinList.Add(new Pixel(0, 0, true));
 
-                    while (pixelHoriList.Count % fullTileSize != 0)
-                        pixelHoriList.Add(new Pixel(0, 0, true));
-                }
+					while (pixelHoriList.Count % fullTileSize != 0)
+						pixelHoriList.Add(new Pixel(0, 0, true));
+				}
 			}
 
             pixelsLin  = pixelLinList.ToArray();
