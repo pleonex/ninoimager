@@ -176,7 +176,8 @@ namespace Ninoimager.Format
                 this.PalInfo.ReadData(strIn);
                 this.Palette = new Color[this.PalInfo.NumObjects][];
 
-                //TODO read palette and image data
+                //TODO read palette and image data                           
+                
 			}
 
 			protected override void WriteData(Stream strOut)
@@ -278,13 +279,15 @@ namespace Ninoimager.Format
                         this.NumObjects = numObjects;
                     }
 
-                    private Info3dType Type { get; set; }
+                    public Info3dType Type { get; set; }
 
-                    private ushort HeaderSize { get; set; }
+                    public ushort HeaderSize { get; set; }
 
-                    private ushort DataSize { get; set; }
+                    public ushort DataSize { get; set; }
 
-                    private byte NumObjects { get; set; }
+                    public byte NumObjects { get; set; }
+
+                    IInfoBase infoBlock;
 
                     public void ReadData(Stream strIn)
                     {
@@ -293,12 +296,12 @@ namespace Ninoimager.Format
                         this.HeaderSize = br.ReadUInt16();
                         this.DataSize   = br.ReadUInt16();
                         
-                        //TODO read info about texture and palette
-                        IInfoBase infoBlock;
+                        //read info block about texture and palette
+                        
                         if (Type == Info3dType.texture)
-                            infoBlock = new InfoBlockTexture();
+                            infoBlock = new InfoBlockTexture(this.NumObjects);
                         else
-                            infoBlock = new InfoBlockPalette();
+                            infoBlock = new InfoBlockPalette(this.NumObjects);
 
                         for (int i = 0; i < this.NumObjects; i++)
                         {
@@ -314,68 +317,89 @@ namespace Ninoimager.Format
 
                     public class InfoBlockTexture : IInfoBase
                     {
+                        public byte NumObjects { get; set; }
+
+                        public InfoBlockTexture(byte numObjects)
+                        {
+                            this.NumObjects = numObjects;
+                        }
+                            
+
                         void IInfoBase.ReadData(Stream strIn)
                         {
+                            //initializing arrays
+                            this.TextureOffset = new ushort[this.NumObjects];
+                            this.parameters = new Params[this.NumObjects];
+                            this.Width = new byte[this.NumObjects];
+                            this.Unknown1 = new byte[this.NumObjects];
+                            this.Unknown2 = new byte[this.NumObjects];
+                            this.Unknown3 = new byte[this.NumObjects];
+
+
                             //reading texture informations...
                             BinaryReader br = new BinaryReader(strIn);
 
-                            this.TextureOffset = (ushort)(br.ReadUInt16() << 3);
-                            this.Parameters    = br.ReadUInt16();
-                            this.Width         = br.ReadByte();
-                            this.Unknown1      = br.ReadByte();
-                            this.Unknown2      = br.ReadByte();
-                            this.Unknown3      = br.ReadByte();
+                            for (int i = 0; i < this.NumObjects; i++)
+                            {
+                                this.TextureOffset[i] = (ushort)(br.ReadUInt16() << 3);
+                                this.Parameters[i] = br.ReadUInt16();
+                                this.Width[i] = br.ReadByte();
+                                this.Unknown1[i] = br.ReadByte();
+                                this.Unknown2[i] = br.ReadByte();
+                                this.Unknown3[i] = br.ReadByte();
 
-                            //now let's get the information inside Parameters
-                            this.parameters = new Params();
-                            this.parameters.CoordTransf = (byte)(this.Parameters & 14);
-                            this.parameters.Color0      = (byte)((this.Parameters >> 13) & 1);
-                            this.parameters.Format      = (byte)((this.Parameters >> 10) & 7);
-                            this.parameters.Height      = (byte)(8 << ((this.Parameters >> 7) & 7));
-                            this.parameters.Width       = (byte)(8 << ((this.Parameters >> 4) & 7));
-                            this.parameters.Flip_Y      = (byte)((this.Parameters >> 3) & 1);
-                            this.parameters.Flip_X      = (byte)((this.Parameters >> 2) & 1);
-                            this.parameters.Repeat_Y    = (byte)((this.Parameters >> 1) & 1);
-                            this.parameters.Repeat_X    = (byte)(this.Parameters & 1);
+                                //now let's get the information inside Parameters
+                                this.parameters[i] = new Params();
+                                this.parameters[i].CoordTransf = (byte)(this.Parameters[i] & 14);
+                                this.parameters[i].Color0 = (byte)((this.Parameters[i] >> 13) & 1);
+                                this.parameters[i].Format = (byte)((this.Parameters[i] >> 10) & 7);
+                                this.parameters[i].Height = (byte)(8 << ((this.Parameters[i] >> 7) & 7));
+                                this.parameters[i].Width = (byte)(8 << ((this.Parameters[i] >> 4) & 7));
+                                this.parameters[i].Flip_Y = (byte)((this.Parameters[i] >> 3) & 1);
+                                this.parameters[i].Flip_X = (byte)((this.Parameters[i] >> 2) & 1);
+                                this.parameters[i].Repeat_Y = (byte)((this.Parameters[i] >> 1) & 1);
+                                this.parameters[i].Repeat_X = (byte)(this.Parameters[i] & 1);
 
-                            //copied from Tinke source code:
-                            if (parameters.Width == 0x00)
-                                switch (this.Unknown1 & 0x3)
-                                {
-                                    case 2:
-                                        parameters.Width = 0x200;
-                                        break;
-                                    default:
-                                        parameters.Width = 0x100;
-                                        break;
-                                }
-                            if (parameters.Height == 0x00)
-                                switch ((this.Unknown1 >> 4) & 0x3)
-                                {
-                                    case 2:
-                                        parameters.Height = 0x200;
-                                        break;
-                                    default:
-                                        parameters.Height = 0x100;
-                                        break;
-                                }
+                                //copied from Tinke source code:
+                                if (parameters[i].Width == 0x00)
+                                    switch (this.Unknown1[i] & 0x3)
+                                    {
+                                        case 2:
+                                            parameters[i].Width = 0x200;
+                                            break;
+                                        default:
+                                            parameters[i].Width = 0x100;
+                                            break;
+                                    }
+                                if (parameters[i].Height == 0x00)
+                                    switch ((this.Unknown1[i] >> 4) & 0x3)
+                                    {
+                                        case 2:
+                                            parameters[i].Height = 0x200;
+                                            break;
+                                        default:
+                                            parameters[i].Height = 0x100;
+                                            break;
+                                    }
+                            }
+
                         }
 
-                        public ushort TextureOffset { get; set; }
+                        public ushort[] TextureOffset { get; set; }
 
-                        public ushort Parameters { get; set; }
+                        public ushort[] Parameters { get; set; }
 
-                        public Params parameters;
+                        public Params[] parameters;
 
-                        public byte Width { get; set; }
+                        public byte[] Width { get; set; }
 
-                        public byte Unknown1 { get; set; }
+                        public byte[] Unknown1 { get; set; }
 
-                        public byte Unknown2 { get; set; }
+                        public byte[] Unknown2 { get; set; }
 
-                        public byte Unknown3 { get; set; }
+                        public byte[] Unknown3 { get; set; }
 
-                        private struct Params
+                        public struct Params
                         {
                             public byte CoordTransf { get; set; }
                             public byte Color0 { get; set; }
@@ -392,21 +416,48 @@ namespace Ninoimager.Format
 
                     public class InfoBlockPalette : IInfoBase
                     {
+                        public byte NumObjects { get; set; }
+
+                        public InfoBlockPalette(byte numObjects)
+                        {
+                            this.NumObjects = numObjects;
+                        }
                         void IInfoBase.ReadData(Stream strIn)
                         {
+                            //initializing arrays
+                            this.PaletteOffset = new ushort[this.NumObjects];
+                            this.Unknown = new ushort[this.NumObjects];
+
                             //reading palette informations...
                             BinaryReader br = new BinaryReader(strIn);
 
-                            this.PaletteOffset = br.ReadUInt16();
-                            this.Unknown       = br.ReadUInt16();
+                            for (int i = 0; i < this.NumObjects; i++)
+                            {
+                                this.PaletteOffset[i] = br.ReadUInt16();
+                                this.Unknown[i] = br.ReadUInt16();
+                            }
+                           
                         }
 
-                        public ushort PaletteOffset { get; set; }
+                        public ushort[] PaletteOffset { get; set; }
 
-                        public ushort Unknown { get; set; }
+                        public ushort[] Unknown { get; set; }
 
                     }
 
+                    public InfoBlockPalette ReturnInfoPalette()
+                    {
+                        if (this.Type == Info3dType.palette)
+                            return (InfoBlockPalette)infoBlock;
+                        return null;
+                    }
+
+                    public InfoBlockTexture ReturnInfoTexture()
+                    {
+                        if (this.Type == Info3dType.palette)
+                            return (InfoBlockTexture)infoBlock;
+                        return null;
+                    }
                 }
 
                 public class NameBlock
