@@ -32,10 +32,12 @@ namespace Ninoimager.ImageProcessing
 		private LabColor[][] labPalettes;
 
 		public ManyFixedPaletteQuantization(Color[][] palettes)
+			: base(palettes[0])
 		{
 			this.compareQuantization = new BasicQuantization();
 			this.palettes = palettes;
 
+			this.labPalettes = new LabColor[palettes.Length][];
 			for (int i = 0; i < palettes.Length; i++)
 				labPalettes[i] = ColorConversion.ToLabPalette<Color>(palettes[i]);
 		}
@@ -49,12 +51,12 @@ namespace Ninoimager.ImageProcessing
 			LabColor[] compareLabPalette = ColorConversion.ToLabPalette<Color>(comparePalette);
 
 			// Compare all possible palettes to get the similar one
-			double minDistance;
+			double minDistance = Double.MaxValue;
 			int palIdx = -1;
 			for (int i = 0; i < palettes.Length; i++) {
 				double distance = PaletteDistance.CalculateDistance(
-					compareLabPalette, this.palettes[i]);
-				if (palIdx == -1 || distance < minDistance) {
+					compareLabPalette, this.labPalettes[i]);
+				if (distance < minDistance) {
 					palIdx = i;
 					minDistance = distance;
 				}
