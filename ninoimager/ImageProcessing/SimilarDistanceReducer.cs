@@ -365,29 +365,12 @@ namespace Ninoimager.ImageProcessing
                     distances[i, j] = new Difference();
                     distances[i, j].SrcPalette = i;
                     distances[i, j].DstPalette = j;
-                    distances[i, j].Distance   = CalculateDistance(labPalettes[i], labPalettes[j]);
+					distances[i, j].Distance   = PaletteDistance.CalculateDistance(
+						labPalettes[i], labPalettes[j]);
 				}
 			}
 
 			return distances;
-		}
-
-        private static double CalculateDistance(LabColor[] palette1, LabColor[] palette2)
-		{
-			double totalDistance = 0;
-
-			for (int i = 0; i < palette1.Length; i++) {
-				double minColorDistance = -1;
-				for (int j = 0; j < palette2.Length; j++) {
-					double distance = palette1[i].GetDistanceSquared(palette2[j]);
-					if (minColorDistance == -1 || distance < minColorDistance)
-						minColorDistance = distance;
-				}
-
-				totalDistance += minColorDistance;
-			}
-
-			return totalDistance;
 		}
            
 		private static Difference[] CalculateDifferentsColors(Color[][] palettes, int idx)
@@ -404,21 +387,12 @@ namespace Ninoimager.ImageProcessing
 				distances[j] = new Difference();
 				distances[j].SrcPalette = idx;
 				distances[j].DstPalette = i;
-				distances[j].Distance = CalculateDifferentsColors(palettes[idx], palettes[i]);
+				distances[j].Distance = PaletteDistance.CalculateDifferentsColors(
+					palettes[idx], palettes[i]);
 				j++;
 			}
 
 			return distances;
-		}
-
-		private static int CalculateDifferentsColors(Color[] palette1, Color[] palette2)
-		{
-			int count = 0;
-			foreach (Color c in palette1)
-				if (!palette2.Contains(c))
-					count++;
-
-			return count;
 		}
 
         /// <summary>>

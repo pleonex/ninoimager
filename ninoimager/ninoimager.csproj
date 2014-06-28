@@ -93,6 +93,8 @@
     <Compile Include="ImageProcessing\NdsSplitter.cs" />
     <Compile Include="ImageProcessing\SimilarDistanceReducer.cs" />
     <Compile Include="Format\Implementation\Lzx.cs" />
+    <Compile Include="ImageProcessing\ManyFixedPaletteQuantization.cs" />
+    <Compile Include="ImageProcessing\PaletteDistance.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
