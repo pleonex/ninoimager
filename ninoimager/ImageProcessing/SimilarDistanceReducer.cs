@@ -29,6 +29,8 @@ namespace Ninoimager.ImageProcessing
 {
 	public class SimilarDistanceReducer : PaletteReducer
 	{
+		private static readonly Color NullColor = new Color(0, 0, 0, 0);
+
         private Difference[,] distancesMatrix;
         private List<Difference> distances;
         private int[] paletteEquivalent;
@@ -79,8 +81,18 @@ namespace Ninoimager.ImageProcessing
 
             // Remove palettes that are equals
 			this.internalPalettes = new List<Color[]>(this.Palettes);
-			this.RemoveRepeatedPalettes();
-			//this.JoinPalettes();
+			//this.RemoveRepeatedPalettes();
+			this.JoinPalettes();
+
+			// OBVIOUSLY TEMP:
+			this.distancesMatrix = CalculateDistances(this.internalPalettes.ToArray());
+			this.distances = new List<Difference>(this.Palettes.Count * this.Palettes.Count);
+			for (int i = 0; i < this.Palettes.Count; i++) {
+				for (int j = 0; j < this.Palettes.Count; j++) {
+					if (i != j)
+						this.distances.Add(this.distancesMatrix[i, j]);
+				}
+			}
         }
 
         private void Process(int number)
@@ -190,28 +202,19 @@ namespace Ninoimager.ImageProcessing
 
 		private void JoinPalettes()
 		{
-			for (int i = 0; i < this.Palettes.Count; i++)
-				Ninoimager.Format.Palette.CreateBitmap(this.Palettes[i]).Save("test" + i.ToString() + ".png");
-
-			// Calculate how many colors has each palette different to others
-			List<Difference> diffColors = new List<Difference>(
-				CalculateDifferentsColors(this.Palettes.ToArray()));
-			diffColors.Sort((a, b) => b.Distance.CompareTo(a.Distance));
-			diffColors.Reverse();
-
 			// For each palette, try to add it to other
 			for (int i = 0; i < this.Palettes.Count; i++) {
-				List<Difference> diffs = diffColors.FindAll(d => d.SrcPalette == i);
+				// Calculate how many colors has each palette different to others
+				List<Difference> diffColors = new List<Difference>(
+					CalculateDifferentsColors(this.internalPalettes.ToArray(), i));
+				diffColors.Sort((a, b) => b.Distance.CompareTo(a.Distance));
+				diffColors.Reverse();
+
 				bool found = false;
+				while (!found && diffColors.Count > 0) {
+					Difference diff = diffColors[0];
+					diffColors.RemoveAt(0);
 
-				while (!found && diffs.Count > 0) {
-					Difference diff = diffs[0];
-					diffs.RemoveAt(0);
-
-					Color[] dstPalette = this.internalPalettes[diff.DstPalette];
-					if (dstPalette.Length + diff.Distance > MaxColors)
-						continue;
-						
 					int newIdx = this.paletteEquivalent[diff.DstPalette];
 					if (newIdx < 0)
 						newIdx = diff.DstPalette;
@@ -219,8 +222,12 @@ namespace Ninoimager.ImageProcessing
 					if (newIdx == i)
 						continue;
 
+					Color[] dstPalette = this.internalPalettes[newIdx];
+					if (CountColorInPalette(dstPalette) + diff.Distance > MaxColors)
+						continue;
+
 					JoinPalettes(this.internalPalettes[diff.SrcPalette], ref dstPalette);
-					this.internalPalettes[diff.DstPalette] = dstPalette;
+					this.internalPalettes[newIdx] = dstPalette;
 					found = true;
 
 					this.paletteEquivalent[i] = newIdx;
@@ -240,11 +247,25 @@ namespace Ninoimager.ImageProcessing
 		{
 			List<Color> outputPalette = new List<Color>(dstPalette);
 			foreach (Color c in srcPalette) {
-				if (!outputPalette.Contains(c))
-					outputPalette.Add(c);
+				if (outputPalette.Contains(c))
+					continue;
+
+				// Remove one null color (color to fill space) and add our color
+				outputPalette.Remove(NullColor);
+				outputPalette.Add(c);
 			}
 
 			dstPalette = outputPalette.ToArray();
+		}
+
+		private static int CountColorInPalette(Color[] palette)
+		{
+			int count = 0;
+			foreach (Color c in palette)
+				if (!c.Equals(NullColor))
+					count++;
+
+			return count;
 		}
 
         private void RemoveRepeatedPalettes()
@@ -362,25 +383,22 @@ namespace Ninoimager.ImageProcessing
 			return totalDistance;
 		}
            
-		private static Difference[] CalculateDifferentsColors(Color[][] palettes)
+		private static Difference[] CalculateDifferentsColors(Color[][] palettes, int idx)
 		{
-			// Combination of each palette with each palette except with itself (diagonal)
-			int numDiff = palettes.Length * palettes.Length - palettes.Length;
-			Difference[] distances = new Difference[numDiff];
+			// Combination of the palette with other palette except with itself
+			Difference[] distances = new Difference[palettes.Length - 1];
 
 			// Compute every possible difference
-			int idx = 0;
+			int j = 0;
 			for (int i = 0; i < palettes.Length; i++) {
-				for (int j = 0; j < palettes.Length; j++) {
-					if (i == j)
-						continue;
+				if (idx == i)
+					continue;
 
-					distances[idx] = new Difference();
-					distances[idx].SrcPalette = i;
-					distances[idx].DstPalette = j;
-					distances[idx].Distance = CalculateDifferentsColors(palettes[i], palettes[j]);
-					idx++;
-				}
+				distances[j] = new Difference();
+				distances[j].SrcPalette = idx;
+				distances[j].DstPalette = i;
+				distances[j].Distance = CalculateDifferentsColors(palettes[idx], palettes[i]);
+				j++;
 			}
 
 			return distances;
