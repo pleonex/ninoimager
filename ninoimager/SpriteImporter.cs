@@ -272,6 +272,7 @@ namespace Ninoimager
 
 			// Reduce palettes
 			this.Reducer.Clear();
+			this.Reducer.MaxColors = maxColors;
 			this.Reducer.AddPaletteRange(palettesList.ToArray());
             this.Reducer.Reduce(numPalettes);
 			palettes = this.Reducer.ReducedPalettes;
@@ -281,7 +282,7 @@ namespace Ninoimager
             List<Pixel> pixelHoriList = new List<Pixel>();
 			for (int i = 0; i < data.Count; i++) {
 				int paletteIdx = this.Reducer.PaletteApproximation[i];
-				if (paletteIdx != -1) {
+				if (paletteIdx >= 0) {
 					// Quantizate again the image with the new palette
 					Color[] newPalette = palettes[paletteIdx];
 					FixedPaletteQuantization quantization = new FixedPaletteQuantization(newPalette);
@@ -291,7 +292,7 @@ namespace Ninoimager
                     data[i].PixelsLineal     = quantization.GetPixels(PixelEncoding.Lineal);
                     data[i].PixelsHorizontal = quantization.GetPixels(PixelEncoding.HorizontalTiles);
 				} else {
-					paletteIdx = Array.FindIndex(palettes, p => p == palettesList[i] );
+					paletteIdx = (paletteIdx + 1) * -1;
 				}
 
 				// Update object

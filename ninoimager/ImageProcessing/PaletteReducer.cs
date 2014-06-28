@@ -31,6 +31,16 @@ namespace Ninoimager
 		private Color[][] reducedPalettes;
 		private int[] paletteApproximation;
 
+		public PaletteReducer()
+		{
+			this.MaxColors = 16;
+		}
+
+		public int MaxColors {
+			get;
+			set;
+		}
+
 		public void AddPalette(Color[] palette)
 		{
 			this.palettes.Add(palette);
