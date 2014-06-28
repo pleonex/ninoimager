@@ -81,18 +81,22 @@ namespace Ninoimager.ImageProcessing
 
             // Remove palettes that are equals
 			this.internalPalettes = new List<Color[]>(this.Palettes);
-			//this.RemoveRepeatedPalettes();
+			this.RemoveRepeatedPalettes();
 			this.JoinPalettes();
 
-			// OBVIOUSLY TEMP:
+			// OBVIOUSLY TEMP: Update distances
 			this.distancesMatrix = CalculateDistances(this.internalPalettes.ToArray());
-			this.distances = new List<Difference>(this.Palettes.Count * this.Palettes.Count);
-			for (int i = 0; i < this.Palettes.Count; i++) {
-				for (int j = 0; j < this.Palettes.Count; j++) {
-					if (i != j)
-						this.distances.Add(this.distancesMatrix[i, j]);
+			for (int i = 0; i < this.internalPalettes.Count; i++) {
+				for (int j = 0; j < this.internalPalettes.Count; j++) {
+					int index = this.distances.FindIndex(
+						diff => diff.SrcPalette == i && diff.DstPalette == j);
+
+					if (index != -1)
+						this.distances[index] = this.distancesMatrix[i, j];
 				}
 			}
+			this.distances.Sort((a, b) => b.Distance.CompareTo(a.Distance));
+			this.distances.Reverse();
         }
 
         private void Process(int number)
@@ -204,6 +208,9 @@ namespace Ninoimager.ImageProcessing
 		{
 			// For each palette, try to add it to other
 			for (int i = 0; i < this.Palettes.Count; i++) {
+				if (this.paletteEquivalent[i] != -2)
+					continue;
+
 				// Calculate how many colors has each palette different to others
 				List<Difference> diffColors = new List<Difference>(
 					CalculateDifferentsColors(this.internalPalettes.ToArray(), i));
@@ -280,7 +287,7 @@ namespace Ninoimager.ImageProcessing
 				int removePalette = diff.SrcPalette;
 
                 // The approximation will be the other palette (they are equals!)
-				this.paletteEquivalent[samePalette]   = -1;
+				this.paletteEquivalent[samePalette]   = -2;
                 this.paletteEquivalent[removePalette] = samePalette;
 
 				this.RemovePalette(removePalette, samePalette);
