@@ -55,12 +55,11 @@ namespace Ninoimager
 			this.frameData = new List<Tuple<Frame, EmguImage>>();
 
 			// Default settings
-			this.BgMode = BgMode.Text;
-			this.Format = ColorFormat.Indexed_4bpp;
-            this.DispCnt       = 0x00200010;
-			this.ObjectMode    = ObjMode.Normal;
-			this.PaletteMode   = PaletteMode.Palette16_16;
-			this.TileSize      = new System.Drawing.Size(64, 64);
+			this.Format      = ColorFormat.Indexed_4bpp;
+            this.DispCnt     = 0x00200010;
+			this.ObjectMode  = ObjMode.Normal;
+			this.PaletteMode = PaletteMode.Palette16_16;
+			this.TileSize    = new System.Drawing.Size(64, 64);
             this.TransparentColor   = new Color(248, 0, 248, 255);
 			this.UseRectangularArea = true;
 			this.Quantization     = new NdsQuantization() { 
@@ -89,11 +88,6 @@ namespace Ninoimager
 		}
 
 		public uint UnknownChar {
-			get;
-			set;
-		}
-
-		public BgMode BgMode {
 			get;
 			set;
 		}

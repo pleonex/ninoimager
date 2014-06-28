@@ -37,9 +37,11 @@ namespace Ninoimager.ImageProcessing
 			this.compareQuantization = new BasicQuantization();
 			this.palettes = palettes;
 
-			this.labPalettes = new LabColor[palettes.Length][];
-			for (int i = 0; i < palettes.Length; i++)
-				labPalettes[i] = ColorConversion.ToLabPalette<Color>(palettes[i]);
+			if (palettes.Length > 1) {
+				this.labPalettes = new LabColor[palettes.Length][];
+				for (int i = 0; i < palettes.Length; i++)
+					labPalettes[i] = ColorConversion.ToLabPalette<Color>(palettes[i]);
+			}
 		}
 
 		public int SelectedPalette {
@@ -49,6 +51,12 @@ namespace Ninoimager.ImageProcessing
 
 		protected override void PreQuantization(Emgu.CV.Image<Color, byte> image)
 		{
+			// If only there is one, do nothing
+			if (this.palettes.Length == 1) {
+				base.PreQuantization(image);
+				return;
+			}
+
 			// Extract a palette from the image
 			this.compareQuantization.TileSize = this.TileSize;
 			this.compareQuantization.Quantizate(image);

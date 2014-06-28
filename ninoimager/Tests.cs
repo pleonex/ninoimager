@@ -417,7 +417,6 @@ namespace Ninoimager
 			Ncer ncer = new Ncer(oldSprStr);
 
 			SpriteImporter importer = new SpriteImporter();
-			importer.BgMode = BgMode.Text;
 			importer.Format = ColorFormat.Indexed_4bpp;
 			importer.ObjectMode    = ObjMode.Normal;
 			importer.PaletteMode   = PaletteMode.Palette16_16;
