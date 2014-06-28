@@ -117,7 +117,8 @@ namespace Ninoimager
 			double green = ((value & 0x03E0) >> 05) * 8.0;
 			double blue  = ((value & 0x7C00) >> 10) * 8.0;
 
-			return new Color(red, green, blue, 255);
+			// TEMP: Swap blue and red due to odd bug of Emug.CV
+			return new Color(blue, green, red, 255);
 		}
 
 		public static Color[] ToBgr555Colors(this byte[] values)
