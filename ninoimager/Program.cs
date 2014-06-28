@@ -38,25 +38,18 @@ namespace Ninoimager
 
 		public static void Main(string[] args)
 		{
-            string offset = "";
-            args = new string[] {
-                "-isp",
-                "/home/benito/Dropbox/Ninokuni español/Imágenes/Originales definitivas/" + offset,
-                "/home/benito/Dropbox/Ninokuni español/Imágenes/N2D/" + offset,
-                "modime.xml"
-            };
-
-			Console.WriteLine("ninoimager ~~ Image importer and exporter for Ni no kuni DS");
+            Console.WriteLine("ninoimager ~~ Image importer and exporter for Ni no kuni DS");
 			Console.WriteLine("V {0} ~~ by pleoNeX ~~", Assembly.GetExecutingAssembly().GetName().Version);
 			Console.WriteLine();
 
 			Stopwatch watch = new Stopwatch();
 			watch.Start();
 
-			if ((args.Length == 4 || args.Length == 5) && args[0] == "-ibg")
-				SearchAndImportBg(args[1], args[2], args[3], (args.Length == 5) ? args[4] : string.Empty);
-			else if (args.Length == 4 && args[0] == "-isp")
-				SearchAndImportSp(args[1], args[2], args[3]);
+			if ((args.Length == 5 || args.Length == 6) && args[0] == "-ibg")
+				SearchAndImportBg(args[1], args[2], args[3], args[4],
+									(args.Length == 6) ? args[5] : string.Empty);
+			else if (args.Length == 5 && args[0] == "-isp")
+				SearchAndImportSp(args[1], args[2], args[3], args[4]);
 			else if (args.Length == 2 && args[0] == "-efr")
 				SearchAndExportBg(args[1]);
 			else
@@ -66,11 +59,14 @@ namespace Ninoimager
 			Console.WriteLine("It tooks: {0}", watch.Elapsed);
 		}
 
-		private static void SearchAndImportSp(string baseDir, string outDir, string modimeXml)
+		private static void SearchAndImportSp(string baseDir, string outDir,
+			string infoPath, string editPath)
 		{
 			Console.WriteLine("@ Batch import");
 			Console.WriteLine("From: {0}", baseDir);
 			Console.WriteLine("To:   {0}", outDir);
+			Console.WriteLine("Info XML: {0}", infoPath);
+			Console.WriteLine("Edit XML: {0}", editPath);
 			Console.WriteLine();
 
 			List<string> imported = new List<string>();
@@ -79,7 +75,7 @@ namespace Ninoimager
 			SingleImportSp(baseDir, outDir, imported);
 
 			// Create a new XML document with data of the modime XMLs
-			CreateModimeXml(imported.ToArray(), modimeXml);
+			UpdateModimeXml(imported.ToArray(), infoPath, editPath);
 		}
 
 		private static void SingleImportSp(string baseDir, string outputDir, List<string> importedList)
@@ -150,13 +146,15 @@ namespace Ninoimager
             Console.WriteLine("Imported {0} images successfully!", count);
 		}
 
-		private static void SearchAndImportBg(string baseDir, string outDir, string modimeXml, string multiXml)
+		private static void SearchAndImportBg(string baseDir, string outDir,
+			string infoPath, string editPath, string multiXml)
 		{
 			Console.WriteLine("@ Batch import");
 			Console.WriteLine("From: {0}", baseDir);
 			Console.WriteLine("To:   {0}", outDir);
-			Console.WriteLine("Modime XML:       {0}", modimeXml);
-			Console.WriteLine("MultiImport from: {0}", multiXml);
+			Console.WriteLine("Info XML:    {0}", infoPath);
+			Console.WriteLine("Edit XML:    {0}", editPath);
+			Console.WriteLine("MultiImport: {0}", multiXml);
 			Console.WriteLine();
 
 			List<string> imported = new List<string>();
@@ -168,7 +166,7 @@ namespace Ninoimager
 			SingleImportBg(baseDir, outDir, imported);
 
 			// Create a new XML document with data of the modime XMLs
-			CreateModimeXml(imported.ToArray(), modimeXml);
+			UpdateModimeXml(imported.ToArray(), infoPath, editPath);
 		}
 
 		private static void MultiImportBg(string baseDir, string outputDir, List<string> importedList, string xml)
@@ -297,6 +295,45 @@ namespace Ninoimager
 			}
 
 			xml.Save(outputXml);
+		}
+
+		private static void UpdateModimeXml(string[] relativePaths, string infoPath, string editPath)
+		{
+			const string RootName    = "/Ninokuni.nds";
+			const string BaseRomPath = "/Ninokuni.nds/ROM/data/";
+
+			// Open Info XML
+			XDocument infoXml  = XDocument.Load(infoPath);
+			XElement  infoRoot = infoXml.Root.Element("Files");
+
+			// Open Edit XML
+			XDocument editXml  = XDocument.Load(editPath);
+			XElement  editRoot = editXml.Root.Element("Files");
+
+			// For each entry to add
+			foreach (string relative in relativePaths) {
+				string path = Path.Combine(BaseRomPath, relative) + ".n2d";
+
+				// If it's not there, add it
+				if (infoRoot.Elements().Count(e => e.Element("Path").Value == path) == 0) {
+					XElement xedit = new XElement("FileInfo");
+					xedit.Add(new XElement("Path", path));
+					xedit.Add(new XElement("Type", "Common.Replace"));
+					xedit.Add(new XElement("DependsOn", RootName));
+					infoRoot.Add(xedit);
+				}
+
+				// If it's not there, add it
+				if (editRoot.Elements().Count(e => e.Element("Path").Value == path) == 0) {
+					XElement xgame = new XElement("File");
+					xgame.Add(new XElement("Path", path));
+					xgame.Add(new XElement("Import", "{$ImagePath}/" + relative + "_new.n2d"));
+					editRoot.Add(xgame);
+				}
+			}
+
+			infoXml.Save(infoPath);
+			editXml.Save(editPath);
 		}
 
 		private static void SearchAndExportBg(string baseDir)
