@@ -62,10 +62,11 @@ namespace Ninoimager
 			// Assign color to each pixel
 			for (int y = yStart; y < yEnd; y++) {
 				for (int x = xStart; x < xEnd; x++) {
+					// TEMP: Swap blue and red due to odd bug of Emug.CV
 					int cIdx = (y - yStart) * area.Width + (x - xStart);
-					data[y, x, 0] = (byte)pixels[cIdx].Red;
+					data[y, x, 0] = (byte)pixels[cIdx].Blue;
 					data[y, x, 1] = (byte)pixels[cIdx].Green;
-					data[y, x, 2] = (byte)pixels[cIdx].Blue;
+					data[y, x, 2] = (byte)pixels[cIdx].Red;
 					data[y, x, 3] = (byte)pixels[cIdx].Alpha;
 				}
 			}
