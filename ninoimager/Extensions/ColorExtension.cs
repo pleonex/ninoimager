@@ -20,7 +20,7 @@
 // <date>20/08/2013</date>
 // -----------------------------------------------------------------------
 using System;
-using Color    = Emgu.CV.Structure.Rgba;
+using Color    = Emgu.CV.Structure.Bgra;
 using LabColor = Emgu.CV.Structure.Lab;
 
 namespace Ninoimager
@@ -73,32 +73,28 @@ namespace Ninoimager
 		public static Color ToArgbColor(this uint argb)
 		{
 			return new Color(
-				(argb >> 16) & 0xFF,
-				(argb >> 08) & 0xFF,
 				(argb >> 00) & 0xFF,
+				(argb >> 08) & 0xFF,
+				(argb >> 16) & 0xFF,
 				(argb >> 24) & 0xFF
 			);
 		}
 
 		public static uint ToArgb(this Color color)
 		{
-			// TODO: Swap blue and red component once the bug is fixed in EmguCV
-			// Bug: http://www.emgu.com/bugs/show_bug.cgi?id=89
 			return (uint)(
-				((byte)color.Blue  << 16) |
+				((byte)color.Red   << 16) |
 				((byte)color.Green << 08) |
-				((byte)color.Red   << 00) |
+				((byte)color.Blue  << 00) |
 				((byte)color.Alpha << 24)
 			);
 		}
 
 		public static ushort ToBgr555(this Color color)
 		{
-			// TODO: Swap blue and red component once the bug is fixed in EmguCV
-			// Bug: http://www.emgu.com/bugs/show_bug.cgi?id=89
-			int red   = (int)(color.Blue  / 8);
+			int red   = (int)(color.Red   / 8);
 			int green = (int)(color.Green / 8);
-			int blue  = (int)(color.Red   / 8);
+			int blue  = (int)(color.Blue  / 8);
 
 			return (ushort)((red << 0) | (green << 5) | (blue << 10));
 		}
@@ -121,7 +117,8 @@ namespace Ninoimager
 			double green = ((value & 0x03E0) >> 05) * 8.0;
 			double blue  = ((value & 0x7C00) >> 10) * 8.0;
 
-			return new Color(red, green, blue, 255);
+			// TEMP: Swap blue and red due to odd bug of Emug.CV
+			return new Color(blue, green, red, 255);
 		}
 
 		public static Color[] ToBgr555Colors(this byte[] values)

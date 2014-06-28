@@ -34,9 +34,18 @@ namespace Ninoimager
 	public static class MainClass
 	{
 		private static readonly Regex BgRegex = new Regex(@"(.+)_6\.nscrm\.png$", RegexOptions.Compiled);
+        private static readonly Regex SpRegex = new Regex(@"(.+)_3\.ncer_(\d+)m\.png$", RegexOptions.Compiled);
 
 		public static void Main(string[] args)
 		{
+            string offset = "";
+            args = new string[] {
+                "-isp",
+                "/home/benito/Dropbox/Ninokuni español/Imágenes/Originales definitivas/" + offset,
+                "/home/benito/Dropbox/Ninokuni español/Imágenes/N2D/" + offset,
+                "modime.xml"
+            };
+
 			Console.WriteLine("ninoimager ~~ Image importer and exporter for Ni no kuni DS");
 			Console.WriteLine("V {0} ~~ by pleoNeX ~~", Assembly.GetExecutingAssembly().GetName().Version);
 			Console.WriteLine();
@@ -45,15 +54,100 @@ namespace Ninoimager
 			watch.Start();
 
 			if ((args.Length == 4 || args.Length == 5) && args[0] == "-ibg")
-				SearchAndImportBg(args[1], args[2], args[3], (args.Length == 5)? args[4] : string.Empty);
+				SearchAndImportBg(args[1], args[2], args[3], (args.Length == 5) ? args[4] : string.Empty);
+			else if (args.Length == 4 && args[0] == "-isp")
+				SearchAndImportSp(args[1], args[2], args[3]);
 			else if (args.Length == 2 && args[0] == "-efr")
-				SearchAndExport(args[1]);
+				SearchAndExportBg(args[1]);
 			else
 				Tests.RunTest(args);
 
 			watch.Stop();
-			Console.WriteLine();
 			Console.WriteLine("It tooks: {0}", watch.Elapsed);
+		}
+
+		private static void SearchAndImportSp(string baseDir, string outDir, string modimeXml)
+		{
+			Console.WriteLine("@ Batch import");
+			Console.WriteLine("From: {0}", baseDir);
+			Console.WriteLine("To:   {0}", outDir);
+			Console.WriteLine();
+
+			List<string> imported = new List<string>();
+
+			// Import single images
+			SingleImportSp(baseDir, outDir, imported);
+
+			// Create a new XML document with data of the modime XMLs
+			CreateModimeXml(imported.ToArray(), modimeXml);
+		}
+
+		private static void SingleImportSp(string baseDir, string outputDir, List<string> importedList)
+		{
+            int count = 0;
+            Dictionary<string, SortedList<int, string>> spriteGroups = 
+                new Dictionary<string, SortedList<int, string>>();
+
+            Console.Write("Searching for images... ");
+			foreach (string imgFile in Directory.EnumerateFiles(baseDir, "*.png", SearchOption.AllDirectories)) {
+				Match match = SpRegex.Match(imgFile);
+				if (!match.Success)
+					continue;
+
+				// Get relative path
+				string imagePath = match.Groups[1].Value;
+                int imageIndex   = Convert.ToInt32(match.Groups[2].Value);
+				string relative  = imagePath.Replace(baseDir, "");
+				if (relative[0] == Path.DirectorySeparatorChar)
+					relative = relative.Substring(1);
+
+				if (!spriteGroups.ContainsKey(relative))
+                    spriteGroups.Add(relative, new SortedList<int, string>());
+                spriteGroups[relative].Add(imageIndex, imgFile);
+                count++;
+			}
+
+            Console.WriteLine("Found {0} images", count);
+            Console.WriteLine("Starting importing...");
+			foreach (string relative in spriteGroups.Keys) {
+				// Get output paths
+				string original = Path.Combine(outputDir, relative) + ".n2d";
+				string outFile  = Path.Combine(outputDir, relative) + "_new.n2d";
+                string[] imgs   = spriteGroups[relative].Values.ToArray();
+
+				// Check if it has been already imported
+				if (importedList.Contains(relative))
+					continue;
+
+                // If original file does not exist, skip
+                // Odd way to import manually images and skip them here
+                if (!File.Exists(original))
+                    continue;
+
+				// Try to import
+                Console.Write("|-Importing {0,-45} {1,2} | ", relative, imgs.Length);
+				try {
+                    Npck ori  = new Npck(original);
+                    Npck npck = Npck.ImportSpriteImage(imgs, spriteGroups[relative].Keys.ToArray(), ori);
+                    npck.Write(outFile);
+
+					npck.CloseAll();
+                    ori.CloseAll();
+				} catch (Exception ex) {
+                    Console.WriteLine("Error: {0}", ex.Message);
+                    #if DEBUG
+                    Console.WriteLine(ex.ToString());
+                    #endif
+                    count -= imgs.Length;
+					continue;
+				}
+
+				importedList.Add(relative);
+                Console.WriteLine("Successfully");
+			}
+
+            Console.WriteLine();
+            Console.WriteLine("Imported {0} images successfully!", count);
 		}
 
 		private static void SearchAndImportBg(string baseDir, string outDir, string modimeXml, string multiXml)
@@ -68,16 +162,16 @@ namespace Ninoimager
 			List<string> imported = new List<string>();
 
 			// First import "special files" that share palette and images data with other N2D files
-			MultiImport(baseDir, outDir, imported, multiXml);
+			MultiImportBg(baseDir, outDir, imported, multiXml);
 
 			// Then import other images
-			SingleImport(baseDir, outDir, imported);
+			SingleImportBg(baseDir, outDir, imported);
 
 			// Create a new XML document with data of the modime XMLs
 			CreateModimeXml(imported.ToArray(), modimeXml);
 		}
 
-		private static void MultiImport(string baseDir, string outputDir, List<string> importedList, string xml)
+		private static void MultiImportBg(string baseDir, string outputDir, List<string> importedList, string xml)
 		{
 			if (string.IsNullOrEmpty(xml))
 				return;
@@ -132,7 +226,7 @@ namespace Ninoimager
 			}
 		}
 
-		private static void SingleImport(string baseDir, string outputDir, List<string> importedList)
+		private static void SingleImportBg(string baseDir, string outputDir, List<string> importedList)
 		{
 			foreach (string imgFile in Directory.EnumerateFiles(baseDir, "*.png", SearchOption.AllDirectories)) {
 				Match match = BgRegex.Match(imgFile);
@@ -205,7 +299,7 @@ namespace Ninoimager
 			xml.Save(outputXml);
 		}
 
-		private static void SearchAndExport(string baseDir)
+		private static void SearchAndExportBg(string baseDir)
 		{
 			foreach (string file in Directory.EnumerateFiles(baseDir, "*.n2d", SearchOption.AllDirectories)) {	
 				string relativePath = file.Replace(baseDir, "");

@@ -20,9 +20,10 @@
 // <date>02/22/2014</date>
 // -----------------------------------------------------------------------
 using System;
+using System.Linq;
 using Ninoimager.Format;
-using Color     = Emgu.CV.Structure.Rgba;
-using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
+using Color     = Emgu.CV.Structure.Bgra;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Bgra, System.Byte>;
 
 namespace Ninoimager.ImageProcessing
 {
@@ -31,21 +32,28 @@ namespace Ninoimager.ImageProcessing
 	/// </summary>
 	public class NdsQuantization : BasicQuantization
 	{
+		private ColorFormat format;
+
 		public NdsQuantization()
 		{
 			this.BackdropColor = new Color(0, 0, 0, 255);	// Black
-			this.Format = ColorFormat.Indexed_8bpp;
+			this.Format        = ColorFormat.Indexed_8bpp;
 		}
 
-		public override void Quantizate(EmguImage image)
-		{
-			base.Quantizate(image);
+        protected override void PostQuantization()
+        {
+            base.PostQuantization();
 
-			// Normalize palette
-			this.SortPalette();
-			this.AddBackdropColor();
-			this.FillPalette();
-		}
+            // Normalize palette
+            //this.SortPalette();
+
+            if (this.Palette.Contains(this.BackdropColor))
+                this.MoveBackdropColor();
+            else
+                this.AddBackdropColor();
+
+            this.FillPalette(); // Especially useful when format is 16/16 to divide palettes.
+        }
 
 		public Color BackdropColor {
 			get;
@@ -53,43 +61,76 @@ namespace Ninoimager.ImageProcessing
 		}
 
 		public ColorFormat Format {
-			get;
-			set;
+			get { return this.format; }
+			set {
+				this.format = value;
+				this.MaxColors = (1 << this.format.Bpp()) - 1;	// Reserve space for BackdropColor
+			}
 		}
 
 		private void AddBackdropColor()
 		{
 			// Add the color to the first place of the palette...
-			Array.Resize(ref this.palette, this.palette.Length + 1);
-			for (int i = this.palette.Length - 1; i >= 1; i--)
-				this.palette[i] = this.palette[i - 1];
-			this.palette[0] = this.BackdropColor;
+            Color[] palette = this.Palette;
+			Array.Resize(ref palette, palette.Length + 1);
+			for (int i = palette.Length - 1; i >= 1; i--)
+				palette[i] = palette[i - 1];
+
+			palette[0] = BackdropColor;
+            this.Palette = palette;
 
 			// and increment the index of every pixels by 1
-			for (int i = 0; i < this.pixels.Length; i++) {
-				this.pixels[i] = this.pixels[i].ChangeInfo(pixels[i].Info + 1);
-			}
+            Pixel[] pixels = this.Pixels;
+			for (int i = 0; i < pixels.Length; i++)
+				pixels[i] = pixels[i].ChangeInfo(pixels[i].Info + 1);
 		}
+
+        private void MoveBackdropColor()
+        {
+            // Move the backdrop color to the first position
+            int idx = Array.FindIndex<Color>(this.Palette, c => c.Equals(this.BackdropColor));
+            if (idx == -1)
+                return;
+
+            // Swap color
+            Color swap = this.Palette[0];
+            this.Palette[0]   = this.Palette[idx];
+            this.Palette[idx] = swap;
+
+            // Change pixel info
+            Pixel[] pixels = this.Pixels;
+            for (int i = 0; i < pixels.Length; i++) {
+                if (pixels[i].Info == idx)
+                    pixels[i] = pixels[i].ChangeInfo(0);
+                else if (pixels[i].Info == 0)
+                    pixels[i] = pixels[i].ChangeInfo((uint)idx);
+            }
+        }
 
 		private void SortPalette()
 		{
 			// Sort palette
-			Color[] messyPalette = (Color[])this.palette.Clone();
-			Array.Sort<Color>(this.palette, (c1, c2) => c1.CompareTo(c2));
+            Color[] palette = this.Palette;
+			Color[] messyPalette = (Color[])palette.Clone();
+			Array.Sort<Color>(palette, (c1, c2) => c1.CompareTo(c2));
+            this.Palette = palette;
 
 			// Update pixel index
-			for (int i = 0; i < this.pixels.Length; i++) {
-				Color oldColor = messyPalette[this.pixels[i].Info];
-				int newIndex = Array.FindIndex<Color>(this.palette, c => c.Equals(oldColor));
+            Pixel[] pixels = this.Pixels;
+			for (int i = 0; i < pixels.Length; i++) {
+				Color oldColor = messyPalette[pixels[i].Info];
+				int newIndex = Array.FindIndex<Color>(palette, c => c.Equals(oldColor));
 
-				this.pixels[i] = this.pixels[i].ChangeInfo((uint)newIndex);
+				pixels[i] = pixels[i].ChangeInfo((uint)newIndex);
 			}
 		}
 
 		private void FillPalette()
 		{
 			// Default color is black, so we only need to resize the palette.
-			Array.Resize(ref this.palette, 1 << this.Format.Bpp());
+            Color[] palette = this.Palette;
+			Array.Resize(ref palette, 1 << this.Format.Bpp());
+            this.Palette = palette;
 		}
 	}
 }

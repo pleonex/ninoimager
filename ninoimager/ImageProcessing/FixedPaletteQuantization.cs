@@ -21,51 +21,50 @@
 // -----------------------------------------------------------------------
 using System;
 using Ninoimager.Format;
-using Color     = Emgu.CV.Structure.Rgba;
+using Color     = Emgu.CV.Structure.Bgra;
 using LabColor  = Emgu.CV.Structure.Lab;
-using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Bgra, System.Byte>;
 
 namespace Ninoimager.ImageProcessing
 {
 	public class FixedPaletteQuantization : ColorQuantization
 	{
 		private NearestNeighbour<LabColor> nearestNeighbour;
+        private Emgu.CV.Image<LabColor, byte> labImg;
+        private LabColor[] labPalette;
 
 		public FixedPaletteQuantization(Color[] fixedPalette)
 		{
 			this.nearestNeighbour = new ExhaustivePaletteSearch();
-			this.palette = fixedPalette;
+            this.Palette = fixedPalette;
 		}
 
-		public override void Quantizate(EmguImage image)
-		{
-			int width  = image.Width;
-			int height = image.Height;
-			this.pixels = new Pixel[width * height];
+        protected override void PreQuantization(EmguImage image)
+        {
+            // Convert image to Lab color space and get palette
+            this.labImg = image.Convert<LabColor, byte>();
+            this.labPalette = ColorConversion.ToLabPalette<Color>(this.Palette);
+            this.nearestNeighbour.Initialize(labPalette);
+        }
 
-			// Convert image to Lab color space and get palette
-			Emgu.CV.Image<LabColor, byte> labImg = image.Convert<LabColor, byte>();
-			LabColor[] labPalette = ColorConversion.ToLabPalette<Color>(this.palette);
-			this.nearestNeighbour.Initialize(labPalette);
+        protected override Pixel QuantizatePixel(int x, int y)
+        {
+            // Get nearest color from palette
+            int colorIndex = nearestNeighbour.Search(labImg[y, x]);
 
-			for (int y = 0; y < height; y++) {
-				for (int x = 0; x < width; x++) {
-					// Get nearest color from palette
-					int colorIndex = nearestNeighbour.Search(labImg[y, x]);
+            // Apply dithering algorithm for each channel
+            LabColor oldPixel = labImg[y, x];
+            LabColor newPixel = labPalette[colorIndex];
+            this.Dithering.ApplyDithering(labImg.Data, x, y, 0, oldPixel.X - newPixel.X);
+            this.Dithering.ApplyDithering(labImg.Data, x, y, 1, oldPixel.Y - newPixel.Y);
+            this.Dithering.ApplyDithering(labImg.Data, x, y, 2, oldPixel.Z - newPixel.Z);
 
-					// Apply dithering algorithm for each channel
-					LabColor oldPixel = labImg[y, x];
-					LabColor newPixel = labPalette[colorIndex];
-					this.dithering.ApplyDithering(labImg.Data, x, y, 0, oldPixel.X - newPixel.X);
-					this.dithering.ApplyDithering(labImg.Data, x, y, 1, oldPixel.Y - newPixel.Y);
-					this.dithering.ApplyDithering(labImg.Data, x, y, 2, oldPixel.Z - newPixel.Z);
+            return new Pixel((uint)colorIndex, (uint)this.Palette[colorIndex].Alpha, true);
+        }
 
-					// Finally set the new pixel into the array
-					int index = this.PixelEncoding.GetIndex(x, y, width, height, this.TileSize);
-					this.pixels[index]  = new Pixel((uint)colorIndex, (uint)this.palette[colorIndex].Alpha, true);
-				}
-			}
-		}
+        protected override void PostQuantization()
+        {
+        }
 	}
 }
 

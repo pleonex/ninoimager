@@ -21,8 +21,8 @@
 // -----------------------------------------------------------------------
 using System;
 using Rectangle = System.Drawing.Rectangle;
-using Color     = Emgu.CV.Structure.Rgba;
-using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
+using Color     = Emgu.CV.Structure.Bgra;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Bgra, System.Byte>;
 
 namespace Ninoimager
 {
@@ -62,16 +62,44 @@ namespace Ninoimager
 			// Assign color to each pixel
 			for (int y = yStart; y < yEnd; y++) {
 				for (int x = xStart; x < xEnd; x++) {
+					// TEMP: Swap blue and red due to odd bug of Emug.CV
 					int cIdx = (y - yStart) * area.Width + (x - xStart);
-					data[y, x, 0] = (byte)pixels[cIdx].Red;
+					data[y, x, 0] = (byte)pixels[cIdx].Blue;
 					data[y, x, 1] = (byte)pixels[cIdx].Green;
-					data[y, x, 2] = (byte)pixels[cIdx].Blue;
+					data[y, x, 2] = (byte)pixels[cIdx].Red;
 					data[y, x, 3] = (byte)pixels[cIdx].Alpha;
 				}
 			}
+		}
 
-			// Assign new data
-			img.Data = data;
+		public static void Overlay(this EmguImage img, int xStart, int yStart, EmguImage layer)
+		{
+			// Area dimensions
+			int xEnd   = xStart + layer.Width;
+			int yEnd   = yStart + layer.Height;
+
+			// Area checks
+			if (xStart < 0 || xEnd > img.Width || yStart < 0 || yEnd > img.Height)
+				throw new ArgumentOutOfRangeException("The are does not fill in the image");
+
+			// Data, it's faster not to iterate over a property
+			byte[,,] data = img.Data;
+			byte[,,] pixels = layer.Data;
+
+			// Assign color to each pixel
+			for (int y = 0; y < layer.Height; y++) {
+				for (int x = 0; x < layer.Width; x++) {
+					int xImg = x + xStart;
+					int yImg = y + yStart;
+					byte alphaLay = (byte)(pixels[y, x, 3] / 255);
+					byte alphaImg = (byte)(1 - alphaLay);
+
+					data[yImg, xImg, 0] = (byte)(pixels[y, x, 0] * alphaLay + data[yImg, xImg, 0] * alphaImg);
+					data[yImg, xImg, 1] = (byte)(pixels[y, x, 1] * alphaLay + data[yImg, xImg, 1] * alphaImg);
+					data[yImg, xImg, 2] = (byte)(pixels[y, x, 2] * alphaLay + data[yImg, xImg, 2] * alphaImg);
+					data[yImg, xImg, 3] = (byte)((alphaLay == data[yImg, xImg, 3] && alphaLay == 0) ? 0 : 255);
+				}
+			}
 		}
 	}
 }

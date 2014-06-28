@@ -48,7 +48,7 @@ namespace Ninoimager.Format
 			}
 		}
 
-		public static void Codec(this PixelEncoding pxEnc, uint[] dataIn, uint[] dataOut, bool decoding,
+        public static void Codec<T>(this PixelEncoding pxEnc, T[] dataIn, T[] dataOut, bool decoding,
 		                               int width, int height, Size tileSize)
 		{
 			if (pxEnc != PixelEncoding.Lineal && pxEnc != PixelEncoding.HorizontalTiles && 
@@ -73,7 +73,7 @@ namespace Ninoimager.Format
 					// As the new data is lineal, and in the last row of tiles in the dataIn can be incompleted
 					// the output array can contains null pixels in the middle of the array.
 					if (tiledIndex >= dataIn.Length)
-						dataOut[linealIndex] = 0;	// Null pixel
+                        dataOut[linealIndex] = default(T);	// Null pixel
 					else
 						dataOut[linealIndex] = dataIn[tiledIndex];
 				} else {

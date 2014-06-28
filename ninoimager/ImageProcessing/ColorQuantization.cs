@@ -22,27 +22,17 @@
 using System;
 using Ninoimager.Format;
 using Size      = System.Drawing.Size;
-using Color     = Emgu.CV.Structure.Rgba;
-using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
+using Color     = Emgu.CV.Structure.Bgra;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Bgra, System.Byte>;
 
 namespace Ninoimager.ImageProcessing
 {
 	public abstract class ColorQuantization
 	{
-		protected Dithering<byte> dithering;
-		protected Pixel[] pixels;
-		protected Color[] palette;
-
 		public ColorQuantization()
 		{
-			this.dithering = new NoDithering<byte>();
-			this.PixelEncoding = PixelEncoding.HorizontalTiles;
+            this.Dithering = new NoDithering<byte>();
 			this.TileSize = new Size(8, 8);
-		}
-
-		public PixelEncoding PixelEncoding {
-			get;
-			set;
 		}
 
 		public Size TileSize {
@@ -50,17 +40,63 @@ namespace Ninoimager.ImageProcessing
 			set;
 		}
 
-		public abstract void Quantizate(EmguImage image);
+        protected Dithering<byte> Dithering {
+            get;
+            set;
+        }
 
-		public Pixel[] GetPixels()
+		public void Quantizate(EmguImage image)
+        {
+            this.Width  = image.Width;
+            this.Height = image.Height;
+
+            this.Pixels = new Pixel[this.Width * this.Height];
+            this.PreQuantization(image);
+
+            for (int y = 0; y < this.Height; y++) {
+                for (int x = 0; x < this.Width; x++) {
+                    Pixel px = this.QuantizatePixel(x, y);
+
+                    int idx = y * this.Width + x;
+                    this.Pixels[idx] = px;
+                }
+            }
+
+            this.PostQuantization();
+        }
+
+        protected abstract void PreQuantization(EmguImage image);
+
+        protected abstract Pixel QuantizatePixel(int x, int y);
+
+        protected abstract void PostQuantization();
+
+        public Pixel[] GetPixels(PixelEncoding enc)
 		{
-			return this.pixels;
+            Pixel[] encoded = new Pixel[this.Width * this.Height];
+            enc.Codec<Pixel>(this.Pixels, encoded, false, this.Width, this.Height, this.TileSize);
+            return encoded;
 		}
 
-		public Color[] GetPalette()
-		{
-			return this.palette;
-		}
+        public int Width {
+            get;
+            private set;
+        }
+
+        public int Height {
+            get;
+            private set;
+        }
+
+        protected Pixel[] Pixels {
+            get;
+            private set;
+        }
+
+        public Color[] Palette {
+            get;
+            protected set;
+        }
 	}
 }
 

@@ -60,13 +60,21 @@ namespace Ninoimager.Format
 
 		public override bool Equals(object obj)
 		{
-			if (!(obj is Pixel))
+			if (obj == null)
 				return false;
-
+			if (ReferenceEquals(this, obj))
+				return true;
+			if (obj.GetType() != typeof(Pixel))
+				return false;
 			Pixel other = (Pixel)obj;
+			return IsIndexed == other.IsIndexed && Info == other.Info && Alpha == other.Alpha;
+		}
 
-			return (this.IsIndexed == other.IsIndexed) && (this.Info == other.Info) &&
-			(this.Alpha == other.Alpha);
+		public override int GetHashCode()
+		{
+			unchecked {
+				return IsIndexed.GetHashCode() ^ Info.GetHashCode() ^ Alpha.GetHashCode();
+			}
 		}
 	}
 

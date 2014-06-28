@@ -25,8 +25,10 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using Ninoimager.Format;
-using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
+using Ninoimager.ImageProcessing;
 using Emgu.CV.Structure;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Bgra, System.Byte>;
+using Color     = Emgu.CV.Structure.Bgra;
 
 namespace Ninoimager
 {
@@ -34,6 +36,44 @@ namespace Ninoimager
 	{
 		public static void RunTest(string[] args)
 		{
+			string pathFile = "/home/benito/tests/";
+            /*args = new string[] {
+                "-tis",
+                pathFile + "button_K_3.ncer",
+                pathFile + "button_K_1.ncgr",
+                pathFile + "button_K_0.nclr"
+            };*/
+			/*args = new string[] {
+				"-tis",
+				pathFile + "ug_hero.NCER",
+				pathFile + "ug_boygirl.NCGR",
+				pathFile + "ug_boygirl.NCLR"
+			};*/
+			/*args = new string[] {
+				"-tis",
+				pathFile + "m2d_ability_menu_obj_00.NCER",
+				pathFile + "m2d_ability_menu_obj_00.NCGR.lz",
+				pathFile + "m2d_common.NCLR"
+			};*/
+			/*args = new string[] {
+				"-tis",
+				pathFile + "c2d_99_00_11.NCER",
+				pathFile + "c2d_99_00_11.NCGR.lz",
+				pathFile + "m2d_common.NCLR"
+			};*/
+            /*args = new string[] {
+				"-tis",
+				pathFile + "titlebutton_3.ncer",
+				pathFile + "titlebutton_1.ncgr",
+				pathFile + "titlebutton_0.nclr"
+            };*/
+			args = new string[] {
+				"-tis",
+				pathFile + "CESA02_3.ncer",
+				pathFile + "CESA02_1.ncgr",
+				pathFile + "CESA02_0.nclr"
+			};
+
 			if (args.Length < 3)
 				return;
 
@@ -44,6 +84,8 @@ namespace Ninoimager
 				ImageInfo(args[1], args[2], args[3]);
 			else if (args[0] == "-t3" && args.Length == 5)
 				MapInfo(args[1], args[2], args[3], args[4]);
+			else if (args[0] == "-t4" && args.Length == 5)
+				SpriteInfo(args[1], args[2], args[3], args[4]);
 			else if (args[0] == "-c1")
 				TestReadWriteFormat(args[1], args[2]);
 			else if (args[0] == "-s1" && args.Length == 4)
@@ -52,8 +94,10 @@ namespace Ninoimager
 				SpecificSearch(args[1], args[2]);
 			else if (args[0] == "-p1")
 				SelectImagesFiles(args[1], args[2]);
-			else if (args[0] == "-ti" && args.Length == 4)
-				ImportTest(args[1], args[2], args[3]);
+			else if (args[0] == "-tib" && args.Length == 4)
+				ImportTestBackground(args[1], args[2], args[3]);
+			else if (args[0] == "-tis" && args.Length == 4)
+				ImportTestSprite(args[1], args[2], args[3]);
 			else if (args[0] == "-pe")
 				ExtractPack(args[1], args[2]);
 			else if (args[0] == "-pi")
@@ -274,6 +318,30 @@ namespace Ninoimager
 			map.CreateBitmap(image, palette).Save(outputFile);
 		}
 
+		private static void SpriteInfo(string spriteFile, string imgFile, string palFile, string outputDir)
+		{
+			Console.WriteLine("Reading {0} as NCLR palette...", palFile);
+			Nclr palette = new Nclr(palFile);
+
+			Console.WriteLine("Reading {0} as NCGR image...", imgFile);
+			Ncgr image = new Ncgr(imgFile);
+
+			Console.WriteLine("Reading {0} as NCER sprite...", spriteFile);
+			Ncer sprite = new Ncer(spriteFile);
+
+			if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
+				Directory.CreateDirectory(outputDir);
+
+			for (int i = 0; i < sprite.NumFrames; i++) {
+				if (!string.IsNullOrEmpty(outputDir)) {
+					string outputFile = Path.Combine(outputDir, "Sprite" + i.ToString() + ".png");
+					if (File.Exists(outputFile))
+						File.Delete(outputFile);
+					sprite.CreateBitmap(i, image, palette).Save(outputFile);
+				}
+			}
+		}
+
 		private static void ExtractPack(string packFile, string outputImage)
 		{
 			Npck npck = new Npck(packFile);
@@ -286,7 +354,7 @@ namespace Ninoimager
 			npck.Write(outputPack);
 		}
 
-		private static void ImportTest(string mapFile, string imgFile, string palFile)
+		private static void ImportTestBackground(string mapFile, string imgFile, string palFile)
 		{
 			FileStream   oldPalStr = new FileStream(palFile, FileMode.Open);
 			FileStream   oldImgStr = new FileStream(imgFile, FileMode.Open);
@@ -301,7 +369,7 @@ namespace Ninoimager
 			EmguImage bmp = nscr.CreateBitmap(ncgr, nclr);
 			bmp.Save(mapFile + ".png");
 
-			Importer importer = new Importer();
+			BackgroundImporter importer = new BackgroundImporter();
 			importer.ImportBackground(bmp, newMapStr, newImgStr, newPalStr);
 
 			if (!Compare(oldPalStr, newPalStr)) {
@@ -332,6 +400,75 @@ namespace Ninoimager
 			newPalStr.Close();
 			newImgStr.Close();
 			newMapStr.Close();
+		}
+
+		private static void ImportTestSprite(string sprFile, string imgFile, string palFile)
+		{
+			FileStream   oldPalStr = new FileStream(palFile, FileMode.Open);
+			FileStream   oldImgStr = new FileStream(imgFile, FileMode.Open);
+			FileStream   oldSprStr = new FileStream(sprFile, FileMode.Open);
+			MemoryStream newPalStr = new MemoryStream();
+            MemoryStream newImgLinealStr = new MemoryStream();
+            MemoryStream newImgTiledStr = new MemoryStream();
+            MemoryStream newSprStr = new MemoryStream();
+
+			Nclr nclr = new Nclr(oldPalStr);
+			Ncgr ncgr = new Ncgr(oldImgStr);
+			Ncer ncer = new Ncer(oldSprStr);
+
+			SpriteImporter importer = new SpriteImporter();
+			importer.Format = ColorFormat.Indexed_4bpp;
+			importer.ObjectMode    = ObjMode.Normal;
+			importer.PaletteMode   = PaletteMode.Palette16_16;
+			importer.TileSize      = new System.Drawing.Size(64, 64);
+			importer.TransparentColor = new Color(128, 0, 128, 255);
+			importer.Quantization     = new NdsQuantization() { 
+				BackdropColor = importer.TransparentColor,
+				Format = ColorFormat.Indexed_4bpp
+			};
+			importer.Reducer  = new SimilarDistanceReducer();
+			importer.Splitter = new NdsSplitter(1);
+
+			for (int i = 0; i < ncer.NumFrames; i++) {
+				EmguImage bmp = ncer.CreateBitmap(i, ncgr, nclr);
+				bmp.Save(sprFile + i.ToString() + ".png");
+				importer.AddFrame(bmp);
+			}
+
+            importer.Generate(newPalStr, newImgLinealStr, newImgTiledStr, newSprStr);
+
+			/*
+			if (!Compare(oldPalStr, newPalStr)) {
+				string newPalFile = palFile + ".new";
+				WriteStream(newPalFile, newPalStr);
+				Console.WriteLine("Palette different... Written to {0}", newPalFile);
+			}
+			if (!Compare(oldImgStr, newImgStr)) {
+				string newImgFile = imgFile + ".new";
+				WriteStream(newImgFile, newImgStr);
+				Console.WriteLine("Image different...   Written to {0}", newImgFile);
+			}
+			if (!Compare(oldSprStr, newSprStr)) {
+				string newSprFile = sprFile + ".new";
+				WriteStream(newSprFile, newSprStr);
+				Console.WriteLine("Sprite different...  Written to {0}", newSprFile);
+			}
+			*/
+
+            newPalStr.Position = newImgLinealStr.Position = newImgTiledStr.Position = newSprStr.Position = 0;
+			nclr = new Nclr(newPalStr);
+            ncgr = new Ncgr(newImgTiledStr);
+			ncer = new Ncer(newSprStr);
+			for (int i = 0; i < ncer.NumFrames; i++)
+				ncer.CreateBitmap(i, ncgr, nclr).Save(sprFile + i.ToString() + "m.png");
+
+			oldPalStr.Close();
+			oldImgStr.Close();
+			oldSprStr.Close();
+			newPalStr.Close();
+            newImgTiledStr.Close();
+            newImgLinealStr.Close();
+			newSprStr.Close();
 		}
 
 		private static void TestConvertColors(string inputImage, string outputImage)
