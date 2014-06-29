@@ -20,11 +20,32 @@
 // <date>01/08/2014</date>
 // -----------------------------------------------------------------------
 using System;
+using Emgu.CV;
+using Emgu.CV.Structure;
+using Emgu.CV.Util;
 
 namespace Ninoimager
 {
 	public static class ColorConversion
 	{
+		public static Lab[] ToLabPalette<TColor>(TColor[] palette)
+			where TColor : struct, IColor
+		{
+			Lab[] labPalette = null;
+
+			try {
+				// Try direct conversion
+				CvToolbox.GetColorCvtCode(typeof(TColor), typeof(Lab));
+				labPalette = ColorConversion.ConvertColors<TColor, Lab>(palette);
+			} catch {
+				// Indirect conversion (converting first to Rgb)
+				Rgb[] tempPalette = ColorConversion.ConvertColors<TColor, Rgb>(palette);
+				labPalette = ColorConversion.ConvertColors<Rgb, Lab>(tempPalette);
+			}
+
+			return labPalette;
+		}
+
 		public static ColorDst[] ConvertColors<ColorSrc, ColorDst>(ColorSrc[] colors)
 			where ColorSrc : struct, Emgu.CV.IColor
 			where ColorDst : struct, Emgu.CV.IColor 
@@ -43,10 +64,17 @@ namespace Ninoimager
 
 			// Copy colors into matSrc
 			for (int i = 0; i < colors.Length; i++) {
-				if (dimensionSrc > 0) matSrc.Data[0, i * dimensionSrc + 0] = (byte)colors[i].MCvScalar.v0;
-				if (dimensionSrc > 1) matSrc.Data[0, i * dimensionSrc + 1] = (byte)colors[i].MCvScalar.v1;
-				if (dimensionSrc > 2) matSrc.Data[0, i * dimensionSrc + 2] = (byte)colors[i].MCvScalar.v2;
-				if (dimensionSrc > 3) matSrc.Data[0, i * dimensionSrc + 3] = (byte)colors[i].MCvScalar.v3;
+				Emgu.CV.Structure.MCvScalar colorComp = colors[i].MCvScalar;
+				if (typeof(Rgba).IsAssignableFrom(typeof(ColorSrc))) {
+					double swap  = colorComp.v0;
+					colorComp.v0 = colorComp.v2;
+					colorComp.v2 = swap;
+				}
+
+				if (dimensionSrc > 0) matSrc.Data[0, i * dimensionSrc + 0] = (byte)colorComp.v0;
+				if (dimensionSrc > 1) matSrc.Data[0, i * dimensionSrc + 1] = (byte)colorComp.v1;
+				if (dimensionSrc > 2) matSrc.Data[0, i * dimensionSrc + 2] = (byte)colorComp.v2;
+				if (dimensionSrc > 3) matSrc.Data[0, i * dimensionSrc + 3] = (byte)colorComp.v3;
 			}
 
 			// Convert colors

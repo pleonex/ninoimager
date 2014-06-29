@@ -22,8 +22,8 @@
 using System;
 using Point     = System.Drawing.Point;
 using Size      = System.Drawing.Size;
-using Color     = Emgu.CV.Structure.Rgba;
-using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
+using Color     = Emgu.CV.Structure.Bgra;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Bgra, System.Byte>;
 
 namespace Ninoimager.Format
 {
@@ -35,6 +35,7 @@ namespace Ninoimager.Format
 		// work. The conversion will take place at the initialization and when the data is required.
 		// CHECK: What about changing the type to Pixel?
 		private uint[] data;
+		private uint[] original;	// Original data, without decoding it
 		private ColorFormat format;
 		private PixelEncoding pixelEnc;
 
@@ -45,6 +46,7 @@ namespace Ninoimager.Format
 		public Image()
 		{
 			this.data     = null;
+			this.original = null;
 			this.format   = ColorFormat.Unknown;
 			this.pixelEnc = PixelEncoding.Unknown;
 			this.tileSize = new Size(8, 8);
@@ -61,12 +63,15 @@ namespace Ninoimager.Format
 
 		private Image(Image img, uint[] data, int width, int height)
 		{
-			this.data = data;
-			this.width = width;
+			this.original = data;
+			this.width  = width;
 			this.height = height;
 			this.format = img.Format;
 			this.pixelEnc = img.PixelEncoding;
 			this.tileSize = img.TileSize;
+
+			this.data = new uint[data.Length];
+			this.pixelEnc.Codec(this.original, this.data, true, this.width, this.height, this.tileSize); 
 		}
 
 		public int Width {
@@ -143,23 +148,25 @@ namespace Ninoimager.Format
 			return bmp;
 		}
 
-		public EmguImage CreateSubImage(int x, int y, int width, int height)
+		public Image CreateSubImage(int index, Size size)
 		{
-			// Get pixel of subimage and create using private constructor to pass internal data
-			throw new NotImplementedException();
+			int length = size.Width * size.Height;
+			uint[] subImage = new uint[length];
+			Array.Copy(this.original, index, subImage, 0, length);
+
+			return new Image(this, subImage, size.Width, size.Height);
 		}
 
 		public Pixel[] GetTile(int index)
 		{
-			Pixel[] tile = new Pixel[this.tileSize.Width * this.tileSize.Height];
+			int tileLength = this.tileSize.Width * this.tileSize.Height;
+			Pixel[] tile = new Pixel[tileLength];
 
 			bool isIndexed = this.Format.IsIndexed();
-			int numTilesX = this.width / this.tileSize.Width;
-			Point tilePos = new Point(index % numTilesX, index / numTilesX);
 
 			for (int y = 0; y < this.tileSize.Height; y++) {
 				for (int x = 0; x < this.tileSize.Width; x++) {
-					uint px = this.data[(y + tilePos.Y * tileSize.Height) * this.Width + (x + tilePos.X * tileSize.Width)];
+					uint px = this.original[y * this.tileSize.Width + x + index * tileLength];
 					tile[y * this.tileSize.Width + x] = new Pixel(
 						px & 0x00FFFFFF,
 						(px >> 24) & 0xFF,
@@ -186,17 +193,17 @@ namespace Ninoimager.Format
 
 			// First convert to 24bpp index + 8 bits alpha if it's indexed or ARGB32 otherwise.
 			// normalizeData contains information about 1 pixel (index or color)
-			uint[] normalizedData = new uint[rawData.Length * 8 / this.Format.Bpp()];
+			this.original = new uint[rawData.Length * 8 / this.Format.Bpp()];
 
 			int rawPos = 0;
-			for (int i = 0; i < normalizedData.Length; i++) {
+			for (int i = 0; i < this.original.Length; i++) {
 				uint info = rawData.GetBits(ref rawPos, this.Format.Bpp());	// Get pixel info from raw data
-				normalizedData[i] = this.format.UnpackColor(info);			// Get color from pixel info (unpack info)
+				this.original[i] = this.format.UnpackColor(info);			// Get color from pixel info (unpack info)
 			}
 
 			// Then convert to lineal pixel encoding
 			this.data = new uint[this.width * this.height];
-			this.pixelEnc.Codec(normalizedData, this.data, true, this.width, this.height, this.tileSize);
+			this.pixelEnc.Codec(this.original, this.data, true, this.width, this.height, this.tileSize);
 		}
 
 		public void SetData(Pixel[] pixels, PixelEncoding pixelEnc, ColorFormat format, Size tileSize)
@@ -208,32 +215,44 @@ namespace Ninoimager.Format
 			this.format   = format;
 			this.tileSize = tileSize;
 
-			uint[] normalizedData = new uint[pixels.Length];
+			this.original = new uint[pixels.Length];
 			for (int i = 0; i < pixels.Length; i++)
-				normalizedData[i] = (uint)(pixels[i].Alpha << 24) | (uint)pixels[i].Info;
+				this.original[i] = (uint)(pixels[i].Alpha << 24) | (uint)pixels[i].Info;
 
 			this.data = new uint[this.width * this.height];
-			this.pixelEnc.Codec(normalizedData, this.data, true, this.width, this.height, this.tileSize);
+			this.pixelEnc.Codec(this.original, this.data, true, this.width, this.height, this.tileSize);
 		}
 
 		public byte[] GetData()
 		{
 			// Inverse operation of SetData
 
-			// First convert to one-dimension array (encode pixels)
-			uint[] normalizedData = new uint[this.width * this.height];
-			this.pixelEnc.Codec(this.data, normalizedData, false, this.width, this.height, this.tileSize);
-
 			// Then code normalized data to its format and write to final buffer
-			byte[] buffer = new byte[normalizedData.Length * this.Format.Bpp() / 8];
+			byte[] buffer = new byte[this.original.Length * this.Format.Bpp() / 8];
 			int bufferPos = 0;
 
-			for (int i = 0; i < normalizedData.Length; i++) {
-				uint info = this.format.PackColor(normalizedData[i]);
+			for (int i = 0; i < this.original.Length; i++) {
+				uint info = this.format.PackColor(this.original[i]);
 				buffer.SetBits(ref bufferPos, this.Format.Bpp(), info);
 			}
 
 			return buffer;
+		}
+
+		public Pixel[] GetPixels()
+		{
+			// Inverse operation of SetData
+
+			// Then get the array of pixels
+			Pixel[] pixels = new Pixel[this.original.Length];
+			for (int i = 0; i < this.original.Length; i++)
+				pixels[i] = new Pixel(
+					this.original[i] & 0xFFFFFF,
+					this.original[i] >> 24,
+					this.format.IsIndexed()
+				);
+
+			return pixels;
 		}
 
 		private static Color[] InfoToIndexedColors(uint[] colorInfo, Color[] palette)

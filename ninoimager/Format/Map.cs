@@ -22,13 +22,14 @@
 using System;
 using System.Collections.Generic;
 using Size      = System.Drawing.Size;
-using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Rgba, System.Byte>;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Bgra, System.Byte>;
 
 namespace Ninoimager.Format
 {
 	public class Map
 	{
 		private MapInfo[] info;
+		private Mapable mapping;
 
 		private Size tileSize;
 		private int width;
@@ -38,9 +39,18 @@ namespace Ninoimager.Format
 		public Map()
 		{
 			this.info     = null;
+			this.mapping  = new SinglePaletteMapping();
 			this.tileSize = new Size(0, 0);
 			this.width    = 0;
 			this.height   = 0;
+		}
+
+		public Mapable Mapping {
+			get { return this.mapping; }
+			set { 
+				this.mapping = value;
+				this.mapping.TileSize = this.tileSize;
+			 }
 		}
 
 		public int Width {
@@ -65,7 +75,10 @@ namespace Ninoimager.Format
 
 		public Size TileSize {
 			get { return this.tileSize; }
-			set { this.tileSize = value; }
+			set { 
+				this.tileSize = value;
+				this.mapping.TileSize = value; 
+			}
 		}
 
 		public BgMode BgMode {
@@ -94,9 +107,9 @@ namespace Ninoimager.Format
 			foreach (MapInfo info in this.info) {
 				Pixel[] tile = image.GetTile(info.TileIndex);
 				if (info.FlipX)
-					FlipX(tile, this.tileSize);
+					tile.FlipX(this.tileSize);
 				if (info.FlipY)
-					FlipY(tile, this.tileSize);
+					tile.FlipY(this.tileSize);
 
 				tile.CopyTo(mapImage, count);
 
@@ -133,112 +146,10 @@ namespace Ninoimager.Format
 
 		public Pixel[] CreateMap(Pixel[] pixels)
 		{
-			// TODO: Palette index support.
-			List<Pixel[]> tiles = new List<Pixel[]>();
-			List<MapInfo> infos = new List<MapInfo>();
-			int tileLength = this.tileSize.Width * this.tileSize.Height;
+			this.mapping.Map(pixels);
 
-			for (int i = 0; i < pixels.Length; i += tileLength) {
-				// Get tile
-				Pixel[] tile = new Pixel[tileLength];
-				Array.Copy(pixels, i, tile, 0, tileLength);
-
-				// TODO: Clean code with flips
-				// what about creating a new structure Tile and writing those methods there?
-				bool flipX = false;
-				bool flipY = false;
-
-				// Check if it's already in the list
-				int index = Search(tile, tiles);
-
-				// Check flip X
-				if (index == -1) {
-					Pixel[] tileFlipX = (Pixel[])tile.Clone();
-					Map.FlipX(tileFlipX, this.tileSize);
-					index = Search(tileFlipX, tiles);
-					flipX = true;
-					flipY = false;
-
-					// Check flip Y
-					if (index == -1) {
-						Pixel[] tileFlipY = (Pixel[])tile.Clone();
-						Map.FlipY(tileFlipY, this.tileSize);
-						index = Search(tileFlipY, tiles);
-						flipX = false;
-						flipY = true;
-					}
-
-					// Check flip X & Y
-					if (index == -1) {
-						Map.FlipY(tileFlipX, this.tileSize);
-						index = Search(tileFlipX, tiles);
-						flipX = true;
-						flipY = true;
-					}
-				}
-
-				// Otherwise add
-				if (index == -1) {
-					tiles.Add(tile);
-					index = tiles.Count - 1;
-					flipX = false;
-					flipY = false;
-				}
-
-				// Finally create map info
-				infos.Add(new MapInfo(index, 0, flipX, flipY));
-			}
-
-			this.SetMapInfo(infos.ToArray());
-
-			Pixel[] linPixels = new Pixel[tiles.Count * tileLength];
-			for (int i = 0; i < tiles.Count; i++)
-				tiles[i].CopyTo(linPixels, i * tileLength);
-
-			return linPixels;
-		}
-
-		private static int Search(Pixel[] tile, List<Pixel[]> tiles)
-		{
-			for (int k = 0; k < tiles.Count; k++) {
-				bool result = true;
-				for (int i = 0; i < tiles[k].Length && result; i++)
-					result = (tile[i].Equals(tiles[k][i]));
-
-				if (result)
-					return k;
-			}
-
-			return -1;
-		}
-
-		private static void FlipX(Pixel[] tile, Size tileSize)
-		{
-			for (int y = 0; y < tileSize.Height; y++) {
-				for (int x = 0; x < tileSize.Width / 2; x++) {
-					int t1 = y * tileSize.Width + x;
-					int t2 = y * tileSize.Width + (tileSize.Width - 1 - x);
-
-					Pixel swap = tile[t1];
-					tile[t1] = tile[t2];
-					tile[t2] = swap;
-				}
-			}
-		}
-
-		private static void FlipY(Pixel[] tile, Size tileSize)
-		{
-			for (int x = 0; x < tileSize.Width; x++) {
-				for (int y = 0; y < tileSize.Height / 2; y++) {
-					int t1 = x + tileSize.Width * y;
-					int t2 = x + tileSize.Width * (tileSize.Height - 1 - y);
-
-					Pixel swap = tile[t1];
-					tile[t1] = tile[t2];
-					tile[t2] = swap;
-				}
-			}
-
+			this.SetMapInfo(this.mapping.GetMapInfo());
+			return this.mapping.GetMappedImage();
 		}
 	}
 }

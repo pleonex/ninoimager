@@ -3,12 +3,13 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
-    <ProductVersion>10.0.0</ProductVersion>
+    <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{70F94E6B-0E3B-4EB5-B86A-E88204E1BD58}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>Ninoimager</RootNamespace>
     <AssemblyName>ninoimager</AssemblyName>
+    <ReleaseVersion>0.3</ReleaseVersion>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <DebugSymbols>true</DebugSymbols>
@@ -18,8 +19,8 @@
     <DefineConstants>DEBUG;</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <Externalconsole>true</Externalconsole>
     <PlatformTarget>x86</PlatformTarget>
+    <ConsolePause>false</ConsolePause>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <DebugType>full</DebugType>
@@ -51,7 +52,6 @@
     <Compile Include="Format\NitroBlock.cs" />
     <Compile Include="Format\Image.cs" />
     <Compile Include="Format\Map.cs" />
-    <Compile Include="Importer.cs" />
     <Compile Include="Format\ColorFormat.cs" />
     <Compile Include="Format\PixelEncoding.cs" />
     <Compile Include="Format\Pixel.cs" />
@@ -63,17 +63,44 @@
     <Compile Include="Format\Implementation\Nclr.cs" />
     <Compile Include="Format\Implementation\Npck.cs" />
     <Compile Include="Format\Implementation\Nscr.cs" />
-    <Compile Include="Format\Implementation\Btx0.cs" />
     <Compile Include="Extensions\ByteArrayExtension.cs" />
     <Compile Include="Extensions\EmguImageExtension.cs" />
     <Compile Include="Extensions\ColorExtension.cs" />
-    <Compile Include="FixedPalette.cs" />
     <Compile Include="ColorConversion.cs" />
+    <Compile Include="ImageProcessing\ColorQuantization.cs" />
+    <Compile Include="ImageProcessing\Dithering.cs" />
+    <Compile Include="ImageProcessing\NoDithering.cs" />
+    <Compile Include="ImageProcessing\FloydSteinbergDithering.cs" />
+    <Compile Include="ImageProcessing\FixedPaletteQuantization.cs" />
+    <Compile Include="ImageProcessing\BasicQuantization.cs" />
+    <Compile Include="ImageProcessing\NdsQuantization.cs" />
+    <Compile Include="ImageProcessing\NearestNeighbour.cs" />
+    <Compile Include="ImageProcessing\ExhaustiveSearch.cs" />
+    <Compile Include="Format\Mapable.cs" />
+    <Compile Include="Format\Implementation\SinglePaletteMapping.cs" />
+    <Compile Include="Format\Implementation\MatchMapping.cs" />
+    <Compile Include="Format\PaletteMode.cs" />
+    <Compile Include="Format\Obj.cs" />
+    <Compile Include="Format\Frame.cs" />
+    <Compile Include="Format\Sprite.cs" />
+    <Compile Include="Format\Implementation\Ncer.cs" />
+    <Compile Include="Format\Implementation\Labl.cs" />
+    <Compile Include="Format\Implementation\Uext.cs" />
+    <Compile Include="BackgroundImporter.cs" />
+    <Compile Include="SpriteImporter.cs" />
+    <Compile Include="ImageProcessing\ISplitable.cs" />
+    <Compile Include="ImageProcessing\PaletteReducer.cs" />
+    <Compile Include="ImageProcessing\NdsSplitter.cs" />
+    <Compile Include="ImageProcessing\SimilarDistanceReducer.cs" />
+    <Compile Include="Format\Implementation\Lzx.cs" />
+    <Compile Include="ImageProcessing\ManyFixedPaletteQuantization.cs" />
+    <Compile Include="ImageProcessing\PaletteDistance.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
     <Folder Include="Format\" />
     <Folder Include="Format\Implementation\" />
     <Folder Include="Extensions\" />
+    <Folder Include="ImageProcessing\" />
   </ItemGroup>
 </Project>
