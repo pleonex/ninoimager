@@ -22,6 +22,7 @@
 using System;
 using System.Drawing;
 using System.IO;
+using Emgu.CV.Structure;
 
 namespace Ninoimager.Format
 {
@@ -68,13 +69,28 @@ namespace Ninoimager.Format
 
 		private void GetInfo()
 		{
-			throw new NotImplementedException();
+            for (int i = 0; i < tex0.palInfo.NumObjects; i++)
+                this.SetData(tex0.TextureData[i], Ninoimager.Format.PixelEncoding.Lineal, tex0.texInfo.colorFormat[i]);
+            this.tex0 = this.nitro.GetBlock<Btx0.Tex0>(0);
 		}
 
 		private void SetInfo()
 		{
 			throw new NotImplementedException();
 		}
+
+        public Bitmap CreateBitmap()
+        {
+            Palette pal;
+            Emgu.CV.Image<Rgba, byte> lista;
+
+            //for (int i = 0; i < tex0.palInfo.NumObjects; i++)
+            //{
+                pal = new Palette(tex0.Palette[0]);
+                lista = this.CreateBitmap(pal, 0);
+            //}
+                return lista.ToBitmap();
+        }
 
 		private class Tex0 : NitroBlock
 		{
@@ -133,10 +149,16 @@ namespace Ninoimager.Format
 				set;
 			}
 
-			public Color[][] Palette {
+			public Rgba[][] Palette {
 				get;
 				set;
 			}
+
+            public Info3D.InfoBlock.InfoBlockPalette palInfo { get; set; }
+
+            public Info3D.InfoBlock.InfoBlockTexture texInfo { get; set; }
+
+
 
 			protected override void ReadData(Stream strIn)
 			{
@@ -174,9 +196,22 @@ namespace Ninoimager.Format
                 strIn.Position = blockOffset + palInfoOffset;
                 this.PalInfo = new Info3D(Info3D.Info3dType.palette);
                 this.PalInfo.ReadData(strIn);
-                this.Palette = new Color[this.PalInfo.NumObjects][];
+                this.Palette = new Rgba[this.PalInfo.NumObjects][];
 
                 //TODO read palette and image data                           
+                palInfo = PalInfo.BlockInfo.ReturnInfoPalette();
+                texInfo = TexInfo.BlockInfo.ReturnInfoTexture();
+
+                for (int i = 0; i < PalInfo.NumObjects; i++)
+                {
+                    //palette
+                    strIn.Position = blockOffset + palInfo.PaletteOffset[i];
+                    this.Palette[i] = br.ReadBytes(PalInfo.BlockInfo.DataSize).ToBgr555Colors();
+
+                    //pixel
+                    strIn.Position = blockOffset + texInfo.TextureOffset[i];
+                    this.TextureData[i] = br.ReadBytes(texInfo.Length[i]);
+                }
                 
 			}
 
@@ -319,6 +354,10 @@ namespace Ninoimager.Format
                     {
                         public byte NumObjects { get; set; }
 
+                        public int[] Length { get; set; }
+
+                        public ColorFormat[] colorFormat { get; set; }
+
                         public InfoBlockTexture(byte numObjects)
                         {
                             this.NumObjects = numObjects;
@@ -381,6 +420,11 @@ namespace Ninoimager.Format
                                             parameters[i].Height = 0x100;
                                             break;
                                     }
+
+                                //getting the depth and texture length
+                                this.colorFormat[i] = (ColorFormat)this.parameters[i].Format;
+                                this.Length[i] = (ColorFormatExtension.Bpp(colorFormat[i]) * this.parameters[i].Height *
+                                    this.parameters[i].Width) / 8;                                    
                             }
 
                         }
