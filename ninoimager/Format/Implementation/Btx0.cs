@@ -162,20 +162,22 @@ namespace Ninoimager.Format
 				uint palInfoOffset = br.ReadUInt32();
 				uint palDataOffset = br.ReadUInt32();
 
-                /*
-				// Info section
-				strIn.Position = blockOffset + texInfoOffset;
-				this.TexInfo   = new Info3D(true);
-				this.TexInfo.Read(strIn);
-				this.TextureData = new byte[this.TexInfo.NumObjs][];
+                //Info3D sections
 
-				strIn.Position = blockOffset + palInfoOffset;
-				this.PalInfo   = new Info3D(false);
-				this.PalInfo.Read(strIn);
-				this.Palette = new Color[this.PalInfo.NumObjs][];
+                //texture
+                strIn.Position = blockOffset + texInfoOffset;
+                this.TexInfo   = new Info3D(Info3D.Info3dType.texture);
+                this.TexInfo.ReadData(strIn);
+                this.TextureData = new byte[this.TexInfo.NumObjects][];
 
-				// UNDONE: Read image data
-                */
+                //palette
+                strIn.Position = blockOffset + palInfoOffset;
+                this.PalInfo = new Info3D(Info3D.Info3dType.palette);
+                this.PalInfo.ReadData(strIn);
+                this.Palette = new Color[this.PalInfo.NumObjects][];
+
+                //TODO read palette and image data                           
+                
 			}
 
 			protected override void WriteData(Stream strOut)
@@ -190,15 +192,19 @@ namespace Ninoimager.Format
 
             public class Info3D
             {
-                public enum info3dType { palette, texture }
+                public enum Info3dType { palette, texture }
 
-                public info3dType type { get; set; }
+                public Info3dType type { get; set; }
 
-                public byte Nobjects { get; set; }
+                public byte NumObjects { get; set; }
 
-                private UnknownBlock BlockUnknown { get; set; }
+                public UnknownBlock BlockUnknown { get; set; }
 
-                public Info3D(info3dType type)
+                public InfoBlock BlockInfo { get; set; }
+
+                public NameBlock BlockName { get; set; }
+
+                public Info3D(Info3dType type)
                 {
                     this.type = type;
                 }
@@ -208,28 +214,30 @@ namespace Ninoimager.Format
                     BinaryReader br = new BinaryReader(strIn);
 
                     byte dummy         = br.ReadByte();
-                    this.Nobjects      = br.ReadByte();
+                    this.NumObjects    = br.ReadByte();
                     ushort sectionSize = br.ReadUInt16();
-
+                    
                     //reading unknown block
-                    this.BlockUnknown = new UnknownBlock(Nobjects);
+                    this.BlockUnknown = new UnknownBlock(this.NumObjects);
                     this.BlockUnknown.ReadData(strIn);
+                    
+                    //reading info block
+                    this.BlockInfo = new InfoBlock(this.type, this.NumObjects);
+                    this.BlockInfo.ReadData(strIn);
 
-                    //TODO reading info block
-                    throw new NotImplementedException();
-                    //TODO reading name block
-
-
+                    //reading name block
+                    this.BlockName = new NameBlock(this.NumObjects);
+                    this.BlockName.ReadData(strIn);
                 }
 
-                private class UnknownBlock
+                public class UnknownBlock
                 {
-                    public UnknownBlock(byte nObjects)
+                    public UnknownBlock(byte numObjects)
                     {
-                        nObjects = this.Nobjects;
+                        numObjects = this.NumObjects;
                     }
 
-                    private byte Nobjects { get; set; }
+                    private byte NumObjects { get; set; }
 
                     private ushort HeaderSize { get; set; }
 
@@ -237,7 +245,7 @@ namespace Ninoimager.Format
 
                     private uint Constant { get; set; }
 
-                    private UnknownRepeatedData[] repeatedData { get; set; }
+                    private UnknownRepeatedData[] RepeatedData { get; set; }
 
                     private struct UnknownRepeatedData
                     {
@@ -253,65 +261,224 @@ namespace Ninoimager.Format
                         this.SectionSize = br.ReadUInt16();
                         this.Constant    = br.ReadUInt32();
 
-                        this.repeatedData = new UnknownRepeatedData[Nobjects];
-                        for (int i = 0; i < Nobjects; i++)
+                        this.RepeatedData = new UnknownRepeatedData[NumObjects];
+                        for (int i = 0; i < NumObjects; i++)
                         {
-                            repeatedData[Nobjects].Unknow1 = br.ReadUInt16();
-                            repeatedData[Nobjects].Unknow2 = br.ReadUInt16();
+                            RepeatedData[NumObjects].Unknow1 = br.ReadUInt16();
+                            RepeatedData[NumObjects].Unknow2 = br.ReadUInt16();
                         }
                     }
                     
                 }
 
-                private class InfoBlock
+                public class InfoBlock
                 {
-                    public InfoBlock(info3dType type)
+                    public InfoBlock(Info3dType type, byte numObjects)
                     {
-                        this.type = type;
+                        this.Type = type;
+                        this.NumObjects = numObjects;
                     }
 
-                    private info3dType type;
-                    private ushort headerSize { get; set; }
-                    private ushort dataSize { get; set; }
+                    public Info3dType Type { get; set; }
+
+                    public ushort HeaderSize { get; set; }
+
+                    public ushort DataSize { get; set; }
+
+                    public byte NumObjects { get; set; }
+
+                    IInfoBase infoBlock;
 
                     public void ReadData(Stream strIn)
                     {
                         BinaryReader br = new BinaryReader(strIn);
 
-                        this.headerSize = br.ReadUInt16();
-                        this.dataSize = br.ReadUInt16();
+                        this.HeaderSize = br.ReadUInt16();
+                        this.DataSize   = br.ReadUInt16();
                         
-                        //TODO read info about texture and palette
-                    }
+                        //read info block about texture and palette
+                        
+                        if (Type == Info3dType.texture)
+                            infoBlock = new InfoBlockTexture(this.NumObjects);
+                        else
+                            infoBlock = new InfoBlockPalette(this.NumObjects);
 
-                    private interface InfoBase
-                    {
-                        void ReadData();
-                    }
-
-                    private class InfoBlockTexture : InfoBase
-                    {
-                        void InfoBase.ReadData()
+                        for (int i = 0; i < this.NumObjects; i++)
                         {
+                            infoBlock.ReadData(strIn);
+                        }
+
+                    }
+
+                    private interface IInfoBase
+                    {
+                        void ReadData(Stream strIn);
+                    }
+
+                    public class InfoBlockTexture : IInfoBase
+                    {
+                        public byte NumObjects { get; set; }
+
+                        public InfoBlockTexture(byte numObjects)
+                        {
+                            this.NumObjects = numObjects;
+                        }
+                            
+
+                        void IInfoBase.ReadData(Stream strIn)
+                        {
+                            //initializing arrays
+                            this.TextureOffset = new ushort[this.NumObjects];
+                            this.parameters = new Params[this.NumObjects];
+                            this.Width = new byte[this.NumObjects];
+                            this.Unknown1 = new byte[this.NumObjects];
+                            this.Unknown2 = new byte[this.NumObjects];
+                            this.Unknown3 = new byte[this.NumObjects];
+
+
                             //reading texture informations...
-                            throw new NotImplementedException();
+                            BinaryReader br = new BinaryReader(strIn);
+
+                            for (int i = 0; i < this.NumObjects; i++)
+                            {
+                                this.TextureOffset[i] = (ushort)(br.ReadUInt16() << 3);
+                                this.Parameters[i] = br.ReadUInt16();
+                                this.Width[i] = br.ReadByte();
+                                this.Unknown1[i] = br.ReadByte();
+                                this.Unknown2[i] = br.ReadByte();
+                                this.Unknown3[i] = br.ReadByte();
+
+                                //now let's get the information inside Parameters
+                                this.parameters[i] = new Params();
+                                this.parameters[i].CoordTransf = (byte)(this.Parameters[i] & 14);
+                                this.parameters[i].Color0 = (byte)((this.Parameters[i] >> 13) & 1);
+                                this.parameters[i].Format = (byte)((this.Parameters[i] >> 10) & 7);
+                                this.parameters[i].Height = (byte)(8 << ((this.Parameters[i] >> 7) & 7));
+                                this.parameters[i].Width = (byte)(8 << ((this.Parameters[i] >> 4) & 7));
+                                this.parameters[i].Flip_Y = (byte)((this.Parameters[i] >> 3) & 1);
+                                this.parameters[i].Flip_X = (byte)((this.Parameters[i] >> 2) & 1);
+                                this.parameters[i].Repeat_Y = (byte)((this.Parameters[i] >> 1) & 1);
+                                this.parameters[i].Repeat_X = (byte)(this.Parameters[i] & 1);
+
+                                //copied from Tinke source code:
+                                if (parameters[i].Width == 0x00)
+                                    switch (this.Unknown1[i] & 0x3)
+                                    {
+                                        case 2:
+                                            parameters[i].Width = 0x200;
+                                            break;
+                                        default:
+                                            parameters[i].Width = 0x100;
+                                            break;
+                                    }
+                                if (parameters[i].Height == 0x00)
+                                    switch ((this.Unknown1[i] >> 4) & 0x3)
+                                    {
+                                        case 2:
+                                            parameters[i].Height = 0x200;
+                                            break;
+                                        default:
+                                            parameters[i].Height = 0x100;
+                                            break;
+                                    }
+                            }
+
                         }
-                    }
 
-                    private class InfoBlockPalette : InfoBase
-                    {
+                        public ushort[] TextureOffset { get; set; }
 
-                        void InfoBase.ReadData()
+                        public ushort[] Parameters { get; set; }
+
+                        public Params[] parameters;
+
+                        public byte[] Width { get; set; }
+
+                        public byte[] Unknown1 { get; set; }
+
+                        public byte[] Unknown2 { get; set; }
+
+                        public byte[] Unknown3 { get; set; }
+
+                        public struct Params
                         {
-                            //reading palette informations...
-                            throw new NotImplementedException();
+                            public byte CoordTransf { get; set; }
+                            public byte Color0 { get; set; }
+                            public byte Format { get; set; }
+                            public ushort Height { get; set; }
+                            public ushort Width { get; set; }
+                            public byte Flip_Y { get; set; }
+                            public byte Flip_X { get; set; }
+                            public byte Repeat_Y { get; set; }
+                            public byte Repeat_X { get; set; }
                         }
+
                     }
 
+                    public class InfoBlockPalette : IInfoBase
+                    {
+                        public byte NumObjects { get; set; }
+
+                        public InfoBlockPalette(byte numObjects)
+                        {
+                            this.NumObjects = numObjects;
+                        }
+                        void IInfoBase.ReadData(Stream strIn)
+                        {
+                            //initializing arrays
+                            this.PaletteOffset = new ushort[this.NumObjects];
+                            this.Unknown = new ushort[this.NumObjects];
+
+                            //reading palette informations...
+                            BinaryReader br = new BinaryReader(strIn);
+
+                            for (int i = 0; i < this.NumObjects; i++)
+                            {
+                                this.PaletteOffset[i] = br.ReadUInt16();
+                                this.Unknown[i] = br.ReadUInt16();
+                            }
+                           
+                        }
+
+                        public ushort[] PaletteOffset { get; set; }
+
+                        public ushort[] Unknown { get; set; }
+
+                    }
+
+                    public InfoBlockPalette ReturnInfoPalette()
+                    {
+                        if (this.Type == Info3dType.palette)
+                            return (InfoBlockPalette)infoBlock;
+                        return null;
+                    }
+
+                    public InfoBlockTexture ReturnInfoTexture()
+                    {
+                        if (this.Type == Info3dType.palette)
+                            return (InfoBlockTexture)infoBlock;
+                        return null;
+                    }
                 }
 
-                private class NameBlock
+                public class NameBlock
                 {
+                    public NameBlock(byte numObjects)
+                    {
+                        this.NumObjects = numObjects;
+                    }
+
+                    public byte NumObjects { get; set; }
+
+                    public string[] Names { get; set; }
+
+                    public void ReadData(Stream strIn)
+                    {
+                        BinaryReader br = new BinaryReader(strIn);
+
+                        for (int i = 0; i < this.NumObjects; i++)
+                            this.Names[i] = br.ReadChars(16).ToString();
+                    }
+
 
                 }
 
