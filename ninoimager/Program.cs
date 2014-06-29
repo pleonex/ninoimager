@@ -36,22 +36,9 @@ namespace Ninoimager
 
 		public static void Main(string[] args)
 		{
-			Console.WriteLine("ninoimager ~~ Image importer and exporter for Ni no kuni DS");
-			Console.WriteLine("V {0} ~~ by pleoNeX ~~", Assembly.GetExecutingAssembly().GetName().Version);
-			Console.WriteLine();
-
-			Stopwatch watch = new Stopwatch();
-			watch.Start();
-
-			if (args.Length == 4 && args[0] == "-ibg")
-				SearchAndImportBg(args[1], args[2], args[3]);
-			else if (args.Length == 2 && args[0] == "-efr")
-				SearchAndExport(args[1]);
-			else
-				Tests.RunTest(args);
-
-			watch.Stop();
-			Console.WriteLine("It tooks: {0}", watch.Elapsed);
+            Btx0 btx = new Btx0(@"E:\utenti\Franci\Desktop\babanacia_0.bmd0");
+            btx.CreateBitmap().Save(@"E:\utenti\Franci\Desktop\babanacia_0.bmd0.png");
+            return;
 		}
 
 		private static void SearchAndImportBg(string baseDir, string outputDir, string xmlList)
