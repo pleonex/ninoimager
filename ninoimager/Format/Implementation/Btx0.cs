@@ -69,9 +69,13 @@ namespace Ninoimager.Format
 
 		private void GetInfo()
 		{
-            for (int i = 0; i < tex0.palInfo.NumObjects; i++)
-                this.SetData(tex0.TextureData[i], Ninoimager.Format.PixelEncoding.Lineal, tex0.texInfo.colorFormat[i]);
-            this.tex0 = this.nitro.GetBlock<Btx0.Tex0>(0);
+			this.tex0 = this.nitro.GetBlock<Tex0>(0);
+            //for (int i = 0; i < tex0.palInfo.NumObjects; i++)
+			// TODO: Since this class inherit from Image, it can define only one image
+			// One solution, it's not inherit from Image and create a variable Image[]
+			this.Width  = tex0.texInfo.parameters[0].Width;
+			this.Height = tex0.texInfo.parameters[0].Height;
+            this.SetData(tex0.TextureData[0], Ninoimager.Format.PixelEncoding.Lineal, tex0.texInfo.colorFormat[0]);
 		}
 
 		private void SetInfo()
@@ -368,11 +372,14 @@ namespace Ninoimager.Format
                         {
                             //initializing arrays
                             this.TextureOffset = new ushort[this.NumObjects];
+							this.Parameters = new ushort[this.NumObjects];
                             this.parameters = new Params[this.NumObjects];
                             this.Width = new byte[this.NumObjects];
                             this.Unknown1 = new byte[this.NumObjects];
                             this.Unknown2 = new byte[this.NumObjects];
                             this.Unknown3 = new byte[this.NumObjects];
+							this.colorFormat = new ColorFormat[this.NumObjects];
+							this.Length = new int[this.NumObjects];
 
 
                             //reading texture informations...
@@ -498,7 +505,7 @@ namespace Ninoimager.Format
 
                     public InfoBlockTexture ReturnInfoTexture()
                     {
-                        if (this.Type == Info3dType.palette)
+						if (this.Type == Info3dType.texture)
                             return (InfoBlockTexture)infoBlock;
                         return null;
                     }
@@ -519,6 +526,7 @@ namespace Ninoimager.Format
                     {
                         BinaryReader br = new BinaryReader(strIn);
 
+						this.Names = new string[this.NumObjects];
                         for (int i = 0; i < this.NumObjects; i++)
                             this.Names[i] = br.ReadChars(16).ToString();
                     }
