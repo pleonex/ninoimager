@@ -208,6 +208,10 @@ namespace Ninoimager
 
 			// Create a new XML document with data of the modime XMLs
 			UpdateModimeXml(imported.ToArray(), infoPath, editPath);
+
+			// Since here it's one image -> one pack, we can count them like that
+			Console.WriteLine();
+			Console.WriteLine("Imported {0} images successfully!", imported.Count);
 		}
 
 		private static void MultiImportBg(string baseDir, string outputDir, 
@@ -249,6 +253,12 @@ namespace Ninoimager
 				}
 
 				// Import
+				Console.Write("|-Importing {0,-45} | ", relatives[0]);
+				for (int i = 1; i < relatives.Count; i++) {
+					Console.WriteLine();
+					Console.Write("            {0,-45} | ", relatives[i]);
+				}
+
 				Npck originalPack = new Npck(outPaths[0] + ".n2d");
 				Npck[] packs = null;
 				if (mode == "SharePalette")
@@ -265,11 +275,8 @@ namespace Ninoimager
 					packs[i].CloseAll();
 				}
 
-				Console.WriteLine("MultiImport done!");
-				foreach (string image in relatives) {
-					importedList.Add(image);
-					Console.WriteLine("\tWritten with success... {0}", image);
-				}
+				importedList.AddRange(relatives);
+				Console.WriteLine("Successfully");
 			}
 		}
 
@@ -301,23 +308,25 @@ namespace Ninoimager
 				}
 
 				// Try to import
+				Console.Write("|-Importing {0,-45} | ", relative);
 				try {
 					// Import with original palette and settings
 					Npck original = new Npck(oriFile);
 					Npck npck = Npck.ImportBackgroundImage(imgFile, original);
-
 					npck.Write(outFile);
 
 					original.CloseAll();
 					npck.CloseAll();
 				} catch (Exception ex) {
-					Console.WriteLine("## Error ## Importing:  {0}", relative);
-					Console.WriteLine("\t" + ex.Message);
+					Console.WriteLine("Error: {0}", ex.Message);
+					#if DEBUG
+					Console.WriteLine(ex.ToString());
+					#endif
 					continue;
 				}
 
 				importedList.Add(relative);
-				Console.WriteLine("Written with success... {0}", relative);
+				Console.WriteLine("Successfully");
 			}
 		}
 
