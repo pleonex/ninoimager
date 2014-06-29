@@ -95,6 +95,7 @@
     <Compile Include="Format\Implementation\Lzx.cs" />
     <Compile Include="ImageProcessing\ManyFixedPaletteQuantization.cs" />
     <Compile Include="ImageProcessing\PaletteDistance.cs" />
+    <Compile Include="Format\Implementation\Btx0.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

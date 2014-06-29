@@ -20,9 +20,9 @@
 // <date>19/09/2013</date>
 // -----------------------------------------------------------------------
 using System;
-using System.Drawing;
 using System.IO;
-using Emgu.CV.Structure;
+using Color     = Emgu.CV.Structure.Bgra;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Bgra, System.Byte>;
 
 namespace Ninoimager.Format
 {
@@ -79,17 +79,17 @@ namespace Ninoimager.Format
 			throw new NotImplementedException();
 		}
 
-        public Bitmap CreateBitmap()
+		public EmguImage CreateBitmap()
         {
             Palette pal;
-            Emgu.CV.Image<Rgba, byte> lista;
+            EmguImage lista;
 
             //for (int i = 0; i < tex0.palInfo.NumObjects; i++)
             //{
-                pal = new Palette(tex0.Palette[0]);
+                pal = new Palette(tex0.Palette);
                 lista = this.CreateBitmap(pal, 0);
             //}
-                return lista.ToBitmap();
+                return lista;
         }
 
 		private class Tex0 : NitroBlock
@@ -149,7 +149,7 @@ namespace Ninoimager.Format
 				set;
 			}
 
-			public Rgba[][] Palette {
+			public Color[][] Palette {
 				get;
 				set;
 			}
@@ -196,7 +196,7 @@ namespace Ninoimager.Format
                 strIn.Position = blockOffset + palInfoOffset;
                 this.PalInfo = new Info3D(Info3D.Info3dType.palette);
                 this.PalInfo.ReadData(strIn);
-                this.Palette = new Rgba[this.PalInfo.NumObjects][];
+                this.Palette = new Color[this.PalInfo.NumObjects][];
 
                 //TODO read palette and image data                           
                 palInfo = PalInfo.BlockInfo.ReturnInfoPalette();
