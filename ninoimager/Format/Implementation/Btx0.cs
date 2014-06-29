@@ -34,20 +34,20 @@ namespace Ninoimager.Format
 
 		public Btx0()
 		{
-			this.nitro = new NitroFile("BTX0", "1.0", BlockTypes);
+			this.nitro = new NitroFile("BTX0", "1.0", BlockTypes) { HasOffsets = true };
 			this.tex0 = new Tex0(this.nitro);
 			this.nitro.Blocks.Add(this.tex0);
 		}
 
 		public Btx0(string file)
 		{
-			this.nitro = new NitroFile(file, BlockTypes);
+			this.nitro = new NitroFile(file, true, BlockTypes);
 			this.GetInfo();
 		}
 
 		public Btx0(Stream str)
 		{
-			this.nitro = new NitroFile(str, BlockTypes);
+			this.nitro = new NitroFile(str, true, BlockTypes);
 			this.GetInfo();
 		}
 

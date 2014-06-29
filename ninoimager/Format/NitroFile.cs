@@ -33,6 +33,7 @@ namespace Ninoimager.Format
 		private const ushort BomLittleEndiannes = 0xFEFF;	// Byte Order Mask
 
 		private Type[] blockTypes;
+		private bool hasOffsets;
 
 		private string magicStamp;
 		private ushort version;
@@ -46,6 +47,7 @@ namespace Ninoimager.Format
 					throw new ArgumentException("Invalid type passed.");
 			}
 
+			this.hasOffsets = false;
 			this.blockTypes = blockTypes;
 			this.blocks = new BlockCollection();
 		}
@@ -53,25 +55,34 @@ namespace Ninoimager.Format
 		public NitroFile(string magicStamp, string version, params Type[] blockTypes)
 			: this(blockTypes)
 		{
+			this.hasOffsets = false;
 			this.magicStamp = magicStamp;
 			this.VersionS   = version;
 		}
 
-		public NitroFile(string fileIn, params Type[] blockTypes)
+		public NitroFile(string fileIn, bool hasOffsets, params Type[] blockTypes)
 			: this(blockTypes)
 		{
-			FileStream fs = new FileStream(fileIn, FileMode.Open, FileAccess.Read, FileShare.Read);
+			this.hasOffsets = hasOffsets;
+			using (FileStream fs = new FileStream(fileIn, FileMode.Open, FileAccess.Read, FileShare.Read))
+				this.Read(fs, (int)fs.Length);
+		}
 
-			this.Read(fs, (int)fs.Length);
+		public NitroFile(string fileIn, params Type[] blockTypes)
+			: this(fileIn, false, blockTypes)
+		{
+		}
 
-			fs.Dispose();
-			fs.Close();
+		public NitroFile(Stream fileIn, bool hasOffsets, params Type[] blockTypes)
+			: this(blockTypes)
+		{
+			this.hasOffsets = hasOffsets;
+			this.Read(fileIn, (int)fileIn.Length);
 		}
 
 		public NitroFile(Stream fileIn, params Type[] blockTypes)
-			: this(blockTypes)
+			: this(fileIn, false, blockTypes)
 		{
-			this.Read(fileIn, (int)fileIn.Length);
 		}
 
 		public static ushort BlocksStart {
@@ -84,7 +95,7 @@ namespace Ninoimager.Format
 			BinaryReader br = new BinaryReader(strIn);
 
 			// Nitro header
-			this.magicStamp = new string(br.ReadChars(4).Reverse().ToArray());
+			this.magicStamp = this.ReadMagicStamp(br);
 
 			ushort bom = br.ReadUInt16();
 			if (bom != BomLittleEndiannes) {	// Byte Order Mark
@@ -108,9 +119,19 @@ namespace Ninoimager.Format
 			ushort numBlocks = br.ReadUInt16();
 
 			strIn.Position = basePosition + blocksStart;
+			uint[] offsets = null;
+			if (this.hasOffsets) {
+				offsets = new uint[numBlocks];
+				for (int i = 0; i < numBlocks; i++)
+					offsets[i] = br.ReadUInt32();
+			}
+				
 			this.blocks = new BlockCollection(numBlocks);
 			for (int i = 0; i < numBlocks; i++)
 			{
+				if (this.hasOffsets)
+					strIn.Position = basePosition + offsets[i];
+
 				if (strIn.Position == strIn.Length) {
 					Console.WriteLine("##ERROR?## Missing {0} blocks", numBlocks - i);
 					return;
@@ -120,7 +141,7 @@ namespace Ninoimager.Format
 				long blockPosition = strIn.Position;
 
 				// First get block parameters
-				string blockName = new string(br.ReadChars(4).Reverse().ToArray());
+				string blockName = this.ReadMagicStamp(br);
 				int blockSize = br.ReadInt32();
 				strIn.Position = blockPosition;
 
@@ -137,18 +158,22 @@ namespace Ninoimager.Format
 			}
 		}
 
+		private string ReadMagicStamp(BinaryReader br)
+		{
+			if (this.hasOffsets)
+				return new string(br.ReadChars(4));
+			else
+				return new string(br.ReadChars(4).Reverse().ToArray());
+		}
+
 		public void Write(string fileOut)
 		{
 			if (File.Exists(fileOut))
 				File.Delete(fileOut);
 
-			FileStream fs = new FileStream(fileOut, FileMode.CreateNew,
-			                               FileAccess.Write, FileShare.Read);
-
-			this.Write(fs);
-
-			fs.Dispose();
-			fs.Close();
+			using (FileStream fs = new FileStream(fileOut, FileMode.CreateNew,
+													FileAccess.Write, FileShare.Read))
+				this.Write(fs);
 		}
 
 		public virtual void Write(Stream strOut)
@@ -166,10 +191,17 @@ namespace Ninoimager.Format
 			bw.Write(0x00);					// File size, unknown at the moment
 			bw.Write(BlocksStart);
 			bw.Write((ushort)this.Blocks.Count);
-			bw.Flush();
 
 			while (strOut.Position < startPos + BlocksStart)
 				strOut.WriteByte(0x00);
+
+			if (this.hasOffsets) {
+				uint offset = (uint)(BlocksStart + this.blocks.Count * 4);
+				foreach (NitroBlock block in this.Blocks) {
+					bw.Write(offset);
+					offset += (uint)block.Size;
+				}
+			}
 
 			// Starts writing blocks
 			foreach (NitroBlock block in this.blocks) {
@@ -204,6 +236,11 @@ namespace Ninoimager.Format
 		public string VersionS {
 			get { return (this.version >> 8).ToString() + "." + (this.version & 0xFF).ToString(); }
 			set { this.version = (ushort)(((value[0] - '0') << 8) | (value[2] - '0')); }
+		}
+
+		public bool HasOffsets{
+			get { return this.hasOffsets; }
+			set { this.hasOffsets = value; }
 		}
 
 		public BlockCollection Blocks {
