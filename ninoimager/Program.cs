@@ -45,22 +45,49 @@ namespace Ninoimager
 			Stopwatch watch = new Stopwatch();
 			watch.Start();
 
-			if ((args.Length == 5 || args.Length == 6) && args[0] == "-ibg")
-				SearchAndImportBg(args[1], args[2], args[3], args[4],
-									(args.Length == 6) ? args[5] : string.Empty);
-			else if (args.Length == 5 && args[0] == "-isp")
-				SearchAndImportSp(args[1], args[2], args[3], args[4]);
-			else if (args.Length == 2 && args[0] == "-efr")
-				SearchAndExportBg(args[1]);
-			else
-				Tests.RunTest(args);
+			RunCommand(args);
 
 			watch.Stop();
 			Console.WriteLine("It tooks: {0}", watch.Elapsed);
 		}
 
+		private static void RunCommand(string[] args)
+		{
+			// Three argument commands
+			if (args.Length < 3)
+				return;
+
+			string command = args[0];
+			string baseDir = args[1];
+			string outputDir = args[2];
+
+			if (command == "-ebg" && args.Length == 3)
+				SearchAndExportBg(baseDir, outputDir);
+
+			// Five argument commands
+			if (args.Length < 5)
+				return;
+				
+			string infoPath = args[3];
+			string editPath = args[4];
+
+			if (command == "-ibg" && (args.Length == 5 || args.Length == 6))
+				SearchAndImportBg(baseDir, outputDir, infoPath, editPath,
+					(args.Length == 6) ? args[5] : string.Empty, false);
+
+			if (command == "-irbg" && (args.Length == 5 || args.Length == 6))
+				SearchAndImportBg(baseDir, outputDir, infoPath, editPath,
+					(args.Length == 6) ? args[5] : string.Empty, true);
+
+			if (command == "-isp" && args.Length == 5)
+				SearchAndImportSp(baseDir, outputDir, infoPath, editPath, false);
+
+			if (command == "-irsp" && args.Length == 5)
+				SearchAndImportSp(baseDir, outputDir, infoPath, editPath, true);
+		}
+
 		private static void SearchAndImportSp(string baseDir, string outDir,
-			string infoPath, string editPath)
+			string infoPath, string editPath, bool filterDate)
 		{
 			Console.WriteLine("@ Batch import");
 			Console.WriteLine("From: {0}", baseDir);
@@ -72,13 +99,14 @@ namespace Ninoimager
 			List<string> imported = new List<string>();
 
 			// Import single images
-			SingleImportSp(baseDir, outDir, imported);
+			SingleImportSp(baseDir, outDir, imported, filterDate);
 
 			// Create a new XML document with data of the modime XMLs
 			UpdateModimeXml(imported.ToArray(), infoPath, editPath);
 		}
 
-		private static void SingleImportSp(string baseDir, string outputDir, List<string> importedList)
+		private static void SingleImportSp(string baseDir, string outputDir,
+			List<string> importedList, bool filterDate)
 		{
             int count = 0;
             Dictionary<string, SortedList<int, string>> spriteGroups = 
@@ -111,14 +139,27 @@ namespace Ninoimager
 				string outFile  = Path.Combine(outputDir, relative) + "_new.n2d";
                 string[] imgs   = spriteGroups[relative].Values.ToArray();
 
+				// If don't match the filter, skip
+				if (filterDate) {
+					DateTime referenceDate = File.GetLastWriteTime(outFile);
+					if (!imgs.Any(f => File.GetLastWriteTime(f) > referenceDate)) {
+						count -= imgs.Length;
+						continue;
+					}
+				}
+
 				// Check if it has been already imported
-				if (importedList.Contains(relative))
+				if (importedList.Contains(relative)) {
+					count -= imgs.Length;
 					continue;
+				}
 
                 // If original file does not exist, skip
                 // Odd way to import manually images and skip them here
-                if (!File.Exists(original))
-                    continue;
+				if (!File.Exists(original)) {
+					count -= imgs.Length;
+					continue;
+				}
 
 				// Try to import
                 Console.Write("|-Importing {0,-45} {1,2} | ", relative, imgs.Length);
@@ -147,7 +188,7 @@ namespace Ninoimager
 		}
 
 		private static void SearchAndImportBg(string baseDir, string outDir,
-			string infoPath, string editPath, string multiXml)
+			string infoPath, string editPath, string multiXml, bool filterDate)
 		{
 			Console.WriteLine("@ Batch import");
 			Console.WriteLine("From: {0}", baseDir);
@@ -160,16 +201,17 @@ namespace Ninoimager
 			List<string> imported = new List<string>();
 
 			// First import "special files" that share palette and images data with other N2D files
-			MultiImportBg(baseDir, outDir, imported, multiXml);
+			MultiImportBg(baseDir, outDir, imported, multiXml, filterDate);
 
 			// Then import other images
-			SingleImportBg(baseDir, outDir, imported);
+			SingleImportBg(baseDir, outDir, imported, filterDate);
 
 			// Create a new XML document with data of the modime XMLs
 			UpdateModimeXml(imported.ToArray(), infoPath, editPath);
 		}
 
-		private static void MultiImportBg(string baseDir, string outputDir, List<string> importedList, string xml)
+		private static void MultiImportBg(string baseDir, string outputDir, 
+			List<string> importedList, string xml, bool filterDate)
 		{
 			if (string.IsNullOrEmpty(xml))
 				return;
@@ -199,6 +241,13 @@ namespace Ninoimager
 				if (!existImages)
 					continue;
 
+				// If don't match the filter, skip
+				if (filterDate) {
+					DateTime referenceDate = File.GetLastWriteTime(outPaths[0] + "_new.n2d");
+					if (!imgPaths.Any(f => File.GetLastWriteTime(f) > referenceDate))
+						continue;
+				}
+
 				// Import
 				Npck originalPack = new Npck(outPaths[0] + ".n2d");
 				Npck[] packs = null;
@@ -224,7 +273,8 @@ namespace Ninoimager
 			}
 		}
 
-		private static void SingleImportBg(string baseDir, string outputDir, List<string> importedList)
+		private static void SingleImportBg(string baseDir, string outputDir,
+			List<string> importedList, bool filterDate)
 		{
 			foreach (string imgFile in Directory.EnumerateFiles(baseDir, "*.png", SearchOption.AllDirectories)) {
 				Match match = BgRegex.Match(imgFile);
@@ -242,6 +292,13 @@ namespace Ninoimager
 				// Check if it has been already imported
 				if (importedList.Contains(relative))
 					continue;
+
+				// If don't match the filter, skip
+				if (filterDate) {
+					DateTime referenceDate = File.GetLastWriteTime(outFile);
+					if (File.GetLastWriteTime(imgFile) <= referenceDate)
+						continue;
+				}
 
 				// Try to import
 				try {
@@ -336,12 +393,12 @@ namespace Ninoimager
 			editXml.Save(editPath);
 		}
 
-		private static void SearchAndExportBg(string baseDir)
+		private static void SearchAndExportBg(string baseDir, string outputDir)
 		{
-			foreach (string file in Directory.EnumerateFiles(baseDir, "*.n2d", SearchOption.AllDirectories)) {	
-				string relativePath = file.Replace(baseDir, "");
-				string imageName = Path.GetRandomFileName().Substring(0, 8);
-				string imagePath = Path.Combine(baseDir, imageName + ".png");
+			foreach (string file in Directory.EnumerateFiles(outputDir, "*.n2d", SearchOption.AllDirectories)) {	
+				string relativePath = file.Replace(outputDir, "");
+				string imageName = Path.GetFileNameWithoutExtension(file);
+				string imagePath = Path.Combine(baseDir, relativePath, imageName + ".png");
 
 				try {
 					Npck pack = new Npck(file);
