@@ -113,7 +113,7 @@ namespace Ninoimager
                 new Dictionary<string, SortedList<int, string>>();
 
             Console.Write("Searching for images... ");
-			foreach (string imgFile in Directory.EnumerateFiles(baseDir, "*.png", SearchOption.AllDirectories)) {
+			foreach (string imgFile in Directory.GetFiles(baseDir, "*.png", SearchOption.AllDirectories)) {
 				Match match = SpRegex.Match(imgFile);
 				if (!match.Success)
 					continue;
@@ -283,7 +283,7 @@ namespace Ninoimager
 		private static void SingleImportBg(string baseDir, string outputDir,
 			List<string> importedList, bool filterDate)
 		{
-			foreach (string imgFile in Directory.EnumerateFiles(baseDir, "*.png", SearchOption.AllDirectories)) {
+			foreach (string imgFile in Directory.GetFiles(baseDir, "*.png", SearchOption.AllDirectories)) {
 				Match match = BgRegex.Match(imgFile);
 				if (!match.Success)
 					continue;
@@ -404,7 +404,7 @@ namespace Ninoimager
 
 		private static void SearchAndExportBg(string baseDir, string outputDir)
 		{
-			foreach (string file in Directory.EnumerateFiles(outputDir, "*.n2d", SearchOption.AllDirectories)) {	
+			foreach (string file in Directory.GetFiles(outputDir, "*.n2d", SearchOption.AllDirectories)) {	
 				string relativePath = file.Replace(outputDir, "");
 				string imageName = Path.GetFileNameWithoutExtension(file);
 				string imagePath = Path.Combine(baseDir, relativePath, imageName + ".png");
