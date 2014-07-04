@@ -109,6 +109,8 @@ namespace Ninoimager
 			List<string> importedList, bool filterDate)
 		{
             int count = 0;
+			int errorsPack = 0;
+			int errorsImgs = 0;
             Dictionary<string, SortedList<int, string>> spriteGroups = 
                 new Dictionary<string, SortedList<int, string>>();
 
@@ -175,6 +177,8 @@ namespace Ninoimager
                     #if DEBUG
                     Console.WriteLine(ex.ToString());
                     #endif
+					errorsPack++;
+					errorsImgs += imgs.Length;
                     count -= imgs.Length;
 					continue;
 				}
@@ -184,6 +188,7 @@ namespace Ninoimager
 			}
 
             Console.WriteLine();
+			Console.WriteLine("Errors in {0} packages ({1} images)", errorsPack, errorsImgs);
             Console.WriteLine("Imported {0} images successfully!", count);
 		}
 
