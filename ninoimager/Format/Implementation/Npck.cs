@@ -374,7 +374,8 @@ namespace Ninoimager.Format
 				importer.DispCnt = ncgr.RegDispcnt;
 				importer.Quantization = new ManyFixedPaletteQuantization(nclr.GetPalettes());
 				importer.OriginalPalettes = nclr.GetPalettes();
-                importer.Format = nclr.Format;
+				importer.TransparentColor = nclr.GetPalette(0)[0];
+				importer.Format = nclr.Format;
                 if (nclr.Format == ColorFormat.Indexed_8bpp)
                     importer.PaletteMode = PaletteMode.Palette256_1;
                 else
