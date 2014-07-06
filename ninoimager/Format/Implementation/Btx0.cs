@@ -26,17 +26,20 @@ using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Bgra, System.Byte>;
 
 namespace Ninoimager.Format
 {
-	public class Btx0 : Image
+	public class Btx0
 	{
 		private static Type[] BlockTypes = { typeof(Btx0.Tex0) };
 		private NitroFile nitro;
 		private Tex0 tex0;
+
+		private Image[] images;
 
 		public Btx0()
 		{
 			this.nitro = new NitroFile("BTX0", "1.0", BlockTypes) { HasOffsets = true };
 			this.tex0 = new Tex0(this.nitro);
 			this.nitro.Blocks.Add(this.tex0);
+			this.images = new Image[0];
 		}
 
 		public Btx0(string file)
@@ -70,12 +73,16 @@ namespace Ninoimager.Format
 		private void GetInfo()
 		{
 			this.tex0 = this.nitro.GetBlock<Tex0>(0);
-            //for (int i = 0; i < tex0.palInfo.NumObjects; i++)
-			// TODO: Since this class inherit from Image, it can define only one image
-			// One solution, it's not inherit from Image and create a variable Image[]
-			this.Width  = tex0.texInfo.parameters[0].Width;
-			this.Height = tex0.texInfo.parameters[0].Height;
-            this.SetData(tex0.TextureData[0], Ninoimager.Format.PixelEncoding.Lineal, tex0.texInfo.colorFormat[0]);
+			this.images = new Image[this.tex0.texInfo.NumObjects];
+			for (int i = 0; i < tex0.palInfo.NumObjects; i++) {
+				this.images[i].Width = tex0.texInfo.parameters[i].Width;
+				this.images[i].Height = tex0.texInfo.parameters[i].Height;
+				this.images[i].SetData(
+					tex0.TextureData[i],
+					Ninoimager.Format.PixelEncoding.Lineal,
+					tex0.texInfo.colorFormat[i]
+				);
+			}
 		}
 
 		private void SetInfo()
@@ -83,17 +90,10 @@ namespace Ninoimager.Format
 			throw new NotImplementedException();
 		}
 
-		public EmguImage CreateBitmap()
+		public EmguImage CreateBitmap(int idx)
         {
-            Palette pal;
-            EmguImage lista;
-
-            //for (int i = 0; i < tex0.palInfo.NumObjects; i++)
-            //{
-                pal = new Palette(tex0.Palette);
-                lista = this.CreateBitmap(pal, 0);
-            //}
-                return lista;
+			Palette pal = new Palette(tex0.Palette);
+			return this.images[idx].CreateBitmap(pal, 0);
         }
 
 		private class Tex0 : NitroBlock
