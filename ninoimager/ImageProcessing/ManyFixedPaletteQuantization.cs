@@ -20,8 +20,10 @@
 // <date>28/06/2014</date>
 // -----------------------------------------------------------------------
 using System;
-using LabColor = Emgu.CV.Structure.Lab;
-using Color    = Emgu.CV.Structure.Bgra;
+using Ninoimager.Format;
+using LabColor  = Emgu.CV.Structure.Lab;
+using Color     = Emgu.CV.Structure.Bgra;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Bgra, System.Byte>;
 
 namespace Ninoimager.ImageProcessing
 {
@@ -30,6 +32,7 @@ namespace Ninoimager.ImageProcessing
 		private ColorQuantization compareQuantization;
 		private Color[][] palettes;
 		private LabColor[][] labPalettes;
+		private EmguImage image;
 
 		public ManyFixedPaletteQuantization(Color[][] palettes)
 			: base(palettes[0])
@@ -51,6 +54,8 @@ namespace Ninoimager.ImageProcessing
 
 		protected override void PreQuantization(Emgu.CV.Image<Color, byte> image)
 		{
+			this.image = image;
+
 			// If only there is one, do nothing
 			if (this.palettes.Length == 1) {
 				base.PreQuantization(image);
@@ -79,6 +84,14 @@ namespace Ninoimager.ImageProcessing
 
 			// ... and run the FixedPaletteQuantization
 			base.PreQuantization(image);
+		}
+
+		protected override Pixel QuantizatePixel(int x, int y) {
+			// If it's a transparent color, set the first palette color
+			if (this.image[y, x].Alpha == 0)
+				return new Pixel(0, (uint)this.Palette[0].Alpha, true);
+			else
+				return base.QuantizatePixel(x, y);
 		}
 	}
 }

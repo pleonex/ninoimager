@@ -421,9 +421,8 @@ namespace Ninoimager
 			importer.ObjectMode    = ObjMode.Normal;
 			importer.PaletteMode   = PaletteMode.Palette16_16;
 			importer.TileSize      = new System.Drawing.Size(64, 64);
-			importer.TransparentColor = new Color(128, 0, 128, 255);
 			importer.Quantization     = new NdsQuantization() { 
-				BackdropColor = importer.TransparentColor,
+				BackdropColor = new Color(248, 0, 248, 255),
 				Format = ColorFormat.Indexed_4bpp
 			};
 			importer.Reducer  = new SimilarDistanceReducer();
