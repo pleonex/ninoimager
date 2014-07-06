@@ -95,11 +95,27 @@ namespace Ninoimager.Format
 			throw new NotImplementedException();
 		}
 
-		public EmguImage CreateBitmap(int idx)
+		public EmguImage CreateBitmap(int texIdx)
         {
-			Palette pal = new Palette(tex0.Palette);
-			return this.images[idx].CreateBitmap(pal, 0);
+			string texName = this.tex0.TexInfo.BlockName.Names[texIdx];
+
+			int palIdx = -1;
+			for (int i = 0; i < this.tex0.palInfo.NumObjects && palIdx == -1; i++) {
+				string palName = this.tex0.PalInfo.BlockName.Names[i].Replace("_pl", "");
+				if (palName == texName || palName.Replace("_pl", "") == texName)
+					palIdx = i;
+			}
+
+			if (palIdx == -1)
+				palIdx = 0;
+
+			return this.CreateBitmap(texIdx, palIdx);
         }
+
+		public EmguImage CreateBitmap(int texIdx, int palIdx)
+		{
+			return this.images[texIdx].CreateBitmap(new Palette(this.tex0.Palette), palIdx);
+		}
 
 		private class Tex0 : NitroBlock
 		{
@@ -529,7 +545,7 @@ namespace Ninoimager.Format
 
 						this.Names = new string[this.NumObjects];
                         for (int i = 0; i < this.NumObjects; i++)
-							this.Names[i] = new string(br.ReadChars(16));
+							this.Names[i] = new string(br.ReadChars(16)).Replace("\0", "");
                     }
 
 
