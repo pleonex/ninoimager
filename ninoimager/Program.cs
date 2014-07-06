@@ -167,7 +167,7 @@ namespace Ninoimager
                 Console.Write("|-Importing {0,-45} {1,2} | ", relative, imgs.Length);
 				try {
                     Npck ori  = new Npck(original);
-                    Npck npck = Npck.ImportSpriteImage(imgs, spriteGroups[relative].Keys.ToArray(), ori);
+                    Npck npck = NpckFactory.FromSpriteImage(imgs, spriteGroups[relative].Keys.ToArray(), ori);
                     npck.Write(outFile);
 
 					npck.CloseAll();
@@ -267,9 +267,9 @@ namespace Ninoimager
 				Npck originalPack = new Npck(outPaths[0] + ".n2d");
 				Npck[] packs = null;
 				if (mode == "SharePalette")
-					packs = Npck.ImportBackgroundImageSharePalette(imgPaths.ToArray(), originalPack);
+					packs = NpckFactory.FromBackgroundImageSharePalette(imgPaths.ToArray(), originalPack);
 				else if (mode == "ShareImage")
-					packs = Npck.ImportBackgroundImageShareImage(imgPaths.ToArray(), originalPack);
+					packs = NpckFactory.FromBackgroundImageShareImage(imgPaths.ToArray(), originalPack);
 				else
 					throw new FormatException(string.Format("Unsopported mode \"{0}\"", mode)); 
 
@@ -317,7 +317,7 @@ namespace Ninoimager
 				try {
 					// Import with original palette and settings
 					Npck original = new Npck(oriFile);
-					Npck npck = Npck.ImportBackgroundImage(imgFile, original);
+					Npck npck = NpckFactory.FromBackgroundImage(imgFile, original);
 					npck.Write(outFile);
 
 					original.CloseAll();

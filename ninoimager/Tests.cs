@@ -350,7 +350,7 @@ namespace Ninoimager
 
 		private static void ImportPack(string inputImage, string outputPack)
 		{
-			Npck npck = Npck.ImportBackgroundImage(inputImage);
+			Npck npck = NpckFactory.FromBackgroundImage(inputImage);
 			npck.Write(outputPack);
 		}
 
