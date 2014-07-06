@@ -58,6 +58,10 @@ namespace Ninoimager.Format
 			get { return this.nitro; }
 		}
 
+		public int NumObjects {
+			get { return this.tex0.texInfo.NumObjects; }
+		}
+
 		public void Write(string fileOut)
 		{
 			this.SetInfo();
@@ -74,7 +78,8 @@ namespace Ninoimager.Format
 		{
 			this.tex0 = this.nitro.GetBlock<Tex0>(0);
 			this.images = new Image[this.tex0.texInfo.NumObjects];
-			for (int i = 0; i < tex0.palInfo.NumObjects; i++) {
+			for (int i = 0; i < tex0.texInfo.NumObjects; i++) {
+				this.images[i] = new Image();
 				this.images[i].Width = tex0.texInfo.parameters[i].Width;
 				this.images[i].Height = tex0.texInfo.parameters[i].Height;
 				this.images[i].SetData(
@@ -166,12 +171,12 @@ namespace Ninoimager.Format
 
 			protected override void ReadData(Stream strIn)
 			{
-				long blockOffset = strIn.Position;
+				long blockOffset = strIn.Position - 8;
 				BinaryReader br  = new BinaryReader(strIn);
 
 				// Offset and size section
 				this.Unknown1       = br.ReadUInt32();
-				uint texDataSize    = (uint)(br.ReadUInt16() << 3);
+				uint texDataSize    = br.ReadUInt16();
 				uint texInfoOffset  = br.ReadUInt16();
 				this.Unknown2       = br.ReadUInt32();
 				uint texDataOffset  = br.ReadUInt32();
@@ -209,11 +214,11 @@ namespace Ninoimager.Format
                 for (int i = 0; i < PalInfo.NumObjects; i++)
                 {
                     //palette
-                    strIn.Position = blockOffset + palInfo.PaletteOffset[i];
+                    strIn.Position = blockOffset + palDataOffset + palInfo.PaletteOffset[i];
                     this.Palette[i] = br.ReadBytes(PalInfo.BlockInfo.DataSize).ToBgr555Colors();
 
                     //pixel
-                    strIn.Position = blockOffset + texInfo.TextureOffset[i];
+					strIn.Position = blockOffset + texDataOffset + texInfo.TextureOffset[i];
                     this.TextureData[i] = br.ReadBytes(texInfo.Length[i]);
                 }
                 
@@ -273,7 +278,7 @@ namespace Ninoimager.Format
                 {
                     public UnknownBlock(byte numObjects)
                     {
-                        numObjects = this.NumObjects;
+						this.NumObjects = numObjects;
                     }
 
                     private byte NumObjects { get; set; }
@@ -303,8 +308,8 @@ namespace Ninoimager.Format
                         this.RepeatedData = new UnknownRepeatedData[NumObjects];
                         for (int i = 0; i < NumObjects; i++)
                         {
-                            RepeatedData[NumObjects].Unknow1 = br.ReadUInt16();
-                            RepeatedData[NumObjects].Unknow2 = br.ReadUInt16();
+                            RepeatedData[i].Unknow1 = br.ReadUInt16();
+                            RepeatedData[i].Unknow2 = br.ReadUInt16();
                         }
                     }
                     
@@ -341,12 +346,8 @@ namespace Ninoimager.Format
                             infoBlock = new InfoBlockTexture(this.NumObjects);
                         else
                             infoBlock = new InfoBlockPalette(this.NumObjects);
-
-                        for (int i = 0; i < this.NumObjects; i++)
-                        {
-                            infoBlock.ReadData(strIn);
-                        }
-
+							
+                        infoBlock.ReadData(strIn);
                     }
 
                     private interface IInfoBase
@@ -387,7 +388,7 @@ namespace Ninoimager.Format
 
                             for (int i = 0; i < this.NumObjects; i++)
                             {
-                                this.TextureOffset[i] = (ushort)(br.ReadUInt16() << 3);
+								this.TextureOffset[i] = (ushort)(br.ReadUInt16() << 3);
                                 this.Parameters[i] = br.ReadUInt16();
                                 this.Width[i] = br.ReadByte();
                                 this.Unknown1[i] = br.ReadByte();
@@ -430,7 +431,7 @@ namespace Ninoimager.Format
 
                                 //getting the depth and texture length
                                 this.colorFormat[i] = (ColorFormat)this.parameters[i].Format;
-                                this.Length[i] = (ColorFormatExtension.Bpp(colorFormat[i]) * this.parameters[i].Height *
+								this.Length[i] = (colorFormat[i].Bpp() * this.parameters[i].Height *
                                     this.parameters[i].Width) / 8;                                    
                             }
 
@@ -484,7 +485,7 @@ namespace Ninoimager.Format
 
                             for (int i = 0; i < this.NumObjects; i++)
                             {
-                                this.PaletteOffset[i] = br.ReadUInt16();
+								this.PaletteOffset[i] = (ushort)(br.ReadUInt16() << 3);
                                 this.Unknown[i] = br.ReadUInt16();
                             }
                            
@@ -528,7 +529,7 @@ namespace Ninoimager.Format
 
 						this.Names = new string[this.NumObjects];
                         for (int i = 0; i < this.NumObjects; i++)
-                            this.Names[i] = br.ReadChars(16).ToString();
+							this.Names[i] = new string(br.ReadChars(16));
                     }
 
 
