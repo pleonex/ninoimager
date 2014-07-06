@@ -153,6 +153,12 @@ namespace Ninoimager
         public void AddFrame(EmguImage image, Frame frame)
         {
             this.frameData.Add(Tuple.Create(frame, image));
+
+			// Since flip it is not supported still, disable it
+			foreach (Obj obj in frame.GetObjects()) {
+				obj.VerticalFlip   = false;
+				obj.HorizontalFlip = false;
+			}
         }
 
         public void Generate(Stream paletteStr, Stream imgLinealStr, Stream imgTiledStr, Stream spriteStr)
