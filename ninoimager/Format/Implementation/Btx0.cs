@@ -33,13 +33,15 @@ namespace Ninoimager.Format
 		private Tex0 tex0;
 
 		private Image[] images;
+		private Palette palette;
 
 		public Btx0()
 		{
 			this.nitro = new NitroFile("BTX0", "1.0", BlockTypes) { HasOffsets = true };
 			this.tex0 = new Tex0(this.nitro);
 			this.nitro.Blocks.Add(this.tex0);
-			this.images = new Image[0];
+			this.images  = new Image[0];
+			this.palette = new Palette();
 		}
 
 		public Btx0(string file)
@@ -77,7 +79,8 @@ namespace Ninoimager.Format
 		private void GetInfo()
 		{
 			this.tex0 = this.nitro.GetBlock<Tex0>(0);
-			this.images = new Image[this.tex0.texInfo.NumObjects];
+			this.palette = new Palette(this.tex0.Palette);
+			this.images  = new Image[this.tex0.texInfo.NumObjects];
 			for (int i = 0; i < tex0.texInfo.NumObjects; i++) {
 				this.images[i] = new Image();
 				this.images[i].Width = tex0.texInfo.parameters[i].Width;
@@ -114,7 +117,16 @@ namespace Ninoimager.Format
 
 		public EmguImage CreateBitmap(int texIdx, int palIdx)
 		{
-			return this.images[texIdx].CreateBitmap(new Palette(this.tex0.Palette), palIdx);
+			EmguImage img = this.images[texIdx].CreateBitmap(this.palette, palIdx);
+
+			// Set transparent color
+			if (this.tex0.texInfo.parameters[texIdx].Color0 == 1) {
+				Color transparent = this.palette.GetPalette(palIdx)[0];
+				var mask = img.InRange(transparent, transparent);
+				img.SetValue(0, mask);
+			}
+
+			return img;
 		}
 
 		private class Tex0 : NitroBlock
