@@ -372,10 +372,12 @@ namespace Ninoimager.Format
 			if (size.Height < 0 || size.Height > 64 || size.Height % 8 != 0)
 				return false;
 
-			if (size.Width == 64 && (size.Height == 8 || size.Height == 16))
+			//if (size.Width == 64 && (size.Height == 8 || size.Height == 16))
+			if (size.Width == 64 && size.Height != 64)
 				return false;
 
-			if ((size.Width == 8 || size.Width == 16) && size.Height == 64)
+			//if ((size.Width == 8 || size.Width == 16) && size.Height == 64)
+			if (size.Height == 64 && size.Width != 64)
 				return false;
 
 			return true;
