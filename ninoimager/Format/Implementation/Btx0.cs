@@ -242,8 +242,9 @@ namespace Ninoimager.Format
                 for (int i = 0; i < PalInfo.NumObjects; i++)
                 {
                     //palette
+					int numColors = 1 << texInfo.colorFormat[i].Bpp();
                     strIn.Position = blockOffset + palDataOffset + palInfo.PaletteOffset[i];
-                    this.Palette[i] = br.ReadBytes(PalInfo.BlockInfo.DataSize).ToBgr555Colors();
+					this.Palette[i] = br.ReadBytes(numColors * 2).ToBgr555Colors();
 
                     //pixel
 					strIn.Position = blockOffset + texDataOffset + texInfo.TextureOffset[i];
