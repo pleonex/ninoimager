@@ -46,6 +46,24 @@ namespace Ninoimager
 			return totalDistance;
 		}
 
+		public static double CalculateDistance(Color[] palette1, Color[] palette2)
+		{
+			double totalDistance = 0;
+
+			for (int i = 0; i < palette1.Length; i++) {
+				double minColorDistance = -1;
+				for (int j = 0; j < palette2.Length; j++) {
+					double distance = palette1[i].GetDistanceSquared(palette2[j]);
+					if (minColorDistance == -1 || distance < minColorDistance)
+						minColorDistance = distance;
+				}
+
+				totalDistance += minColorDistance;
+			}
+
+			return totalDistance;
+		}
+
 		public static int CalculateDifferentsColors(Color[] palette1, Color[] palette2)
 		{
 			int count = 0;

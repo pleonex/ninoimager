@@ -53,16 +53,14 @@ namespace Ninoimager.ImageProcessing
 
         protected override Pixel QuantizatePixel(int x, int y)
         {
-            // Get the color without the alpha channel and add to the list
-            Color color   = image[y, x];
-            Color noTrans = color;
-            noTrans.Alpha = 255;
+            // Get the color and add to the list
+            Color color = image[y, x];
 
             int colorIndex;
             if (listColor.Count < this.MaxColors) {
-                if (!listColor.Contains(noTrans))
-                    listColor.Add(noTrans);
-                colorIndex = listColor.IndexOf(noTrans);
+                if (!listColor.Contains(color))
+                    listColor.Add(color);
+                colorIndex = listColor.IndexOf(color);
             } else {
                 // Create the labpalette if so
                 if (nearestNeighbour == null) {
@@ -71,7 +69,7 @@ namespace Ninoimager.ImageProcessing
                     nearestNeighbour.Initialize(labPalette);
                 }
 
-                LabColor labNoTrans = ColorConversion.ToLabPalette<Color>(new Color[] { noTrans })[0];
+                LabColor labNoTrans = ColorConversion.ToLabPalette<Color>(new Color[] { color })[0];
                 colorIndex = nearestNeighbour.Search(labNoTrans);
             }
 

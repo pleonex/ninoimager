@@ -20,6 +20,7 @@
 // <date>28/06/2014</date>
 // -----------------------------------------------------------------------
 using System;
+using System.Linq;
 using Ninoimager.Format;
 using LabColor  = Emgu.CV.Structure.Lab;
 using Color     = Emgu.CV.Structure.Bgra;
@@ -62,15 +63,16 @@ namespace Ninoimager.ImageProcessing
 				return;
 			}
 
-			// Extract a palette from the image
+			// Extract a palette from the image removing transparent colors (not approximated)
 			this.compareQuantization.TileSize = this.TileSize;
 			this.compareQuantization.Quantizate(image);
-			Color[] comparePalette = this.compareQuantization.Palette;
+			Color[] comparePalette = this.compareQuantization.Palette.
+				Where(c => c.Alpha == 255).ToArray();
 			LabColor[] compareLabPalette = ColorConversion.ToLabPalette<Color>(comparePalette);
 
 			// Compare all possible palettes to get the similar one
 			double minDistance = Double.MaxValue;
-			for (int i = 0; i < palettes.Length; i++) {
+			for (int i = 0; i < palettes.Length && minDistance > 0; i++) {
 				double distance = PaletteDistance.CalculateDistance(
 					compareLabPalette, this.labPalettes[i]);
 				if (distance < minDistance) {
