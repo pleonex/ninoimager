@@ -384,7 +384,8 @@ namespace Ninoimager
 			// For each entry to add
 			foreach (string relative in relativePaths) {
 				string path = Path.Combine(BaseRomPath, relative) + ".n2d";
-
+				path = path.Replace('\\', '/');
+				
 				// If it's not there, add it
 				if (infoRoot.Elements().Count(e => e.Element("Path").Value == path) == 0) {
 					XElement xedit = new XElement("FileInfo");
@@ -398,7 +399,7 @@ namespace Ninoimager
 				if (editRoot.Elements().Count(e => e.Element("Path").Value == path) == 0) {
 					XElement xgame = new XElement("File");
 					xgame.Add(new XElement("Path", path));
-					xgame.Add(new XElement("Import", "{$ImagePath}/" + relative + "_new.n2d"));
+					xgame.Add(new XElement("Import", "{$ImagePath}/" + relative.Replace('\\', '/') + "_new.n2d"));
 					editRoot.Add(xgame);
 				}
 			}
