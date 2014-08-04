@@ -223,7 +223,11 @@ namespace Ninoimager.Format
 		{
 			EmguImage[] emguImages = new EmguImage[images.Length];
 			for (int i = 0; i < images.Length; i++) {
-				emguImages[i] = new EmguImage(images[i]);
+				try { 
+					emguImages[i] = new EmguImage(images[i]);
+				} catch (Exception ex) {
+					throw new FormatException("Unknown exception with: " + images[i], ex);
+				}
 			}
 
 			Npck npck = FromSpriteImage(emguImages, frames, original);
