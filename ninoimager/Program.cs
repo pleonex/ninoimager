@@ -34,7 +34,7 @@ namespace Ninoimager
 	public static class MainClass
 	{
 		private static readonly Regex BgRegex = new Regex(@"(.+)_6\.nscrm\.png$", RegexOptions.Compiled);
-		private static readonly Regex SpRegex = new Regex(@"(.+)_3(\.ncer)?_(\d+)m\.png$", RegexOptions.Compiled);
+		private static readonly Regex SpRegex = new Regex(@"(.+)(_3)?(\.ncer)?_(\d+)m\.png$", RegexOptions.Compiled);
 
 		public static void Main(string[] args)
 		{
@@ -122,7 +122,7 @@ namespace Ninoimager
 
 				// Get relative path
 				string imagePath = match.Groups[1].Value;
-                int imageIndex   = Convert.ToInt32(match.Groups[3].Value);
+                int imageIndex   = Convert.ToInt32(match.Groups[4].Value);
 				string relative  = imagePath.Replace(baseDir, "");
 				if (relative[0] == Path.DirectorySeparatorChar)
 					relative = relative.Substring(1);
