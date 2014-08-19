@@ -271,7 +271,7 @@ namespace Ninoimager
 				else if (mode == "ShareImage")
 					packs = NpckFactory.FromBackgroundImageShareImage(imgPaths.ToArray(), originalPack);
 				else if (mode == "SharePaletteChangeDepth")
-					packs = NpckFactory.FromBackgroundImageSharePaletteChangeDepth(imgPaths.ToArray(), originalPack);
+					packs = NpckFactory.FromBackgroundImageSharePaletteChangeDepth(imgPaths.ToArray(), originalPack, true);
 				else
 					throw new FormatException(string.Format("Unsopported mode \"{0}\"", mode)); 
 

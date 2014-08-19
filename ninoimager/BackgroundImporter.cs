@@ -49,16 +49,16 @@ namespace Ninoimager
 				+ BG Mode will be "Text" (most used)
 				+ Transparent color will be magenta: (R:248, G:0, B:248) 
 			*/
-			this.IncludePcmp = false;
-			this.IncludeCpos = false;
-			this.DispCnt     = 0;
-			this.UnknownChar = 0;
-			this.BgMode      = BgMode.Text;
-			this.Format      = ColorFormat.Indexed_8bpp;
-			this.TileSize    = new Size(8, 8);
+			this.PartialImage  = false;
+			this.IncludePcmp   = false;
+			this.IncludeCpos   = false;
+			this.DispCnt       = 0;
+			this.UnknownChar   = 0;
+			this.BgMode        = BgMode.Text;
+			this.Format        = ColorFormat.Indexed_8bpp;
+			this.TileSize      = new Size(8, 8);
 			this.PixelEncoding = PixelEncoding.HorizontalTiles;
-
-			this.Quantization = new NdsQuantization();
+			this.Quantization  = new NdsQuantization();
 		}
 
 		#region Importer parameters
@@ -113,6 +113,11 @@ namespace Ninoimager
 		}
 
 		public PaletteMode PaletteMode {
+			get;
+			set;
+		}
+
+		public bool PartialImage {
 			get;
 			set;
 		}
@@ -194,6 +199,17 @@ namespace Ninoimager
 				}
 
 				pixels = pixelList.ToArray();
+			}
+
+			if (this.PartialImage) {
+				// As the image won't expand to all the screen,
+				// The first tile must be transparent
+				int tilesizeLength = this.TileSize.Width * this.TileSize.Height;
+				Pixel[] newPixels = new Pixel[pixels.Length + tilesizeLength];
+				Array.Copy(pixels, 0, newPixels, tilesizeLength, pixels.Length);
+				pixels = newPixels;
+
+				mapPalette.Insert(0, 0);
 			}
 
 			// Create palette format

@@ -219,7 +219,8 @@ namespace Ninoimager.Format
 			return packs;
 		}
 
-		public static Npck[] FromBackgroundImageSharePaletteChangeDepth(string[] images, Npck original)
+		public static Npck[] FromBackgroundImageSharePaletteChangeDepth(string[] images,
+			Npck original, bool partialImage = false)
 		{
 			EmguImage[] emguImgs = new EmguImage[images.Length];
 			for (int i = 0; i < images.Length; i++)
@@ -227,6 +228,7 @@ namespace Ninoimager.Format
 
 			BackgroundImporter importer = new BackgroundImporter();
 			importer.SetOriginalSettings(original[6], original[1], original[0]);
+			importer.PartialImage = partialImage;
 
 			// Create packs
 			Npck[] packs = new Npck[images.Length];
