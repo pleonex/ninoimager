@@ -39,7 +39,7 @@ namespace Ninoimager.Format
 		public Map()
 		{
 			this.info     = null;
-			this.mapping  = new SinglePaletteMapping();
+			this.mapping  = new CompressMapping();
 			this.tileSize = new Size(0, 0);
 			this.width    = 0;
 			this.height   = 0;
@@ -147,6 +147,14 @@ namespace Ninoimager.Format
 		public Pixel[] CreateMap(Pixel[] pixels)
 		{
 			this.mapping.Map(pixels);
+
+			this.SetMapInfo(this.mapping.GetMapInfo());
+			return this.mapping.GetMappedImage();
+		}
+
+		public Pixel[] CreateMap(Pixel[] pixels, int[] palettes)
+		{
+			this.mapping.Map(pixels, palettes);
 
 			this.SetMapInfo(this.mapping.GetMapInfo());
 			return this.mapping.GetMappedImage();

@@ -24,9 +24,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Ninoimager.Format;
 using Ninoimager.ImageProcessing;
 using Size      = System.Drawing.Size;
+using Rectangle = System.Drawing.Rectangle;
 using Color     = Emgu.CV.Structure.Bgra;
 using LabColor  = Emgu.CV.Structure.Lab;
 using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Bgra, System.Byte>;
@@ -164,12 +166,35 @@ namespace Ninoimager
 			int height = newImg.Height;
 			int maxColors = 1 << this.Format.Bpp();
 
-			// Quantizate image -> get pixels and palette
-			this.Quantization.Quantizate(newImg);
-            Pixel[] pixels  = this.Quantization.GetPixels(this.PixelEncoding);
-			Color[] palette = this.Quantization.Palette;
-			if (palette.Length > maxColors)
-				throw new FormatException(string.Format("The image has more than {0} colors", maxColors));
+			Pixel[] pixels;
+			Color[] palette;
+			List<int> mapPalette = new List<int>();
+			bool is16ColFixed = (PaletteMode == PaletteMode.Palette16_16) && (Quantization is FixedPaletteQuantization);
+			if (!is16ColFixed) {
+				// Quantizate image -> get pixels and palette
+				this.Quantization.Quantizate(newImg);
+				pixels  = this.Quantization.GetPixels(this.PixelEncoding);
+				palette = this.Quantization.Palette;
+				if (palette.Length > maxColors)
+					throw new FormatException(string.Format("The image has more than {0} colors", maxColors));
+			} else {
+				palette = this.Quantization.Palette;
+				ManyFixedPaletteQuantization quant = new ManyFixedPaletteQuantization(
+					this.Quantization.Palette.Split(16).ToArray());
+					
+				List<Pixel> pixelList = new List<Pixel>();
+				for (int y = 0; y < newImg.Height; y += this.TileSize.Height) {
+					for (int x = 0; x < newImg.Width; x += this.TileSize.Width) {
+						Rectangle subArea  = new Rectangle(x, y, this.TileSize.Width, this.TileSize.Height);
+						EmguImage subImage = newImg.Copy(subArea);
+						quant.Quantizate(subImage);
+						mapPalette.Add(quant.SelectedPalette);
+						pixelList.AddRange(quant.GetPixels(PixelEncoding.Lineal));
+					}
+				}
+
+				pixels = pixelList.ToArray();
+			}
 
 			// Create palette format
 			Nclr nclr = new Nclr() {
@@ -185,9 +210,15 @@ namespace Ninoimager
 				BgMode      = this.BgMode,
 				PaletteMode = this.PaletteMode
 			};
-			nscr.PaletteMode = (this.Format == ColorFormat.Indexed_4bpp) ?
-				PaletteMode.Palette16_16 : PaletteMode.Palette256_1;
-			pixels = nscr.CreateMap(pixels);
+
+			if (!is16ColFixed) {
+				nscr.PaletteMode = (this.Format == ColorFormat.Indexed_4bpp) ?
+					PaletteMode.Palette16_16 : PaletteMode.Palette256_1;
+				pixels = nscr.CreateMap(pixels);
+			} else {
+				nscr.PaletteMode = PaletteMode.Palette16_16;
+				pixels = nscr.CreateMap(pixels, mapPalette.ToArray());
+			}
 
 			// Create image format
 			Ncgr ncgr = new Ncgr() {

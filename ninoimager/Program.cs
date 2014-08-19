@@ -34,7 +34,7 @@ namespace Ninoimager
 	public static class MainClass
 	{
 		private static readonly Regex BgRegex = new Regex(@"(.+)_6\.nscrm\.png$", RegexOptions.Compiled);
-		private static readonly Regex SpRegex = new Regex(@"(.+)(_3)?(\.ncer)?_(\d+)m\.png$", RegexOptions.Compiled);
+		private static readonly Regex SpRegex = new Regex(@"(.+)_3?(\.ncer)?_(\d+)m\.png$", RegexOptions.Compiled);
 
 		public static void Main(string[] args)
 		{
@@ -122,7 +122,7 @@ namespace Ninoimager
 
 				// Get relative path
 				string imagePath = match.Groups[1].Value;
-                int imageIndex   = Convert.ToInt32(match.Groups[4].Value);
+                int imageIndex   = Convert.ToInt32(match.Groups[3].Value);
 				string relative  = imagePath.Replace(baseDir, "");
 				if (relative[0] == Path.DirectorySeparatorChar)
 					relative = relative.Substring(1);
@@ -270,6 +270,8 @@ namespace Ninoimager
 					packs = NpckFactory.FromBackgroundImageSharePalette(imgPaths.ToArray(), originalPack);
 				else if (mode == "ShareImage")
 					packs = NpckFactory.FromBackgroundImageShareImage(imgPaths.ToArray(), originalPack);
+				else if (mode == "SharePaletteChangeDepth")
+					packs = NpckFactory.FromBackgroundImageSharePaletteChangeDepth(imgPaths.ToArray(), originalPack);
 				else
 					throw new FormatException(string.Format("Unsopported mode \"{0}\"", mode)); 
 

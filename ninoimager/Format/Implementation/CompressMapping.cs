@@ -25,9 +25,9 @@ using Size = System.Drawing.Size;
 
 namespace Ninoimager.Format
 {
-	public class SinglePaletteMapping : Mapable
+	public class CompressMapping : Mapable
 	{
-		public override void Map(Pixel[] image)
+		public override void Map(Pixel[] image, int[] palettes)
 		{
 			List<Pixel[]> tiles = new List<Pixel[]>();
 			List<MapInfo> infos = new List<MapInfo>();
@@ -40,7 +40,7 @@ namespace Ninoimager.Format
 
 				bool flipX;
 				bool flipY;
-				int index = SinglePaletteMapping.Search(tile, tiles, this.TileSize, out flipX, out flipY);
+				int index = CompressMapping.Search(tile, tiles, this.TileSize, out flipX, out flipY);
 
 				// Otherwise add
 				if (index == -1) {
@@ -51,7 +51,7 @@ namespace Ninoimager.Format
 				}
 
 				// Finally create map info
-				infos.Add(new MapInfo(index, 0, flipX, flipY));
+				infos.Add(new MapInfo(index, palettes[i / tileLength], flipX, flipY));
 			}
 
 			// Get an array of pixels instead of tiles
@@ -62,6 +62,11 @@ namespace Ninoimager.Format
 			// Set data
 			this.mappedImage = linPixels;
 			this.mapInfo = infos.ToArray();
+		}
+
+		public override void Map(Pixel[] image)
+		{
+			this.Map(image, new int[image.Length]);
 		}
 
 		protected static int Search(Pixel[] tile, List<Pixel[]> tiles, Size tileSize,

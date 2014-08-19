@@ -77,7 +77,6 @@
     <Compile Include="ImageProcessing\NearestNeighbour.cs" />
     <Compile Include="ImageProcessing\ExhaustiveSearch.cs" />
     <Compile Include="Format\Mapable.cs" />
-    <Compile Include="Format\Implementation\SinglePaletteMapping.cs" />
     <Compile Include="Format\Implementation\MatchMapping.cs" />
     <Compile Include="Format\PaletteMode.cs" />
     <Compile Include="Format\Obj.cs" />
@@ -97,6 +96,8 @@
     <Compile Include="ImageProcessing\PaletteDistance.cs" />
     <Compile Include="Format\Implementation\Btx0.cs" />
     <Compile Include="Format\Implementation\NpckFactory.cs" />
+    <Compile Include="Extensions\ArrayExtension.cs" />
+    <Compile Include="Format\Implementation\CompressMapping.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

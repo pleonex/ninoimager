@@ -24,7 +24,7 @@ using System.Collections.Generic;
 
 namespace Ninoimager.Format
 {
-	public class MatchMapping : SinglePaletteMapping
+	public class MatchMapping : CompressMapping
 	{
 		public MatchMapping(Pixel[] mappedImage)
 		{
@@ -52,7 +52,7 @@ namespace Ninoimager.Format
 
 				bool flipX;
 				bool flipY;
-				int index = SinglePaletteMapping.Search(tile, tiles, this.TileSize, out flipX, out flipY);
+				int index = CompressMapping.Search(tile, tiles, this.TileSize, out flipX, out flipY);
 
 				if (index == -1)
 					throw new Exception("Tile not found.");

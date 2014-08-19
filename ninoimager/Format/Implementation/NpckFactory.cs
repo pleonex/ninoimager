@@ -219,6 +219,44 @@ namespace Ninoimager.Format
 			return packs;
 		}
 
+		public static Npck[] FromBackgroundImageSharePaletteChangeDepth(string[] images, Npck original)
+		{
+			EmguImage[] emguImgs = new EmguImage[images.Length];
+			for (int i = 0; i < images.Length; i++)
+				emguImgs[i] = new EmguImage(images[i]);
+
+			BackgroundImporter importer = new BackgroundImporter();
+			importer.SetOriginalSettings(original[6], original[1], original[0]);
+
+			// Create packs
+			Npck[] packs = new Npck[images.Length];
+			for (int i = 0; i < images.Length; i++) {
+				MemoryStream nclrStr = new MemoryStream();
+				MemoryStream ncgrStr = new MemoryStream();
+				MemoryStream nscrStr = new MemoryStream();
+
+				if (i > 0) {
+					importer.PaletteMode = PaletteMode.Palette16_16;
+					importer.Format = ColorFormat.Indexed_4bpp;
+				}
+
+				importer.ImportBackground(emguImgs[i], nscrStr, ncgrStr, nclrStr);
+				nclrStr.Position = ncgrStr.Position = nscrStr.Position = 0;
+
+				// Only first pack file has palette file
+				if (i == 0)
+					packs[i] = Npck.FromBackgroundStreams(nscrStr, ncgrStr, nclrStr);
+				else
+					packs[i] = Npck.FromBackgroundStreams(nscrStr, ncgrStr, null);
+			}
+
+			// Dispose images
+			foreach (EmguImage emgu in emguImgs)
+				emgu.Dispose();
+
+			return packs;
+		}
+
 		public static Npck FromSpriteImage(string[] images, int[] frames, Npck original)
 		{
 			EmguImage[] emguImages = new EmguImage[images.Length];
