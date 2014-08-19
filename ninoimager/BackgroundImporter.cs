@@ -206,6 +206,12 @@ namespace Ninoimager
 				// The first tile must be transparent
 				int tilesizeLength = this.TileSize.Width * this.TileSize.Height;
 				Pixel[] newPixels = new Pixel[pixels.Length + tilesizeLength];
+
+				// New transparent pixels
+				for (int i = 0; i < tilesizeLength; i++)
+					newPixels[i] = new Pixel(0, 255, true);
+
+				// Image pixels
 				Array.Copy(pixels, 0, newPixels, tilesizeLength, pixels.Length);
 				pixels = newPixels;
 

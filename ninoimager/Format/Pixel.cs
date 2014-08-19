@@ -76,6 +76,11 @@ namespace Ninoimager.Format
 				return IsIndexed.GetHashCode() ^ Info.GetHashCode() ^ Alpha.GetHashCode();
 			}
 		}
+			
+		public override string ToString()
+		{
+			return string.Format("[Pixel: IsIndexed={0}, Info={1}, Alpha={2}]", IsIndexed, Info, Alpha);
+		}
 	}
 
 	public static class PixelExtension
