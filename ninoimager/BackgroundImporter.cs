@@ -174,7 +174,8 @@ namespace Ninoimager
 			Pixel[] pixels;
 			Color[] palette;
 			List<int> mapPalette = new List<int>();
-			bool is16ColFixed = (PaletteMode == PaletteMode.Palette16_16) && (Quantization is FixedPaletteQuantization);
+			bool is16ColFixed = (Format == ColorFormat.Indexed_4bpp) &&
+				(PaletteMode == PaletteMode.Palette16_16) && (Quantization is FixedPaletteQuantization);
 			if (!is16ColFixed) {
 				// Quantizate image -> get pixels and palette
 				this.Quantization.Quantizate(newImg);
@@ -183,6 +184,7 @@ namespace Ninoimager
 				if (palette.Length > maxColors)
 					throw new FormatException(string.Format("The image has more than {0} colors", maxColors));
 			} else {
+				Console.Write("(16 Color fixed!) ");
 				palette = this.Quantization.Palette;
 				ManyFixedPaletteQuantization quant = new ManyFixedPaletteQuantization(
 					this.Quantization.Palette.Split(16).ToArray());
