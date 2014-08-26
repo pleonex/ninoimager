@@ -70,6 +70,18 @@ namespace Ninoimager.Format
 			return npck;
 		}
 
+		public bool IsBackground {
+			get {
+				return this.NumSubfiles == 9 && this[6] != null;
+			}
+		}
+
+		public bool IsSprite {
+			get {
+				return this.NumSubfiles == 9 && this[3] != null;
+			}
+		}
+
 		protected override void Read(Stream strIn)
 		{
 			BinaryReader br = new BinaryReader(strIn);
@@ -153,21 +165,25 @@ namespace Ninoimager.Format
 			if (this.NumSubfiles != 9 || this[0] == null || this[1] == null || this[6] == null)
 				throw new FormatException("The pack does not contain a background image.");
 
+			this[0].Position = this[1].Position = this[6].Position = 0;
 			Nclr nclr = new Nclr(this[0]);
 			Ncgr ncgr = new Ncgr(this[1]);
 			Nscr nscr = new Nscr(this[6]);
+			this[0].Position = this[1].Position = this[6].Position = 0;
 
 			return nscr.CreateBitmap(ncgr, nclr);
 		}
 
 		public EmguImage[] GetSpriteImage()
 		{
-			if (this.NumSubfiles != 9 || this[0] == null || this[1] == null || this[6] == null)
-				throw new FormatException("The pack does not contain a background image.");
+			if (this.NumSubfiles != 9 || this[0] == null || this[1] == null || this[3] == null)
+				throw new FormatException("The pack does not contain a sprite image.");
 
+			this[0].Position = this[1].Position = this[3].Position = 0;
 			Nclr nclr = new Nclr(this[0]);
 			Ncgr ncgr = new Ncgr(this[1]);
 			Ncer ncer = new Ncer(this[3]);
+			this[0].Position = this[1].Position = this[3].Position = 0;
 
 			EmguImage[] images = new EmguImage[ncer.NumFrames];
 			for (int i = 0; i < ncer.NumFrames; i++)

@@ -33,8 +33,8 @@ namespace Ninoimager
 {
 	public static class MainClass
 	{
-		private static readonly Regex BgRegex = new Regex(@"(.+)_6\.nscrm\.png$", RegexOptions.Compiled);
-		private static readonly Regex SpRegex = new Regex(@"(.+)_3?(\.ncer)?_(\d+)m\.png$", RegexOptions.Compiled);
+		private static readonly Regex RegexLin = new Regex(@"(.+)\/(.+)m\.png$", RegexOptions.Compiled);
+		private static readonly Regex RegexWin = new Regex(@"(.+)\\(.+)m\.png$", RegexOptions.Compiled);
 
 		public static void Main(string[] args)
 		{
@@ -70,129 +70,16 @@ namespace Ninoimager
 				
 			string infoPath = args[3];
 			string editPath = args[4];
+			string multiXml = (args.Length == 6) ? args[5] : string.Empty;
 
-			if (command == "-ibg" && (args.Length == 5 || args.Length == 6))
-				SearchAndImportBg(baseDir, outputDir, infoPath, editPath,
-					(args.Length == 6) ? args[5] : string.Empty, false);
+			if (command == "-i" && (args.Length == 5 || args.Length == 6))
+				SearchAndImport(baseDir, outputDir, infoPath, editPath, multiXml, false);
 
-			if (command == "-irbg" && (args.Length == 5 || args.Length == 6))
-				SearchAndImportBg(baseDir, outputDir, infoPath, editPath,
-					(args.Length == 6) ? args[5] : string.Empty, true);
-
-			if (command == "-isp" && args.Length == 5)
-				SearchAndImportSp(baseDir, outputDir, infoPath, editPath, false);
-
-			if (command == "-irsp" && args.Length == 5)
-				SearchAndImportSp(baseDir, outputDir, infoPath, editPath, true);
+			if (command == "-ir" && (args.Length == 5 || args.Length == 6))
+				SearchAndImport(baseDir, outputDir, infoPath, editPath, multiXml, true);
 		}
-
-		private static void SearchAndImportSp(string baseDir, string outDir,
-			string infoPath, string editPath, bool filterDate)
-		{
-			Console.WriteLine("@ Batch import");
-			Console.WriteLine("From: {0}", baseDir);
-			Console.WriteLine("To:   {0}", outDir);
-			Console.WriteLine("Info XML: {0}", infoPath);
-			Console.WriteLine("Edit XML: {0}", editPath);
-			Console.WriteLine();
-
-			List<string> imported = new List<string>();
-
-			// Import single images
-			SingleImportSp(baseDir, outDir, imported, filterDate);
-
-			// Create a new XML document with data of the modime XMLs
-			UpdateModimeXml(imported.ToArray(), infoPath, editPath);
-		}
-
-		private static void SingleImportSp(string baseDir, string outputDir,
-			List<string> importedList, bool filterDate)
-		{
-            int count = 0;
-			int errorsPack = 0;
-			int errorsImgs = 0;
-            Dictionary<string, SortedList<int, string>> spriteGroups = 
-                new Dictionary<string, SortedList<int, string>>();
-
-            Console.Write("Searching for images... ");
-			foreach (string imgFile in Directory.GetFiles(baseDir, "*.png", SearchOption.AllDirectories)) {
-				Match match = SpRegex.Match(imgFile);
-				if (!match.Success)
-					continue;
-
-				// Get relative path
-				string imagePath = match.Groups[1].Value;
-                int imageIndex   = Convert.ToInt32(match.Groups[3].Value);
-				string relative  = imagePath.Replace(baseDir, "");
-				if (relative[0] == Path.DirectorySeparatorChar)
-					relative = relative.Substring(1);
-
-				if (!spriteGroups.ContainsKey(relative))
-                    spriteGroups.Add(relative, new SortedList<int, string>());
-                spriteGroups[relative].Add(imageIndex, imgFile);
-                count++;
-			}
-
-            Console.WriteLine("Found {0} images", count);
-            Console.WriteLine("Starting importing...");
-			foreach (string relative in spriteGroups.Keys) {
-				// Get output paths
-				string original = Path.Combine(outputDir, relative) + ".n2d";
-				string outFile  = Path.Combine(outputDir, relative) + "_new.n2d";
-                string[] imgs   = spriteGroups[relative].Values.ToArray();
-
-				// If don't match the filter, skip
-				if (filterDate) {
-					DateTime referenceDate = File.GetLastWriteTime(outFile);
-					if (!imgs.Any(f => File.GetLastWriteTime(f) > referenceDate)) {
-						count -= imgs.Length;
-						continue;
-					}
-				}
-
-				// Check if it has been already imported
-				if (importedList.Contains(relative)) {
-					count -= imgs.Length;
-					continue;
-				}
-
-                // If original file does not exist, skip
-                // Odd way to import manually images and skip them here
-				if (!File.Exists(original)) {
-					count -= imgs.Length;
-					continue;
-				}
-
-				// Try to import
-                Console.Write("|-Importing {0,-45} {1,2} | ", relative, imgs.Length);
-				try {
-                    Npck ori  = new Npck(original);
-                    Npck npck = NpckFactory.FromSpriteImage(imgs, spriteGroups[relative].Keys.ToArray(), ori);
-                    npck.Write(outFile);
-
-					npck.CloseAll();
-                    ori.CloseAll();
-				} catch (Exception ex) {
-                    Console.WriteLine("Error: {0}", ex.Message);
-                    #if DEBUG
-                    Console.WriteLine(ex.ToString());
-                    #endif
-					errorsPack++;
-					errorsImgs += imgs.Length;
-                    count -= imgs.Length;
-					continue;
-				}
-
-				importedList.Add(relative);
-                Console.WriteLine("Successfully");
-			}
-
-            Console.WriteLine();
-			Console.WriteLine("Errors in {0} packages ({1} images)", errorsPack, errorsImgs);
-            Console.WriteLine("Imported {0} images successfully!", count);
-		}
-
-		private static void SearchAndImportBg(string baseDir, string outDir,
+		
+		private static void SearchAndImport(string baseDir, string outDir,
 			string infoPath, string editPath, string multiXml, bool filterDate)
 		{
 			Console.WriteLine("@ Batch import");
@@ -206,20 +93,20 @@ namespace Ninoimager
 			List<string> imported = new List<string>();
 
 			// First import "special files" that share palette and images data with other N2D files
-			MultiImportBg(baseDir, outDir, imported, multiXml, filterDate);
+			Console.WriteLine("## Starting MultiImport ##");
+			MultiImport(baseDir, outDir, imported, multiXml, filterDate);
+			Console.WriteLine();
 
 			// Then import other images
-			SingleImportBg(baseDir, outDir, imported, filterDate);
+			Console.WriteLine("## Starting SingleImport ##");
+			SingleImport(baseDir, outDir, imported, filterDate);
+			Console.WriteLine();
 
 			// Create a new XML document with data of the modime XMLs
 			UpdateModimeXml(imported.ToArray(), infoPath, editPath);
-
-			// Since here it's one image -> one pack, we can count them like that
-			Console.WriteLine();
-			Console.WriteLine("Imported {0} images successfully!", imported.Count);
 		}
 
-		private static void MultiImportBg(string baseDir, string outputDir, 
+		private static void MultiImport(string baseDir, string outputDir, 
 			List<string> importedList, string xml, bool filterDate)
 		{
 			if (string.IsNullOrEmpty(xml))
@@ -286,55 +173,158 @@ namespace Ninoimager
 				Console.WriteLine("Successfully");
 			}
 		}
-
-		private static void SingleImportBg(string baseDir, string outputDir,
+			
+		private static void SingleImport(string baseDir, string outputDir,
 			List<string> importedList, bool filterDate)
 		{
+			int count = 0;
+			Dictionary<string, int> errors = new Dictionary<string, int>();
+			errors.Add("skipImgs", 0);
+			errors.Add("errorPack", 0); 	errors.Add("errorImgs", 0);
+			errors.Add("noN2DPack", 0);		errors.Add("noN2DImgs", 0);
+			errors.Add("noModPack", 0);		errors.Add("noModImgs", 0);
+			errors.Add("inListPack", 0);	errors.Add("inListImgs", 0);
+
+			Dictionary<string, SortedList<int, string>> imageGroups = 
+				new Dictionary<string, SortedList<int, string>>();
+				
+			PlatformID osId = Environment.OSVersion.Platform;
+			Regex regex = (osId == PlatformID.Unix || osId == PlatformID.MacOSX) ? RegexLin : RegexWin;
+
+			Console.Write("Searching for images... ");
 			foreach (string imgFile in Directory.GetFiles(baseDir, "*.png", SearchOption.AllDirectories)) {
-				Match match = BgRegex.Match(imgFile);
+				Match match = regex.Match(imgFile);
 				if (!match.Success)
 					continue;
 
-				// Get paths
-				string imagePath = match.Groups[1].Value;
+				// Gets real name and frame index
+				string filename = match.Groups[2].Value;
+				int frameIdx = 0;	// BG index is always 0 (only importing one image)
+
+				// If it's match old format (suffix '_6.nscrm' and '_3.ncer_Xm')
+				if (filename.EndsWith("_6.nscr")) {
+					filename = filename.Substring(0, filename.Length - 7);
+				} else if (filename.Contains("_3.ncer_")) {
+					try {
+						int nameIdx = filename.IndexOf("_3.ncer_");
+						frameIdx = Convert.ToInt32(filename.Substring(nameIdx + 8));
+						filename = filename.Substring(0, nameIdx);
+					} catch {
+						Console.WriteLine("\t\t{0} skipped", imgFile);
+						errors["skipImgs"]++;
+						continue;
+					}
+				}
+
+				// Else, the new format does not have the suffixes
+				// If the .n2d file exists with that file name we got it
+				string testN2D = match.Groups[1].Value + Path.DirectorySeparatorChar + filename + ".n2d";
+				testN2D = testN2D.Replace(baseDir, outputDir);
+				if (!File.Exists(testN2D) && filename.Contains("_")) {
+					// Else, try to get frame index, if exception it should be texture so skip
+					try {
+						int nameIdx = filename.LastIndexOf("_");
+						frameIdx = Convert.ToInt32(filename.Substring(nameIdx + 1));
+						filename = filename.Substring(0, nameIdx);
+					} catch {
+						errors["skipImgs"]++;
+						continue;
+					}
+				}
+
+				// Get relative path
+				string imagePath = match.Groups[1].Value + Path.DirectorySeparatorChar + filename;
 				string relative  = imagePath.Replace(baseDir, "");
 				if (relative[0] == Path.DirectorySeparatorChar)
 					relative = relative.Substring(1);
-				string oriFile = Path.Combine(outputDir, relative) + ".n2d";
-				string outFile = Path.Combine(outputDir, relative) + "_new.n2d";
 
-				// Check if it has been already imported
-				if (importedList.Contains(relative))
-					continue;
+				if (!imageGroups.ContainsKey(relative))
+					imageGroups.Add(relative, new SortedList<int, string>());
+				imageGroups[relative].Add(frameIdx, imgFile);
+				count++;
+			}
+
+			Console.WriteLine("\tFound {0} images in {1} groups", count, imageGroups.Count);
+			Console.WriteLine("\t\t\tSkipped {0} images", errors["skipImgs"]);
+			Console.WriteLine("Starting importing...");
+			foreach (string relative in imageGroups.Keys) {
+				// Get output paths
+				string original = Path.Combine(outputDir, relative) + ".n2d";
+				string outFile  = Path.Combine(outputDir, relative) + "_new.n2d";
+				string[] imgs   = imageGroups[relative].Values.ToArray();
 
 				// If don't match the filter, skip
 				if (filterDate) {
 					DateTime referenceDate = File.GetLastWriteTime(outFile);
-					if (File.GetLastWriteTime(imgFile) <= referenceDate)
+					if (!imgs.Any(f => File.GetLastWriteTime(f) > referenceDate)) {
+						Console.WriteLine("|+ Skipped (date filter) {0}", relative);
+						errors["noModPack"]++;
+						errors["noModImgs"] += imgs.Length;
+						count -= imgs.Length;
 						continue;
+					}
+				}
+
+				// Check if it has been already imported
+				if (importedList.Contains(relative)) {
+					Console.WriteLine("|+ Skipped (already imported) {0}", relative);
+					errors["inListPack"]++;
+					errors["inListImgs"] += imgs.Length;
+					count -= imgs.Length;
+					continue;
+				}
+
+				// If original file does not exist, skip
+				// Odd way to import manually images and skip them here
+				if (!File.Exists(original)) {
+					Console.WriteLine("|+ Skipped (manual mode) {0}", relative);
+					errors["noN2DPack"]++;
+					errors["noN2DImgs"] += imgs.Length;
+					count -= imgs.Length;
+					continue;
 				}
 
 				// Try to import
-				Console.Write("|-Importing {0,-45} | ", relative);
+				Console.Write("|-Importing {0,-45} {1,2} | ", relative, imgs.Length);
 				try {
-					// Import with original palette and settings
-					Npck original = new Npck(oriFile);
-					Npck npck = NpckFactory.FromBackgroundImage(imgFile, original);
-					npck.Write(outFile);
+					Npck ori  = new Npck(original);
+					Npck npck;
+					if (ori.IsSprite)
+						npck = NpckFactory.FromSpriteImage(imgs, imageGroups[relative].Keys.ToArray(), ori);
+					else if (ori.IsBackground && imgs.Length == 1)
+						npck = NpckFactory.FromBackgroundImage(imgs[0], ori);
+					else
+						throw new FormatException("Image format not supported");
 
-					original.CloseAll();
+					npck.Write(outFile);
 					npck.CloseAll();
+					ori.CloseAll();
 				} catch (Exception ex) {
 					Console.WriteLine("Error: {0}", ex.Message);
 					#if DEBUG
 					Console.WriteLine(ex.ToString());
 					#endif
+					errors["errorPack"]++;
+					errors["errorImgs"] += imgs.Length;
+					count -= imgs.Length;
 					continue;
 				}
 
 				importedList.Add(relative);
 				Console.WriteLine("Successfully");
 			}
+
+			Console.WriteLine();
+			Console.WriteLine("# Statistics #");
+			Console.WriteLine("\tErrors in {0} packages ({1} images)",
+				errors["errorPack"], errors["errorImgs"]);
+			Console.WriteLine("\tNo N2D file found for {0} packages ({1} images)",
+				errors["noN2DPack"], errors["noN2DImgs"]);
+			Console.WriteLine("\tFilter skipped {0} packages ({1} images)",
+				errors["noModPack"], errors["noModImgs"]);
+			Console.WriteLine("\tAlready imported {0} packages ({1} images)",
+				errors["inListPack"], errors["inListImgs"]);
+			Console.WriteLine("\tImported {0} images successfully!", count);
 		}
 
 		private static void CreateModimeXml(string[] relativePaths, string outputXml)
