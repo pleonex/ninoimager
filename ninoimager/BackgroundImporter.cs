@@ -202,24 +202,7 @@ namespace Ninoimager
 
 				pixels = pixelList.ToArray();
 			}
-
-			if (this.PartialImage) {
-				// As the image won't expand to all the screen,
-				// The first tile must be transparent
-				int tilesizeLength = this.TileSize.Width * this.TileSize.Height;
-				Pixel[] newPixels = new Pixel[pixels.Length + tilesizeLength];
-
-				// New transparent pixels
-				for (int i = 0; i < tilesizeLength; i++)
-					newPixels[i] = new Pixel(0, 255, true);
-
-				// Image pixels
-				Array.Copy(pixels, 0, newPixels, tilesizeLength, pixels.Length);
-				pixels = newPixels;
-
-				mapPalette.Insert(0, 0);
-			}
-
+				
 			// Create palette format
 			Nclr nclr = new Nclr() {
 				Extended = this.ExtendedPalette
@@ -243,6 +226,33 @@ namespace Ninoimager
 				nscr.PaletteMode = PaletteMode.Palette16_16;
 				pixels = nscr.CreateMap(pixels, mapPalette.ToArray());
 			}
+
+			if (this.PartialImage) {
+				// As the image won't expand to all the screen,
+				// The first tile must be transparent
+				int tilesizeLength = this.TileSize.Width * this.TileSize.Height;
+				Pixel[] newPixels = new Pixel[pixels.Length + tilesizeLength];
+
+				// New transparent pixels
+				for (int i = 0; i < tilesizeLength; i++)
+					newPixels[i] = new Pixel(0, 255, true);
+
+				// Image pixels
+				Array.Copy(pixels, 0, newPixels, tilesizeLength, pixels.Length);
+				pixels = newPixels;
+
+				// Update map info
+				MapInfo[] mapInfo = nscr.GetMapInfo();
+				for (int i = 0; i < mapInfo.Length; i++) {
+					mapInfo[i] = new MapInfo(
+						mapInfo[i].TileIndex + 1,
+						mapInfo[i].PaletteIndex,
+						mapInfo[i].FlipX,
+						mapInfo[i].FlipY);
+				}
+				nscr.SetMapInfo(mapInfo);
+			}
+
 
 			// Create image format
 			Ncgr ncgr = new Ncgr() {
