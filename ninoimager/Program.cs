@@ -33,8 +33,9 @@ namespace Ninoimager
 {
 	public static class MainClass
 	{
-		private static readonly Regex RegexLin = new Regex(@"(.+)\/(.+)m\.png$", RegexOptions.Compiled);
-		private static readonly Regex RegexWin = new Regex(@"(.+)\\(.+)m\.png$", RegexOptions.Compiled);
+		private static readonly string M = "";
+		private static readonly Regex RegexLin = new Regex(@"(.+)\/(.+)" + M + @"\.png$", RegexOptions.Compiled);
+		private static readonly Regex RegexWin = new Regex(@"(.+)\\(.+)" + M + @"\.png$", RegexOptions.Compiled);
 
 		public static void Main(string[] args)
 		{
@@ -124,7 +125,7 @@ namespace Ninoimager
 				List<string> outPaths  = new List<string>();
 				foreach (XElement ximg in entry.Element("Images").Elements("Image")) {
 					relatives.Add(ximg.Value);
-					imgPaths.Add(Path.Combine(baseDir, ximg.Value) + "_6.nscrm.png");
+					imgPaths.Add(Path.Combine(baseDir, ximg.Value) + "_6.nscr" + M + ".png");
 					outPaths.Add(Path.Combine(outputDir, ximg.Value));
 
 					if (!File.Exists(imgPaths[imgPaths.Count - 1])) {
@@ -218,9 +219,9 @@ namespace Ninoimager
 
 				// Else, the new format does not have the suffixes
 				// If the .n2d file exists with that file name we got it
-				string testN2D = match.Groups[1].Value + Path.DirectorySeparatorChar + filename + ".n2d";
+				string testN2D = match.Groups[1].Value + Path.DirectorySeparatorChar;
 				testN2D = testN2D.Replace(baseDir, outputDir);
-				if (!File.Exists(testN2D) && filename.Contains("_")) {
+				if (!File.Exists(testN2D + filename + ".n2d") && filename.Contains("_")) {
 					// Else, try to get frame index, if exception it should be texture so skip
 					try {
 						int nameIdx = filename.LastIndexOf("_");
