@@ -186,7 +186,7 @@ namespace Ninoimager
 		{
 			int count = 0;
 			Dictionary<string, int> errors = new Dictionary<string, int>();
-			errors.Add("skipImgs",   0);
+			errors.Add("skipImgs",   0);	errors.Add("texImgs",    0);
 			errors.Add("errorPack",  0); 	errors.Add("errorImgs",  0);
 			errors.Add("noN2DPack",  0);	errors.Add("noN2DImgs",  0);
 			errors.Add("noModPack",  0);	errors.Add("noModImgs",  0);
@@ -206,10 +206,18 @@ namespace Ninoimager
 					continue;
 
 				// Gets real name and frame index
+				string testN2D = match.Groups[1].Value + Path.DirectorySeparatorChar;
+				testN2D = testN2D.Replace(baseDir, outputDir);
 				string filename = match.Groups[2].Value;
 				int frameIdx = 0;	// BG index is always 0 (only importing one image)
 
-				// If it's match old format (suffix '_6.nscrm' and '_3.ncer_Xm')
+				// Try to dectect texture
+				if (File.Exists(testN2D + filename + ".n3d")) {
+					errors["texImgs"]++;
+					continue;
+				}
+
+				// If it matches old format (suffix '_6.nscrm' and '_3.ncer_Xm')
 				if (filename.EndsWith("_6.nscr")) {
 					filename = filename.Substring(0, filename.Length - 7);
 				} else if (filename.Contains("_3.ncer_")) {
@@ -226,8 +234,6 @@ namespace Ninoimager
 
 				// Else, the new format does not have the suffixes
 				// If the .n2d file exists with that file name we got it
-				string testN2D = match.Groups[1].Value + Path.DirectorySeparatorChar;
-				testN2D = testN2D.Replace(baseDir, outputDir);
 				if (!File.Exists(testN2D + filename + ".n2d") && filename.Contains("_")) {
 					// Else, try to get frame index, if exception it should be texture so skip
 					try {
@@ -235,6 +241,7 @@ namespace Ninoimager
 						frameIdx = Convert.ToInt32(filename.Substring(nameIdx + 1));
 						filename = filename.Substring(0, nameIdx);
 					} catch {
+						Console.WriteLine("\t\t{0} skipped", imgFile);
 						errors["skipImgs"]++;
 						continue;
 					}
@@ -254,6 +261,7 @@ namespace Ninoimager
 
 			Console.WriteLine("\tFound {0} images in {1} groups", count, imageGroups.Count);
 			Console.WriteLine("\t\t\t\tSkipped {0} images", errors["skipImgs"]);
+			Console.WriteLine("\t\t\t\tDetected {0} textures", errors["texImgs"]);
 			Console.WriteLine("Starting importing...");
 			foreach (string relative in imageGroups.Keys) {
 				// Get output paths
