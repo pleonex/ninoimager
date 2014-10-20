@@ -33,7 +33,7 @@ namespace Ninoimager
 {
 	public static class MainClass
 	{
-		private static readonly string M = "";
+		private static readonly string M = "m";
 		private static readonly Regex RegexLin = new Regex(@"(.+)\/(.+)" + M + @"\.png$", RegexOptions.Compiled);
 		private static readonly Regex RegexWin = new Regex(@"(.+)\\(.+)" + M + @"\.png$", RegexOptions.Compiled);
 
@@ -64,6 +64,12 @@ namespace Ninoimager
 
 			if (command == "-ebg" && args.Length == 3)
 				SearchAndExportBg(baseDir, outputDir);
+
+			if (command == "-etx" && args.Length == 3) {
+				Btx0 tex = new Btx0(args[1]);
+				for (int i = 0; i < tex.NumObjects; i++)
+					tex.CreateBitmap(i).Save(args[2] + i.ToString() + ".png");
+			}
 
 			// Five argument commands
 			if (args.Length < 5)
@@ -180,11 +186,12 @@ namespace Ninoimager
 		{
 			int count = 0;
 			Dictionary<string, int> errors = new Dictionary<string, int>();
-			errors.Add("skipImgs", 0);
-			errors.Add("errorPack", 0); 	errors.Add("errorImgs", 0);
-			errors.Add("noN2DPack", 0);		errors.Add("noN2DImgs", 0);
-			errors.Add("noModPack", 0);		errors.Add("noModImgs", 0);
+			errors.Add("skipImgs",   0);
+			errors.Add("errorPack",  0); 	errors.Add("errorImgs",  0);
+			errors.Add("noN2DPack",  0);	errors.Add("noN2DImgs",  0);
+			errors.Add("noModPack",  0);	errors.Add("noModImgs",  0);
 			errors.Add("inListPack", 0);	errors.Add("inListImgs", 0);
+			errors.Add("noSuffPack", 0);    errors.Add("noSuffImgs", 0);
 
 			Dictionary<string, SortedList<int, string>> imageGroups = 
 				new Dictionary<string, SortedList<int, string>>();
@@ -246,7 +253,7 @@ namespace Ninoimager
 			}
 
 			Console.WriteLine("\tFound {0} images in {1} groups", count, imageGroups.Count);
-			Console.WriteLine("\t\t\tSkipped {0} images", errors["skipImgs"]);
+			Console.WriteLine("\t\t\t\tSkipped {0} images", errors["skipImgs"]);
 			Console.WriteLine("Starting importing...");
 			foreach (string relative in imageGroups.Keys) {
 				// Get output paths
@@ -277,10 +284,19 @@ namespace Ninoimager
 
 				// If original file does not exist, skip
 				// Odd way to import manually images and skip them here
-				if (!File.Exists(original)) {
+				if (!File.Exists(original) && File.Exists(outFile)) {
 					Console.WriteLine("|+ Skipped (manual mode) {0}", relative);
 					errors["noN2DPack"]++;
 					errors["noN2DImgs"] += imgs.Length;
+					count -= imgs.Length;
+					continue;
+				}
+
+				// If the original file does not exists AND there isn't any manual import
+				if (!File.Exists(original)) {
+					Console.WriteLine("|+ Skipped (invalid suffix) {0}", relative);
+					errors["noSuffPack"]++;
+					errors["noSuffImgs"] += imgs.Length;
 					count -= imgs.Length;
 					continue;
 				}
@@ -321,6 +337,8 @@ namespace Ninoimager
 				errors["errorPack"], errors["errorImgs"]);
 			Console.WriteLine("\tNo N2D file found for {0} packages ({1} images)",
 				errors["noN2DPack"], errors["noN2DImgs"]);
+			Console.WriteLine("\tInvalid file suffix for {0} packages ({1} images)",
+				errors["noSuffPack"], errors["noSuffImgs"]);
 			Console.WriteLine("\tFilter skipped {0} packages ({1} images)",
 				errors["noModPack"], errors["noModImgs"]);
 			Console.WriteLine("\tAlready imported {0} packages ({1} images)",
