@@ -28,7 +28,7 @@ namespace Ninoimager.Format
 {
 	public class Btx0
 	{
-		private static Type[] BlockTypes = { typeof(Btx0.Tex0) };
+		private static Type[] BlockTypes = { typeof(Btx0.Tex0), typeof(Btx0.Mdl0) };
 		private NitroFile nitro;
 		private Tex0 tex0;
 
@@ -127,6 +127,32 @@ namespace Ninoimager.Format
 			}
 
 			return img;
+		}
+
+		private class Mdl0 : NitroBlock
+		{
+			public Mdl0(NitroFile nitro)
+				: base(nitro)
+			{
+			}
+
+			public byte[] Data { get; set; }
+
+			protected override void ReadData(Stream strIn)
+			{
+				this.Data = new byte[this.Size - 8];
+				strIn.Read(this.Data, 0, this.Data.Length);
+			}
+
+			protected override void WriteData(Stream strOut)
+			{
+				strOut.Write(this.Data, 0, this.Data.Length);
+			}
+
+			protected override void UpdateSize()
+			{
+				this.Size = 8 + this.Data.Length;
+			}
 		}
 
 		private class Tex0 : NitroBlock
