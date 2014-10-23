@@ -67,7 +67,7 @@ namespace Ninoimager
 
 			if (command == "-etx" && args.Length == 3) {
 				Btx0 tex = new Btx0(args[1]);
-				for (int i = 0; i < tex.NumObjects; i++)
+				for (int i = 0; i < tex.NumTextures; i++)
 					tex.CreateBitmap(i).Save(args[2] + i.ToString() + ".png");
 			}
 
