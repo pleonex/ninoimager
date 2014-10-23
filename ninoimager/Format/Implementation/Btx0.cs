@@ -175,10 +175,10 @@ namespace Ninoimager.Format
 			public InfoCollection<TextureDataInfo> TextureInfo { get; set; }
 			public InfoCollection<PaletteDataInfo> PaletteInfo { get; set; }
 
-            public byte[][]  TextureData               { get; set; }
-            public byte[]    TextureCompressedData     { get; set; }
-            public byte[]    TextureCompressedInfoData { get; set; }
-            public byte[]    PaletteData               { get; set; }
+            public byte[][] TextureData               { get; set; }
+            public byte[]   TextureCompressedData     { get; set; }
+            public byte[]   TextureCompressedInfoData { get; set; }
+            public byte[]   PaletteData               { get; set; }
 
 			protected override void ReadData(Stream strIn)
 			{
@@ -208,7 +208,6 @@ namespace Ninoimager.Format
                 strIn.Position = blockOffset + texInfoOffset;
 				this.TextureInfo = new InfoCollection<TextureDataInfo>();
 				this.TextureInfo.ReadData(strIn);
-
 
                 // Read Info 3D: palette
                 strIn.Position = blockOffset + palInfoOffset;
@@ -263,11 +262,8 @@ namespace Ninoimager.Format
 
 			public class InfoCollection<T> where T : DataInfo, new()
 			{
-				public byte   NumObjects { get; set; }
-				public ushort Unknown1   { get; set; }    // HeaderSize from Unknown
-				public ushort Unknown2   { get; set; }    // SectionSize from Unknown
-				public uint   Unknown3   { get; set; }    // Constant from Unknown
-				public T[]    Data       { get; set; }
+				public byte NumObjects { get; set; }
+				public T[]  Data       { get; set; }
 
 				public void ReadData(Stream strIn)
 				{
