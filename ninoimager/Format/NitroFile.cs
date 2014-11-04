@@ -185,7 +185,10 @@ namespace Ninoimager.Format
 			BinaryWriter bw = new BinaryWriter(strOut);
 
 			// Write header (need to be updated later)
-			bw.Write(this.magicStamp.Reverse().ToArray());
+			if (this.magicStamp[3] != '0')
+				bw.Write(this.magicStamp.Reverse().ToArray());
+			else
+				bw.Write(this.magicStamp.ToCharArray());
 			bw.Write(BomLittleEndiannes);
 			bw.Write(this.Version);
 			bw.Write(0x00);					// File size, unknown at the moment

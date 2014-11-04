@@ -327,19 +327,22 @@ namespace Ninoimager.Format
 				BinaryWriter bw = new BinaryWriter(strOut);
 
 				uint textureDataSize = (uint)this.TextureData.Sum(d => d.Length);
-				uint textureDataPadd = textureDataSize % 8;
-				if (textureDataPadd != 0)
-					textureDataSize += 8 - textureDataPadd;
+				uint textureDataPadd = 8 - textureDataSize % 8;
+				if (textureDataPadd != 8)
+					textureDataSize += textureDataPadd;
 
 				uint paletteDataSize = (uint)this.PaletteData.Count;
 				uint paletteDataPadd = paletteDataSize % 8;
-				if (paletteDataPadd != 0)
-					paletteDataSize += 8 - paletteDataPadd;
+				if (paletteDataPadd != 8)
+					paletteDataSize += paletteDataPadd;
 
 				uint textureInfoOffset = 0x3C;
 				uint paletteInfoOffset = textureInfoOffset + (uint)this.TextureInfo.GetSize();
 				uint textureDataOffset = paletteInfoOffset + (uint)this.PaletteInfo.GetSize();
 				uint paletteDataOffset = textureDataOffset + textureDataSize;
+				uint texelInfoOffset     = textureInfoOffset;
+				uint texelDataOffset     = paletteDataOffset;
+				uint texelInfoDataOffset = paletteDataOffset;
 
 				// Write header
 				bw.Write(this.Unknown1);
@@ -350,10 +353,10 @@ namespace Ninoimager.Format
 
 				bw.Write(this.Unknown3);
 				bw.Write((ushort)0x00);
-				bw.Write((ushort)0x00);
+				bw.Write((ushort)texelInfoOffset);
 				bw.Write(this.Unknown4);
-				bw.Write((uint)0x00);
-				bw.Write((uint)0x00);
+				bw.Write((uint)texelDataOffset);
+				bw.Write((uint)texelInfoDataOffset);
 
 				bw.Write(this.Unknown5);
 				bw.Write(paletteDataSize >> 3);
@@ -439,8 +442,8 @@ namespace Ninoimager.Format
 
 					// Write unknown values
 					bw.Write((ushort)0x08);
-					bw.Write((ushort)(8 + this.NumObjects * 4));
-					bw.Write((ushort)0xBEEF);
+					bw.Write((ushort)(0xC + this.NumObjects * 4));
+					bw.Write(0x017F);
 					foreach (T data in this.Data) {
 						bw.Write(data.UnknownData1);
 						bw.Write(data.UnknownData2);
@@ -448,7 +451,7 @@ namespace Ninoimager.Format
 
 					// Write info values
 					int infoSize = (this.Data.Count > 0) ? this.Data[0].GetInfoSize() : 0;
-					bw.Write((ushort)0x04);
+					bw.Write((ushort)infoSize);
 					bw.Write((ushort)(4 + this.NumObjects * infoSize));
 					foreach (T data in this.Data)
 						data.WriteInfo(strOut);

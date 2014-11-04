@@ -72,7 +72,10 @@ namespace Ninoimager.Format
 			BinaryWriter bw = new BinaryWriter(strOut);
 			long startPos = strOut.Position;
 
-			bw.Write(this.Name.Reverse().ToArray());
+			if (this.Name[3] != '0')
+				bw.Write(this.Name.Reverse().ToArray());
+			else
+				bw.Write(this.Name.ToCharArray());
 			bw.Write(this.Size);
 
 			this.WriteData(strOut);
