@@ -75,7 +75,7 @@ namespace Ninoimager
 			Image image = new Image();
 			image.Width = newImg.Width;
 			image.Height = newImg.Height;
-			image.SetData(pixels, PixelEncoding.Lineal, this.Format);
+			image.SetData(pixels, PixelEncoding.Lineal, this.Format, new Size(1, 1));
 
 			// Create the palette
 			Palette palette = new Palette(colors);

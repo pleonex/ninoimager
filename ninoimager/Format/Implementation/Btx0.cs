@@ -90,6 +90,11 @@ namespace Ninoimager.Format
 			}
 		}
 
+		public string GetTextureName(int texIdx)
+		{
+			return this.tex0.TextureInfo.Data[texIdx].Name;
+		}
+
 		public EmguImage CreateBitmap(int texIdx)
         {
 			string texName = this.tex0.TextureInfo.Data[texIdx].Name;
@@ -282,10 +287,12 @@ namespace Ninoimager.Format
 			public void AddPalette(Palette palette, string name)
 			{
 				// Get palette data and add it
-				byte[] palData = palette.GetPalette(0).ToBgr555();
 				// TODO: Check if they already exists and/or add them
 				int offset = this.PaletteData.Count;
+				byte[] palData = palette.GetPalette(0).ToBgr555();
 				this.PaletteData.AddRange(palData);
+				while (this.PaletteData.Count % 8 != 0)
+					this.PaletteData.Add(0x00);
 
 				// Create palette info and add it
 				Tex0.PaletteDataInfo palInfo = new Tex0.PaletteDataInfo();
@@ -299,6 +306,8 @@ namespace Ninoimager.Format
 				// Get image data and add it
 				int offset = this.TextureData.Sum(d => d.Length);
 				byte[] texData = image.GetData();
+				if (texData.Length % 8 != 0)
+					Array.Resize(ref texData, texData.Length + (8 - (texData.Length % 8)));
 				this.TextureData.Add(texData);
 
 				// Create texture info and add it
@@ -314,12 +323,68 @@ namespace Ninoimager.Format
 
 			protected override void WriteData(Stream strOut)
 			{
-				throw new NotImplementedException ();
+				// TODO: Texel support
+				BinaryWriter bw = new BinaryWriter(strOut);
+
+				uint textureDataSize = (uint)this.TextureData.Sum(d => d.Length);
+				uint textureDataPadd = textureDataSize % 8;
+				if (textureDataPadd != 0)
+					textureDataSize += 8 - textureDataPadd;
+
+				uint paletteDataSize = (uint)this.PaletteData.Count;
+				uint paletteDataPadd = paletteDataSize % 8;
+				if (paletteDataPadd != 0)
+					paletteDataSize += 8 - paletteDataPadd;
+
+				uint textureInfoOffset = 0x3C;
+				uint paletteInfoOffset = textureInfoOffset + (uint)this.TextureInfo.GetSize();
+				uint textureDataOffset = paletteInfoOffset + (uint)this.PaletteInfo.GetSize();
+				uint paletteDataOffset = textureDataOffset + textureDataSize;
+
+				// Write header
+				bw.Write(this.Unknown1);
+				bw.Write((ushort)(textureDataSize >> 3));
+				bw.Write((ushort)0x3C);	// Just after header
+				bw.Write(this.Unknown2);
+				bw.Write(textureDataOffset);
+
+				bw.Write(this.Unknown3);
+				bw.Write((ushort)0x00);
+				bw.Write((ushort)0x00);
+				bw.Write(this.Unknown4);
+				bw.Write((uint)0x00);
+				bw.Write((uint)0x00);
+
+				bw.Write(this.Unknown5);
+				bw.Write(paletteDataSize >> 3);
+				bw.Write(paletteInfoOffset);
+				bw.Write(paletteDataOffset);
+
+				// Write texture info
+				this.TextureInfo.WriteData(strOut);
+
+				// Write palette info
+				this.PaletteInfo.WriteData(strOut);
+
+				// Write texture data
+				foreach (byte[] tex in this.TextureData)
+					bw.Write(tex);
+				for (int i = 0; i < textureDataPadd; i++)
+					bw.Write((byte)0x00);
+
+				// Write palette data
+				bw.Write(this.PaletteData.ToArray());
+				for (int i = 0; i < paletteDataPadd; i++)
+					bw.Write((byte)0x00);
 			}
 
 			protected override void UpdateSize()
 			{
-				throw new NotImplementedException ();
+				this.Size = 8 + 0x34;
+				this.Size += this.TextureInfo.GetSize();
+				this.Size += this.PaletteInfo.GetSize();
+				this.Size += this.TextureData.Sum(d => d.Length);
+				this.Size += this.PaletteData.Count;
 			}
 
 			public class InfoCollection<T> where T : DataInfo, new()
@@ -363,6 +428,39 @@ namespace Ninoimager.Format
 					}
 				}
 
+				public void WriteData(Stream strOut)
+				{
+					BinaryWriter bw = new BinaryWriter(strOut);
+
+					// Header
+					bw.Write((byte)0x00);
+					bw.Write(this.NumObjects);
+					bw.Write((ushort)this.GetSize());
+
+					// Write unknown values
+					bw.Write((ushort)0x08);
+					bw.Write((ushort)(8 + this.NumObjects * 4));
+					bw.Write((ushort)0xBEEF);
+					foreach (T data in this.Data) {
+						bw.Write(data.UnknownData1);
+						bw.Write(data.UnknownData2);
+					}
+
+					// Write info values
+					int infoSize = (this.Data.Count > 0) ? this.Data[0].GetInfoSize() : 0;
+					bw.Write((ushort)0x04);
+					bw.Write((ushort)(4 + this.NumObjects * infoSize));
+					foreach (T data in this.Data)
+						data.WriteInfo(strOut);
+
+					// Write names
+					foreach (T data in this.Data) {
+						byte[] name = System.Text.Encoding.ASCII.GetBytes(data.Name);
+						bw.Write(name);
+						bw.Write(new byte[0x10 - name.Length]);
+					}
+				}
+
 				public void AddElement(T element)
 				{
 					this.Data.Add(element);
@@ -372,6 +470,14 @@ namespace Ninoimager.Format
 				{
 					this.Data.Clear();
 				}
+
+				public int GetSize()
+				{
+					int size = 4 + 0xC;
+					if (this.Data.Count > 0)
+						size += this.NumObjects * this.Data[0].Size;
+					return size;
+				}
 			}
 
             public abstract class DataInfo
@@ -380,6 +486,12 @@ namespace Ninoimager.Format
 				public ushort UnknownData2 { get; set; }  // Unknown data 2 from Unknown
 
 				public string Name { get; set; }
+
+				public int Size {
+					get {
+						return 4 + this.GetInfoSize() + 0x10;
+					}
+				}
 
 				public void ReadData(Stream strIn, int index, int numObjs)
                 {
@@ -401,7 +513,9 @@ namespace Ninoimager.Format
 
 				protected abstract void ReadInfo(Stream strIn);
 
-				protected abstract int GetInfoSize();
+				public abstract void WriteInfo(Stream strOut);
+
+				public abstract int GetInfoSize();
             }
 
 			public class TextureDataInfo
@@ -417,11 +531,11 @@ namespace Ninoimager.Format
 				public bool Color0 { get; set; }
 				public ColorFormat Format { get; set; }
 				public int Height { get; set; }
-				//public byte Width2 { get; set; }
-				public byte FlipY { get; set; }
-				public byte FlipX { get; set; }
-				public byte RepeatY { get; set; }
-				public byte RepeatX { get; set; }
+				//public int Width2 { get; set; }
+				public bool FlipY { get; set; }
+				public bool FlipX { get; set; }
+				public bool RepeatY { get; set; }
+				public bool RepeatX { get; set; }
 
 				public int Length {
 					get {
@@ -441,15 +555,15 @@ namespace Ninoimager.Format
 					this.Unknown3 = br.ReadByte();
 
 					// Now let's get the information inside Parameters
-					this.CoordinateTransformation = (byte)(parameters & 14);
+					this.CoordinateTransformation = (byte)(parameters >> 14);
 					this.Color0  = ((parameters >> 13) & 1) == 1;
 					this.Format  = (ColorFormat)((parameters >> 10) & 7);
 					this.Height  = (byte)(8 << ((parameters >> 7) & 7));
 					//this.Width2  = (byte)(8 << ((parameters >> 4) & 7));
-					this.FlipY   = (byte)((parameters >> 3) & 1);
-					this.FlipX   = (byte)((parameters >> 2) & 1);
-					this.RepeatY = (byte)((parameters >> 1) & 1);
-					this.RepeatX = (byte)(parameters & 1);
+					this.FlipY   = (byte)((parameters >> 3) & 1) == 1;
+					this.FlipX   = (byte)((parameters >> 2) & 1) == 1;
+					this.RepeatY = (byte)((parameters >> 1) & 1) == 1;
+					this.RepeatX = (byte)(parameters & 1) == 1;
 
 					// In the case of width is zero
 					if (this.Width == 0x00) {
@@ -468,7 +582,31 @@ namespace Ninoimager.Format
 					}    
 				}
 
-				protected override int GetInfoSize()
+				public override void WriteInfo(Stream strOut)
+				{
+					BinaryWriter bw = new BinaryWriter(strOut);
+					
+					// Now let's set the information inside Parameters
+					ushort parameters = 0;
+					parameters |= (ushort)((this.CoordinateTransformation & 0x03) << 14);
+					parameters |= (ushort)((this.Color0 ? 1 : 0) << 13);
+					parameters |= (ushort)(((int)this.Format & 0x07) << 10);
+					parameters |= (ushort)(((int)Math.Log(this.Height / 8, 2) & 0x07) << 7);
+					parameters |= (ushort)(((int)Math.Log(this.Width / 8, 2) & 0x07) << 4);
+					parameters |= (ushort)((this.FlipY ? 1 : 0) << 3);
+					parameters |= (ushort)((this.FlipX ? 1 : 0) << 2);
+					parameters |= (ushort)((this.RepeatY ? 1 : 0) << 1);
+					parameters |= (ushort)((this.RepeatX ? 1 : 0) << 0);
+
+					bw.Write((ushort)(this.TextureOffset >> 3));
+					bw.Write(parameters);
+					bw.Write((byte)this.Width);
+					bw.Write(this.Unknown1);
+					bw.Write(this.Unknown2);
+					bw.Write(this.Unknown3);
+				}
+
+				public override int GetInfoSize()
 				{
 					return 8;
 				}
@@ -487,7 +625,14 @@ namespace Ninoimager.Format
 					this.Unknown = br.ReadUInt16();
 				}
 
-				protected override int GetInfoSize()
+				public override void WriteInfo(Stream strOut)
+				{
+					BinaryWriter bw = new BinaryWriter(strOut);
+					bw.Write((ushort)(this.Offset >> 3));
+					bw.Write(this.Unknown);
+				}
+
+				public override int GetInfoSize()
 				{
 					return 4;
 				}

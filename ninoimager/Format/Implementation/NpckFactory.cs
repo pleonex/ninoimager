@@ -343,7 +343,8 @@ namespace Ninoimager.Format
 			return Npck.FromSpriteStreams(ncerStr, ncgrLinealStr, ncgrTiledStr, nclrStr, original[5]);
 		}
 
-		public static void ChangeTextureImages(string[] images, int[] frames, Npck original)
+		public static void ChangeTextureImages(string[] images, string[] names, 
+			int[] frames, Npck original)
 		{
 			// Creamos las imágenes
 			EmguImage[] emguImages = new EmguImage[images.Length];
@@ -355,14 +356,15 @@ namespace Ninoimager.Format
 				}
 			}
 
-			ChangeTextureImages(emguImages, frames, original);
+			ChangeTextureImages(emguImages, names, frames, original);
 
 			// Liberamos recursos
 			foreach (EmguImage img in emguImages)
 				img.Dispose();
 		}
 
-		public static void ChangeTextureImages(EmguImage[] images, int[] frames, Npck original)
+		public static void ChangeTextureImages(EmguImage[] images, string[] names, 
+			int[] frames, Npck original)
 		{
 			// Get an original texture file to get images and the texture to modify
 			Btx0 oriTexture = new Btx0(original[0]);
@@ -374,10 +376,11 @@ namespace Ninoimager.Format
 
 			// Add images from arguments or original texture if not presents.
 			for (int i = 0, idx = 0; i < oriTexture.NumTextures; i++) {
-				if (frames.Contains(i))
-					importer.AddImage(images[idx++]);
-				else
-					importer.AddImage(oriTexture.CreateBitmap(i));
+				if (frames.Contains(i)) {
+					importer.AddImage(images[idx], names[idx]);
+					idx++;
+				} else
+					importer.AddImage(oriTexture.CreateBitmap(i), oriTexture.GetTextureName(i));
 			}
 
 			// Write the new texture file
