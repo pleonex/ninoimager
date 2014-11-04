@@ -342,6 +342,49 @@ namespace Ninoimager.Format
 
 			return Npck.FromSpriteStreams(ncerStr, ncgrLinealStr, ncgrTiledStr, nclrStr, original[5]);
 		}
+
+		public static void ChangeTextureImages(string[] images, int[] frames, Npck original)
+		{
+			// Creamos las imágenes
+			EmguImage[] emguImages = new EmguImage[images.Length];
+			for (int i = 0; i < images.Length; i++) {
+				try { 
+					emguImages[i] = new EmguImage(images[i]);
+				} catch (Exception ex) {
+					throw new FormatException("Unknown exception with: " + images[i], ex);
+				}
+			}
+
+			ChangeTextureImages(emguImages, frames, original);
+
+			// Liberamos recursos
+			foreach (EmguImage img in emguImages)
+				img.Dispose();
+		}
+
+		public static void ChangeTextureImages(EmguImage[] images, int[] frames, Npck original)
+		{
+			// Get an original texture file to get images and the texture to modify
+			Btx0 oriTexture = new Btx0(original[0]);
+			Btx0 newTexture = new Btx0(original[0]);
+
+			// Create importer and remove all images
+			TextureImporter importer = new TextureImporter(newTexture);
+			importer.RemoveImages();
+
+			// Add images from arguments or original texture if not presents.
+			for (int i = 0, idx = 0; i < oriTexture.NumTextures; i++) {
+				if (frames.Contains(i))
+					importer.AddImage(images[idx++]);
+				else
+					importer.AddImage(oriTexture.CreateBitmap(i));
+			}
+
+			// Write the new texture file
+			MemoryStream textureStream = new MemoryStream();
+			newTexture.Write(textureStream);
+			original[0] = textureStream;
+		}
 	}
 }
 

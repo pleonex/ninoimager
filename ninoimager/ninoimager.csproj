@@ -98,6 +98,7 @@
     <Compile Include="Format\Implementation\NpckFactory.cs" />
     <Compile Include="Extensions\ArrayExtension.cs" />
     <Compile Include="Format\Implementation\CompressMapping.cs" />
+    <Compile Include="TextureImporter.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

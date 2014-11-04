@@ -125,6 +125,14 @@ namespace Ninoimager.Format
 			return img;
 		}
 
+		public void RemoveImages()
+		{
+			this.tex0.TextureData.Clear();
+			this.tex0.TextureInfo.Clear();
+			this.tex0.PaletteData.Clear();
+			this.tex0.PaletteInfo.Clear();
+		}
+
 		public void AddImage(Image img, Palette palette, string name)
 		{
 			this.AddImage(img, name);
@@ -358,6 +366,11 @@ namespace Ninoimager.Format
 				public void AddElement(T element)
 				{
 					this.Data.Add(element);
+				}
+
+				public void Clear()
+				{
+					this.Data.Clear();
 				}
 			}
 
