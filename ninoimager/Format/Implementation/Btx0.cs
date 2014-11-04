@@ -20,7 +20,9 @@
 // <date>19/09/2013</date>
 // -----------------------------------------------------------------------
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Color     = Emgu.CV.Structure.Bgra;
 using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Bgra, System.Byte>;
 
@@ -31,14 +33,14 @@ namespace Ninoimager.Format
 		private static Type[] BlockTypes = { typeof(Btx0.Tex0), typeof(Btx0.Mdl0) };
 		private NitroFile nitro;
 		private Tex0 tex0;
-		private Image[] images;
+		private List<Image> images;
 
 		public Btx0()
 		{
 			this.nitro = new NitroFile("BTX0", "1.0", BlockTypes) { HasOffsets = true };
-			this.tex0 = new Tex0(this.nitro);
+			this.tex0  = new Tex0(this.nitro);
 			this.nitro.Blocks.Add(this.tex0);
-			this.images  = new Image[0];
+			this.images  = new List<Image>();
 		}
 
 		public Btx0(string file)
@@ -74,16 +76,17 @@ namespace Ninoimager.Format
 		private void GetInfo()
 		{
 			this.tex0 = this.nitro.GetBlock<Tex0>(0);
-			this.images  = new Image[this.tex0.TextureInfo.NumObjects];
+			this.images  = new List<Image>(this.tex0.TextureInfo.NumObjects);
 			for (int i = 0; i < tex0.TextureInfo.NumObjects; i++) {
-				this.images[i] = new Image();
-				this.images[i].Width  = (int)tex0.TextureInfo.Data[i].Width;
-				this.images[i].Height = (int)tex0.TextureInfo.Data[i].Height;
-				this.images[i].SetData(
+				Image img = new Image();
+				img.Width  = (int)tex0.TextureInfo.Data[i].Width;
+				img.Height = (int)tex0.TextureInfo.Data[i].Height;
+				img.SetData(
 					tex0.TextureData[i],
 					Ninoimager.Format.PixelEncoding.Lineal,
 					tex0.TextureInfo.Data[i].Format
 				);
+				this.images.Add(img);
 			}
 		}
 
@@ -114,12 +117,34 @@ namespace Ninoimager.Format
 			EmguImage img = this.images[texIdx].CreateBitmap(palette, 0);
 
 			// Set transparent color
-			if (this.tex0.TextureInfo.Data[texIdx].Color0 == 1) {
+			if (this.tex0.TextureInfo.Data[texIdx].Color0) {
 				Color transparent = palette.GetPalette(0)[0];
 				var mask = img.InRange(transparent, transparent);
 				img.SetValue(0, mask);
 			}
 			return img;
+		}
+
+		public void AddImage(Image img, Palette palette, string name)
+		{
+			this.AddImage(img, name);
+			this.AddPalette(palette, name + "_pl");
+		}
+
+		public void AddImage(Image img, string name)
+		{
+			this.images.Add(img);
+			this.tex0.AddImage(img, name);
+		}
+
+		public void AddTexelImage(Image img, string name)
+		{
+			throw new NotSupportedException();
+		}
+
+		public void AddPalette(Palette palette, string name)
+		{
+			this.tex0.AddPalette(palette, name);
 		}
 
 		private class Mdl0 : NitroBlock
@@ -164,6 +189,10 @@ namespace Ninoimager.Format
 			public Tex0(NitroFile nitro)
 				: base(nitro)
 			{
+				this.TextureInfo = new InfoCollection<TextureDataInfo>();
+				this.PaletteInfo = new InfoCollection<PaletteDataInfo>();
+				this.TextureData = new List<byte[]>();
+				this.PaletteData = new List<byte>();
 			}
 
 			public uint Unknown1 { get; set; }
@@ -175,10 +204,10 @@ namespace Ninoimager.Format
 			public InfoCollection<TextureDataInfo> TextureInfo { get; set; }
 			public InfoCollection<PaletteDataInfo> PaletteInfo { get; set; }
 
-            public byte[][] TextureData               { get; set; }
-            public byte[]   TextureCompressedData     { get; set; }
-            public byte[]   TextureCompressedInfoData { get; set; }
-            public byte[]   PaletteData               { get; set; }
+            public List<byte[]> TextureData               { get; set; }
+            public byte[]       TextureCompressedData     { get; set; }
+            public byte[]       TextureCompressedInfoData { get; set; }
+            public List<byte>   PaletteData               { get; set; }
 
 			protected override void ReadData(Stream strIn)
 			{
@@ -187,7 +216,7 @@ namespace Ninoimager.Format
 
 				// Offset and size section
 				this.Unknown1       = br.ReadUInt32();
-				uint texDataSize    = (uint)(br.ReadUInt16() << 3);
+				br.ReadUInt16();	// Texture Data Size (must be multiplied by 8)
 				uint texInfoOffset  = br.ReadUInt16();
 				this.Unknown2       = br.ReadUInt32();
 				uint texDataOffset  = br.ReadUInt32();
@@ -206,25 +235,23 @@ namespace Ninoimager.Format
 
                 // Read Info 3D: texture
                 strIn.Position = blockOffset + texInfoOffset;
-				this.TextureInfo = new InfoCollection<TextureDataInfo>();
 				this.TextureInfo.ReadData(strIn);
 
                 // Read Info 3D: palette
                 strIn.Position = blockOffset + palInfoOffset;
-				this.PaletteInfo = new InfoCollection<PaletteDataInfo>();
                 this.PaletteInfo.ReadData(strIn);
 
                 // TODO: Read Info 3D: texel texture                         
 
 				// Get palette data
 				strIn.Position   = blockOffset + palDataOffset;
-				this.PaletteData = br.ReadBytes((int)palDataSize);
+				this.PaletteData.AddRange(br.ReadBytes((int)palDataSize));
 
 				// Get texture data
-				this.TextureData = new byte[this.TextureInfo.NumObjects][];
+				this.TextureData = new List<byte[]>(this.TextureInfo.NumObjects);
 				for (int i = 0; i < this.TextureInfo.NumObjects; i++) {
 					strIn.Position = blockOffset + texDataOffset + this.TextureInfo.Data[i].TextureOffset;
-					this.TextureData[i] = br.ReadBytes(this.TextureInfo.Data[i].Length);
+					this.TextureData.Add(br.ReadBytes(this.TextureInfo.Data[i].Length));
                 }
 
 				// TODO: Convert image from texel texture to indexed color                
@@ -236,18 +263,45 @@ namespace Ninoimager.Format
 				// much data as possible
 				int length = numColors * 2;
 				int offset = (int)this.PaletteInfo.Data[idxPalette].Offset;
-				if (offset + numColors * 2 > this.PaletteData.Length)
-					length = this.PaletteData.Length - offset;
+				if (offset + numColors * 2 > this.PaletteData.Count)
+					length = this.PaletteData.Count - offset;
 
-				byte[] subPalette = new byte[length];
-				Array.Copy(
-					this.PaletteData,
-					this.PaletteInfo.Data[idxPalette].Offset,
-					subPalette,
-					0,
-					length);
-
+				byte[] subPalette = this.PaletteData.GetRange(
+					(int)this.PaletteInfo.Data[idxPalette].Offset, length).ToArray();
 				return new Palette(subPalette.ToBgr555Colors());
+			}
+
+			public void AddPalette(Palette palette, string name)
+			{
+				// Get palette data and add it
+				byte[] palData = palette.GetPalette(0).ToBgr555();
+				// TODO: Check if they already exists and/or add them
+				int offset = this.PaletteData.Count;
+				this.PaletteData.AddRange(palData);
+
+				// Create palette info and add it
+				Tex0.PaletteDataInfo palInfo = new Tex0.PaletteDataInfo();
+				palInfo.Name = name;
+				palInfo.Offset = (uint)offset;
+				this.PaletteInfo.AddElement(palInfo);
+			}
+
+			public void AddImage(Image image, string name)
+			{
+				// Get image data and add it
+				int offset = this.TextureData.Sum(d => d.Length);
+				byte[] texData = image.GetData();
+				this.TextureData.Add(texData);
+
+				// Create texture info and add it
+				Tex0.TextureDataInfo texInfo = new Tex0.TextureDataInfo();
+				texInfo.Width  = image.Width;
+				texInfo.Height = image.Height;
+				texInfo.Color0 = true;
+				texInfo.Format = image.Format;
+				texInfo.Name   = name;
+				texInfo.TextureOffset = (uint)offset;
+				this.TextureInfo.AddElement(texInfo);
 			}
 
 			protected override void WriteData(Stream strOut)
@@ -262,8 +316,13 @@ namespace Ninoimager.Format
 
 			public class InfoCollection<T> where T : DataInfo, new()
 			{
-				public byte NumObjects { get; set; }
-				public T[]  Data       { get; set; }
+				public byte    NumObjects { get; set; }
+				public List<T> Data       { get; set; }
+
+				public InfoCollection()
+				{
+					this.Data = new List<T>();
+				}
 
 				public void ReadData(Stream strIn)
 				{
@@ -282,17 +341,23 @@ namespace Ninoimager.Format
 					br.ReadUInt32();	// Unknown Block Constant
 
 					// Info Block header
-					strIn.Position = this.NumObjects * 4;
+					strIn.Position += this.NumObjects * 4;
 					br.ReadUInt16();	// Info Block HeaderSize
 					br.ReadUInt16();	// Info Block SectionSize
 					#endif
 
-					this.Data = new T[this.NumObjects];
+					this.Data = new List<T>(this.NumObjects);
 					for (int i = 0; i < this.NumObjects; i++) {
 						strIn.Position = objStart;
-						this.Data[i] = new T();
-						this.Data[i].ReadData(strIn, i, this.NumObjects);
+						T entry = new T();
+						entry.ReadData(strIn, i, this.NumObjects);
+						this.Data.Add(entry);
 					}
+				}
+
+				public void AddElement(T element)
+				{
+					this.Data.Add(element);
 				}
 			}
 
@@ -330,22 +395,26 @@ namespace Ninoimager.Format
 				: DataInfo
 			{
 				public uint TextureOffset { get; set; }
-				public uint Width    { get; set; }
+				public int Width    { get; set; }
 				public byte Unknown1 { get; set; }
 				public byte Unknown2 { get; set; }
 				public byte Unknown3 { get; set; }
 
 				public byte CoordinateTransformation { get; set; }
-				public byte Color0 { get; set; }
+				public bool Color0 { get; set; }
 				public ColorFormat Format { get; set; }
-				public uint Height { get; set; }
-				public byte Width2 { get; set; }
+				public int Height { get; set; }
+				//public byte Width2 { get; set; }
 				public byte FlipY { get; set; }
 				public byte FlipX { get; set; }
 				public byte RepeatY { get; set; }
 				public byte RepeatX { get; set; }
 
-				public int Length { get; set; }
+				public int Length {
+					get {
+						return (int)((this.Format.Bpp() * this.Height * this.Width) / 8);
+					}
+				}
 
 				protected override void ReadInfo(Stream strIn) 
 				{
@@ -360,10 +429,10 @@ namespace Ninoimager.Format
 
 					// Now let's get the information inside Parameters
 					this.CoordinateTransformation = (byte)(parameters & 14);
-					this.Color0  = (byte)((parameters >> 13) & 1);
+					this.Color0  = ((parameters >> 13) & 1) == 1;
 					this.Format  = (ColorFormat)((parameters >> 10) & 7);
 					this.Height  = (byte)(8 << ((parameters >> 7) & 7));
-					this.Width2  = (byte)(8 << ((parameters >> 4) & 7));
+					//this.Width2  = (byte)(8 << ((parameters >> 4) & 7));
 					this.FlipY   = (byte)((parameters >> 3) & 1);
 					this.FlipX   = (byte)((parameters >> 2) & 1);
 					this.RepeatY = (byte)((parameters >> 1) & 1);
@@ -383,10 +452,7 @@ namespace Ninoimager.Format
 							case 2:  this.Height = 0x200; break;
 							default: this.Height = 0x100; break;
 						}
-					}
-						
-					// Calculate texture length
-					this.Length = (int)((this.Format.Bpp() * this.Height * this.Width) / 8);       
+					}    
 				}
 
 				protected override int GetInfoSize()
