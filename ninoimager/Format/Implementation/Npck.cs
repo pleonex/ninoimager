@@ -82,6 +82,12 @@ namespace Ninoimager.Format
 			}
 		}
 
+		public bool IsTexture {
+			get {
+				return this.NumSubfiles == 6;
+			}
+		}
+
 		protected override void Read(Stream strIn)
 		{
 			BinaryReader br = new BinaryReader(strIn);

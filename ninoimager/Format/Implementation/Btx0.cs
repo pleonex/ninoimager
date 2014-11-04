@@ -95,8 +95,8 @@ namespace Ninoimager.Format
 			return this.tex0.TextureInfo.Data[texIdx].Name;
 		}
 
-		public EmguImage CreateBitmap(int texIdx)
-        {
+		private int SearchPaletteIdx(int texIdx)
+		{
 			string texName = this.tex0.TextureInfo.Data[texIdx].Name;
 
 			int palIdx = -1;
@@ -109,14 +109,18 @@ namespace Ninoimager.Format
 			if (palIdx == -1)
 				palIdx = 0;
 
-			return this.CreateBitmap(texIdx, palIdx);
+			return palIdx;
+		}
+
+		public EmguImage CreateBitmap(int texIdx)
+        {
+			return this.CreateBitmap(texIdx, this.SearchPaletteIdx(texIdx));
         }
 
 		public EmguImage CreateBitmap(int texIdx, int palIdx)
 		{
 			// Get palette
-			int numColors = 1 << this.tex0.TextureInfo.Data[texIdx].Format.Bpp();
-			Palette palette = this.tex0.GetPalette(palIdx, numColors);
+			Palette palette = this.GetPalette(texIdx);
 
 			// Get image
 			EmguImage img = this.images[texIdx].CreateBitmap(palette, 0);
@@ -128,6 +132,13 @@ namespace Ninoimager.Format
 				img.SetValue(0, mask);
 			}
 			return img;
+		}
+
+		public Palette GetPalette(int texIdx)
+		{
+			int palIdx = this.SearchPaletteIdx(texIdx);
+			int numColors = 1 << this.tex0.TextureInfo.Data[texIdx].Format.Bpp();
+			return this.tex0.GetPalette(palIdx, numColors);
 		}
 
 		public void RemoveImages()
@@ -372,12 +383,12 @@ namespace Ninoimager.Format
 				// Write texture data
 				foreach (byte[] tex in this.TextureData)
 					bw.Write(tex);
-				for (int i = 0; i < textureDataPadd; i++)
+				for (int i = 0; i < textureDataPadd && textureDataPadd != 8; i++)
 					bw.Write((byte)0x00);
 
 				// Write palette data
 				bw.Write(this.PaletteData.ToArray());
-				for (int i = 0; i < paletteDataPadd; i++)
+				for (int i = 0; i < paletteDataPadd && paletteDataPadd != 8; i++)
 					bw.Write((byte)0x00);
 			}
 

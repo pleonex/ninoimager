@@ -343,32 +343,39 @@ namespace Ninoimager.Format
 			return Npck.FromSpriteStreams(ncerStr, ncgrLinealStr, ncgrTiledStr, nclrStr, original[5]);
 		}
 
-		public static void ChangeTextureImages(string[] images, string[] names, 
+		public static Npck ChangeTextureImages(string[] images, string[] names,
 			int[] frames, Npck original)
 		{
 			// Creamos las imágenes
 			EmguImage[] emguImages = new EmguImage[images.Length];
 			for (int i = 0; i < images.Length; i++) {
-				try { 
+				try {
 					emguImages[i] = new EmguImage(images[i]);
 				} catch (Exception ex) {
 					throw new FormatException("Unknown exception with: " + images[i], ex);
 				}
 			}
 
-			ChangeTextureImages(emguImages, names, frames, original);
+			Npck npck = ChangeTextureImages(emguImages, names, frames, original);
 
 			// Liberamos recursos
 			foreach (EmguImage img in emguImages)
 				img.Dispose();
+
+			return npck;
 		}
 
-		public static void ChangeTextureImages(EmguImage[] images, string[] names, 
+		public static Npck ChangeTextureImages(EmguImage[] images, string[] names, 
 			int[] frames, Npck original)
 		{
 			// Get an original texture file to get images and the texture to modify
+			long start = original[0].Position;
+
 			Btx0 oriTexture = new Btx0(original[0]);
+			original[0].Position = start;
+
 			Btx0 newTexture = new Btx0(original[0]);
+			original[0].Position = start;
 
 			// Create importer and remove all images
 			TextureImporter importer = new TextureImporter(newTexture);
@@ -376,6 +383,9 @@ namespace Ninoimager.Format
 
 			// Add images from arguments or original texture if not presents.
 			for (int i = 0, idx = 0; i < oriTexture.NumTextures; i++) {
+				Color[] palette = oriTexture.GetPalette(i).GetPalette(0);
+				importer.Quantization = new FixedPaletteQuantization(palette);
+
 				if (frames.Contains(i)) {
 					importer.AddImage(images[idx], names[idx]);
 					idx++;
@@ -386,7 +396,15 @@ namespace Ninoimager.Format
 			// Write the new texture file
 			MemoryStream textureStream = new MemoryStream();
 			newTexture.Write(textureStream);
-			original[0] = textureStream;
+			textureStream.Position = 0;
+
+			// Create a copy of the NPCK from the original
+			Npck npck = new Npck();
+			npck.AddSubfile(textureStream);
+			for (int i = 1; i < 6; i++)
+				npck.AddSubfile(original[i]);
+
+			return npck;
 		}
 	}
 }
