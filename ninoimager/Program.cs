@@ -39,6 +39,14 @@ namespace Ninoimager
 
 		public static void Main(string[] args)
 		{
+//			Npck original = new Npck("test/Industrial.n3d");
+//			string[] imgs = new string[] { "test/Industrialm[alt].png", "test/Industrialm[alt].png" };
+//			string[] names = new string[] { "industrial", "holi" };
+//			int[] frames = new int[] { 0, 1 };
+//			Npck modified = NpckFactory.ChangeTextureImages(imgs, names, frames, original);
+//			modified.Write("test/Industrial_new.n3d");
+//			return;
+
             Console.WriteLine("ninoimager ~~ Image importer and exporter for Ni no kuni DS");
 			Console.WriteLine("V {0} ~~ by pleoNeX ~~", Assembly.GetExecutingAssembly().GetName().Version);
 			Console.WriteLine();
@@ -97,7 +105,7 @@ namespace Ninoimager
 			Console.WriteLine("MultiImport: {0}", multiXml);
 			Console.WriteLine();
 
-			List<string> imported = new List<string>();
+			List<ImageInfo> imported = new List<ImageInfo>();
 
 			// First import "special files" that share palette and images data with other N2D files
 			Console.WriteLine("## Starting MultiImport ##");
@@ -114,7 +122,7 @@ namespace Ninoimager
 		}
 
 		private static void MultiImport(string baseDir, string outputDir, 
-			List<string> importedList, string xml, bool filterDate)
+			List<ImageInfo> importedList, string xml, bool filterDate)
 		{
 			if (string.IsNullOrEmpty(xml))
 				return;
@@ -126,15 +134,19 @@ namespace Ninoimager
 
 				// Get paths
 				bool existImages = true;
-				List<string> relatives = new List<string>();
-				List<string> imgPaths  = new List<string>();
-				List<string> outPaths  = new List<string>();
+				List<string> images   = new List<string>();
+				List<ImageInfo> infos = new List<ImageInfo>();
 				foreach (XElement ximg in entry.Element("Images").Elements("Image")) {
-					relatives.Add(ximg.Value);
-					imgPaths.Add(Path.Combine(baseDir, ximg.Value) + "_6.nscr" + M + ".png");
-					outPaths.Add(Path.Combine(outputDir, ximg.Value));
+					ImageInfo info = new ImageInfo();
+					info.AbsoluteImage = Path.Combine(baseDir, ximg.Value) + "_6.nscr" + M + ".png";
+					info.Filename      = Path.GetFileNameWithoutExtension(ximg.Value);
+					info.PackExtension = ".n2d";
+					info.RelativePath  = Path.GetDirectoryName(ximg.Value) + Path.DirectorySeparatorChar;
+					infos.Add(info);
 
-					if (!File.Exists(imgPaths[imgPaths.Count - 1])) {
+					images.Add(info.AbsoluteImage);
+
+					if (!File.Exists(info.AbsoluteImage)) {
 						existImages = false;
 						break;
 					}
@@ -146,128 +158,66 @@ namespace Ninoimager
 
 				// If don't match the filter, skip
 				if (filterDate) {
-					DateTime referenceDate = File.GetLastWriteTime(outPaths[0] + "_new.n2d");
-					if (!imgPaths.Any(f => File.GetLastWriteTime(f) > referenceDate))
+					DateTime referenceDate = File.GetLastWriteTime(outputDir + infos[0].RelativeNewPack);
+					if (!images.Any(f => File.GetLastWriteTime(f) > referenceDate))
 						continue;
 				}
 
 				// Import
-				Console.Write("|-Importing {0,-45} | ", relatives[0]);
-				for (int i = 1; i < relatives.Count; i++) {
+				Console.Write("|-Importing {0,-45} | ", infos[0].RelativeImage);
+				for (int i = 1; i < infos.Count; i++) {
 					Console.WriteLine();
-					Console.Write("            {0,-45} | ", relatives[i]);
+					Console.Write("            {0,-45} | ", infos[i].RelativeImage);
 				}
 
-				Npck originalPack = new Npck(outPaths[0] + ".n2d");
+				Npck originalPack = new Npck(outputDir + infos[0].RelativePack);
 				Npck[] packs = null;
 				if (mode == "SharePalette")
-					packs = NpckFactory.FromBackgroundImageSharePalette(imgPaths.ToArray(), originalPack);
+					packs = NpckFactory.FromBackgroundImageSharePalette(images.ToArray(), originalPack);
 				else if (mode == "ShareImage")
-					packs = NpckFactory.FromBackgroundImageShareImage(imgPaths.ToArray(), originalPack);
+					packs = NpckFactory.FromBackgroundImageShareImage(images.ToArray(), originalPack);
 				else if (mode == "SharePaletteChangeDepth")
-					packs = NpckFactory.FromBackgroundImageSharePaletteChangeDepth(imgPaths.ToArray(), originalPack, true);
+					packs = NpckFactory.FromBackgroundImageSharePaletteChangeDepth(images.ToArray(), originalPack, true);
 				else
 					throw new FormatException(string.Format("Unsopported mode \"{0}\"", mode)); 
 
 				// Write output
 				originalPack.CloseAll();
-				for (int i = 0; i < outPaths.Count; i++) {
-					packs[i].Write(outPaths[i] + "_new.n2d");
+				for (int i = 0; i < infos.Count; i++) {
+					packs[i].Write(outputDir + infos[i].RelativeNewPack);
 					packs[i].CloseAll();
 				}
 
-				importedList.AddRange(relatives);
+				importedList.AddRange(infos);
 				Console.WriteLine("Successfully");
 			}
 		}
 			
-		private static void SingleImport(string baseDir, string outputDir,
-			List<string> importedList, bool filterDate)
+		private static void SingleImport(string imgDir, string outputDir,
+			List<ImageInfo> importedList, bool filterDate)
 		{
 			int count = 0;
 			Dictionary<string, int> errors = new Dictionary<string, int>();
-			errors.Add("skipImgs",   0);	errors.Add("texImgs",    0);
 			errors.Add("errorPack",  0); 	errors.Add("errorImgs",  0);
 			errors.Add("noN2DPack",  0);	errors.Add("noN2DImgs",  0);
 			errors.Add("noModPack",  0);	errors.Add("noModImgs",  0);
 			errors.Add("inListPack", 0);	errors.Add("inListImgs", 0);
 			errors.Add("noSuffPack", 0);    errors.Add("noSuffImgs", 0);
 
-			Dictionary<string, SortedList<int, string>> imageGroups = 
-				new Dictionary<string, SortedList<int, string>>();
-				
-			PlatformID osId = Environment.OSVersion.Platform;
-			Regex regex = (osId == PlatformID.Unix || osId == PlatformID.MacOSX) ? RegexLin : RegexWin;
+			// Search image: Group of images with same prefix ordered by frame index.
+			Dictionary<string, SortedList<int, ImageInfo>> imageGroups =
+				SearchImages(imgDir, outputDir);
 
-			Console.Write("Searching for images... ");
-			foreach (string imgFile in Directory.GetFiles(baseDir, "*.png", SearchOption.AllDirectories)) {
-				Match match = regex.Match(imgFile);
-				if (!match.Success)
-					continue;
-
-				// Gets real name and frame index
-				string testN2D = match.Groups[1].Value + Path.DirectorySeparatorChar;
-				testN2D = testN2D.Replace(baseDir, outputDir);
-				string filename = match.Groups[2].Value;
-				int frameIdx = 0;	// BG index is always 0 (only importing one image)
-
-				// Try to dectect texture
-				if (File.Exists(testN2D + filename + ".n3d")) {
-					errors["texImgs"]++;
-					continue;
-				}
-
-				// If it matches old format (suffix '_6.nscrm' and '_3.ncer_Xm')
-				if (filename.EndsWith("_6.nscr")) {
-					filename = filename.Substring(0, filename.Length - 7);
-				} else if (filename.Contains("_3.ncer_")) {
-					try {
-						int nameIdx = filename.IndexOf("_3.ncer_");
-						frameIdx = Convert.ToInt32(filename.Substring(nameIdx + 8));
-						filename = filename.Substring(0, nameIdx);
-					} catch {
-						Console.WriteLine("\t\t{0} skipped", imgFile);
-						errors["skipImgs"]++;
-						continue;
-					}
-				}
-
-				// Else, the new format does not have the suffixes
-				// If the .n2d file exists with that file name we got it
-				if (!File.Exists(testN2D + filename + ".n2d") && filename.Contains("_")) {
-					// Else, try to get frame index, if exception it should be texture so skip
-					try {
-						int nameIdx = filename.LastIndexOf("_");
-						frameIdx = Convert.ToInt32(filename.Substring(nameIdx + 1));
-						filename = filename.Substring(0, nameIdx);
-					} catch {
-						Console.WriteLine("\t\t{0} skipped", imgFile);
-						errors["skipImgs"]++;
-						continue;
-					}
-				}
-
-				// Get relative path
-				string imagePath = match.Groups[1].Value + Path.DirectorySeparatorChar + filename;
-				string relative  = imagePath.Replace(baseDir, "");
-				if (relative[0] == Path.DirectorySeparatorChar)
-					relative = relative.Substring(1);
-
-				if (!imageGroups.ContainsKey(relative))
-					imageGroups.Add(relative, new SortedList<int, string>());
-				imageGroups[relative].Add(frameIdx, imgFile);
-				count++;
-			}
-
-			Console.WriteLine("\tFound {0} images in {1} groups", count, imageGroups.Count);
-			Console.WriteLine("\t\t\t\tSkipped {0} images", errors["skipImgs"]);
-			Console.WriteLine("\t\t\t\tDetected {0} textures", errors["texImgs"]);
+			// Import!
 			Console.WriteLine("Starting importing...");
 			foreach (string relative in imageGroups.Keys) {
-				// Get output paths
-				string original = Path.Combine(outputDir, relative) + ".n2d";
-				string outFile  = Path.Combine(outputDir, relative) + "_new.n2d";
-				string[] imgs   = imageGroups[relative].Values.ToArray();
+				// Get paths
+				IList<ImageInfo> infos = imageGroups[relative].Values;
+				string outFile = outputDir + infos[0].RelativeNewPack;
+				string oriFile = outputDir + infos[0].RelativePack;
+				string[] imgs  = infos.Select(i => i.AbsoluteImage).ToArray();
+				int[] frameIdx = infos.Select(i => i.FrameIndex).ToArray();
+				//string[] internalNames = infos.Select(i => i.InternalName).ToArray();
 
 				// If don't match the filter, skip
 				if (filterDate) {
@@ -276,48 +226,46 @@ namespace Ninoimager
 						Console.WriteLine("|+ Skipped (date filter) {0}", relative);
 						errors["noModPack"]++;
 						errors["noModImgs"] += imgs.Length;
-						count -= imgs.Length;
 						continue;
 					}
 				}
 
 				// Check if it has been already imported
-				if (importedList.Contains(relative)) {
+				if (importedList.Any(i => i.RelativeImage == relative)) {
 					Console.WriteLine("|+ Skipped (already imported) {0}", relative);
 					errors["inListPack"]++;
 					errors["inListImgs"] += imgs.Length;
-					count -= imgs.Length;
 					continue;
 				}
 
 				// If original file does not exist, skip
 				// Odd way to import manually images and skip them here
-				if (!File.Exists(original) && File.Exists(outFile)) {
+				if (!File.Exists(oriFile) && File.Exists(outFile)) {
 					Console.WriteLine("|+ Skipped (manual mode) {0}", relative);
 					errors["noN2DPack"]++;
 					errors["noN2DImgs"] += imgs.Length;
-					count -= imgs.Length;
 					continue;
 				}
 
 				// If the original file does not exists AND there isn't any manual import
-				if (!File.Exists(original)) {
+				if (!File.Exists(oriFile)) {
 					Console.WriteLine("|+ Skipped (invalid suffix) {0}", relative);
 					errors["noSuffPack"]++;
 					errors["noSuffImgs"] += imgs.Length;
-					count -= imgs.Length;
 					continue;
 				}
 
 				// Try to import
 				Console.Write("|-Importing {0,-45} {1,2} | ", relative, imgs.Length);
 				try {
-					Npck ori  = new Npck(original);
+					Npck ori  = new Npck(oriFile);
 					Npck npck;
 					if (ori.IsSprite)
-						npck = NpckFactory.FromSpriteImage(imgs, imageGroups[relative].Keys.ToArray(), ori);
+						npck = NpckFactory.FromSpriteImage(imgs, frameIdx, ori);
 					else if (ori.IsBackground && imgs.Length == 1)
 						npck = NpckFactory.FromBackgroundImage(imgs[0], ori);
+					else if (ori.IsTexture)
+						npck = NpckFactory.ChangeTextureImages(imgs, frameIdx, ori);
 					else
 						throw new FormatException("Image format not supported");
 
@@ -331,11 +279,11 @@ namespace Ninoimager
 					#endif
 					errors["errorPack"]++;
 					errors["errorImgs"] += imgs.Length;
-					count -= imgs.Length;
 					continue;
 				}
 
-				importedList.Add(relative);
+				count += imgs.Length;
+				importedList.AddRange(infos);
 				Console.WriteLine("Successfully");
 			}
 
@@ -352,6 +300,116 @@ namespace Ninoimager
 			Console.WriteLine("\tAlready imported {0} packages ({1} images)",
 				errors["inListPack"], errors["inListImgs"]);
 			Console.WriteLine("\tImported {0} images successfully!", count);
+		}
+
+		private static Dictionary<string, SortedList<int, ImageInfo>> SearchImages(
+			string imgDir, string outputDir)
+		{
+			int count   = 0;
+			int skipped = 0;
+			Dictionary<string, SortedList<int, ImageInfo>> imageGroups = 
+				new Dictionary<string, SortedList<int, ImageInfo>>();
+
+			// Select regular expression by platform since they are pre-compiled.
+			PlatformID osId = Environment.OSVersion.Platform;
+			Regex regex = (osId == PlatformID.Unix || osId == PlatformID.MacOSX) ? RegexLin : RegexWin;
+
+			Console.Write("Searching for images... ");
+			foreach (string imgFile in Directory.GetFiles(imgDir, "*.png", SearchOption.AllDirectories)) {
+				Match match = regex.Match(imgFile);
+				if (!match.Success)
+					continue;
+
+				// Gets file info
+				ImageInfo info = new ImageInfo();
+				info.Matched       = false;
+				info.Filename      = match.Groups[2].Value;
+				info.PackExtension = ".n2d";
+				info.FrameIndex    = 0;
+				info.AbsoluteImage = imgFile;
+				info.InternalName  = info.Filename;
+				info.RelativePath  = match.Groups[1].Value + Path.DirectorySeparatorChar;
+				info.RelativePath  = info.RelativePath.Replace(imgDir, "");
+				if (info.RelativePath[0] == Path.DirectorySeparatorChar)
+					info.RelativePath = info.RelativePath.Substring(1);
+
+				// Dectect texture
+				string[] fields = info.Filename.Split('_');
+				if (fields.Count() >= 2) {
+					// Get texture name (find one last '_' chars)
+					int nameIdx = 0;
+					for (int i = 0; i < fields.Count() - 1; i++)
+						nameIdx = info.Filename.IndexOf('_', nameIdx + 1);
+
+					// Check if it exists a N3D with the texture name
+					string texName = info.Filename.Substring(0, nameIdx);
+					if (File.Exists(outputDir + info.RelativePath + texName + ".n3d")) {
+						try {
+							//info.InternalName = fields[fields.Count() - 2];
+							info.FrameIndex = Convert.ToInt32(fields[fields.Count() - 1]);
+							info.Matched    = true;
+							info.Filename   = texName;
+							info.PackExtension = ".n3d";
+						} catch {
+							Console.WriteLine("\t\t{0} skipped", imgFile);
+							skipped++;
+							continue;
+						}
+					}
+				}
+
+				// If it matches old format (suffix '_6.nscr' and '_3.ncer_X')
+				if (!info.Matched && info.Filename.EndsWith("_6.nscr")) {
+					info.Matched  = true;
+					info.Filename = info.Filename.Substring(0, info.Filename.Length - 7);
+				} else if (!info.Matched && info.Filename.Contains("_3.ncer_")) {
+					try {
+						int nameIdx = info.Filename.IndexOf("_3.ncer_");
+						info.FrameIndex = Convert.ToInt32(info.Filename.Substring(nameIdx + 8));
+						info.Filename   = info.Filename.Substring(0, nameIdx);
+						info.Matched = true;
+					} catch {
+						Console.WriteLine("\t\t{0} skipped", imgFile);
+						skipped++;
+						continue;
+					}
+				}
+
+				// Else, the new format does not have the suffixes
+				// If the .n2d file exists with that file name we got it
+				if (!info.Matched && File.Exists(outputDir + info.RelativePack)) {
+					// It's a background image
+					info.Matched = true;
+				} else if (!info.Matched && info.Filename.Contains("_")) {
+					// It's a sprite image
+					try {
+						int nameIdx = info.Filename.LastIndexOf("_");
+						info.FrameIndex = Convert.ToInt32(info.Filename.Substring(nameIdx + 1));
+						info.Filename   = info.Filename.Substring(0, nameIdx);
+						//if (File.Exists(outputDir + info.RelativePack))
+						info.Matched = true;
+					} catch {
+						Console.WriteLine("\t\t{0} skipped", imgFile);
+						skipped++;
+						continue;
+					}
+				}
+
+				if (info.Matched) {
+					if (!imageGroups.ContainsKey(info.RelativeImage))
+						imageGroups.Add(info.RelativeImage, new SortedList<int, ImageInfo>());
+					imageGroups[info.RelativeImage].Add(info.FrameIndex, info);
+					count++;
+				} else {
+					Console.WriteLine("\t\t{0} skipped", imgFile);
+					skipped++;
+				}
+			}
+
+			Console.WriteLine("\tFound {0} images in {1} groups", count, imageGroups.Count);
+			Console.WriteLine("\t\t\t\tSkipped {0} images", skipped);
+
+			return imageGroups;
 		}
 
 		private static void CreateModimeXml(string[] relativePaths, string outputXml)
@@ -387,7 +445,7 @@ namespace Ninoimager
 			xml.Save(outputXml);
 		}
 
-		private static void UpdateModimeXml(string[] relativePaths, string infoPath, string editPath)
+		private static void UpdateModimeXml(ImageInfo[] relativePaths, string infoPath, string editPath)
 		{
 			const string RootName    = "/Ninokuni.nds";
 			const string BaseRomPath = "/Ninokuni.nds/ROM/data/";
@@ -401,8 +459,8 @@ namespace Ninoimager
 			XElement  editRoot = editXml.Root.Element("Files");
 
 			// For each entry to add
-			foreach (string relative in relativePaths) {
-				string path = Path.Combine(BaseRomPath, relative) + ".n2d";
+			foreach (ImageInfo info in relativePaths) {
+				string path = BaseRomPath + info.RelativePack;
 				path = path.Replace('\\', '/');
 				
 				// If it's not there, add it
@@ -418,7 +476,7 @@ namespace Ninoimager
 				if (editRoot.Elements().Count(e => e.Element("Path").Value == path) == 0) {
 					XElement xgame = new XElement("File");
 					xgame.Add(new XElement("Path", path));
-					xgame.Add(new XElement("Import", "{$ImagePath}/" + relative.Replace('\\', '/') + "_new.n2d"));
+					xgame.Add(new XElement("Import", "{$ImagePath}/" + info.RelativeNewPack.Replace("\\", "/")));
 					editRoot.Add(xgame);
 				}
 			}
@@ -445,6 +503,20 @@ namespace Ninoimager
 
 				Console.WriteLine("Exported {0} -> {1}", relativePath, imageName);
 			}
+		}
+
+		private struct ImageInfo
+		{
+			public bool   Matched { get; set; }
+			public string RelativePath  { get; set; }
+			public string Filename      { get; set; }
+			public string PackExtension { get; set; }
+			public int    FrameIndex    { get; set; }
+			public string InternalName  { get; set; }
+			public string AbsoluteImage { get; set; }
+			public string RelativeImage { get { return RelativePath + Filename; } }
+			public string RelativePack  { get { return RelativePath + Filename + PackExtension; }}
+			public string RelativeNewPack { get { return RelativePath + Filename + "_new" + PackExtension; }}
 		}
 	}
 }

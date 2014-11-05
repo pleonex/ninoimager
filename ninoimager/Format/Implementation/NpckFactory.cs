@@ -343,8 +343,7 @@ namespace Ninoimager.Format
 			return Npck.FromSpriteStreams(ncerStr, ncgrLinealStr, ncgrTiledStr, nclrStr, original[5]);
 		}
 
-		public static Npck ChangeTextureImages(string[] images, string[] names,
-			int[] frames, Npck original)
+		public static Npck ChangeTextureImages(string[] images, int[] frames, Npck original)
 		{
 			// Creamos las imágenes
 			EmguImage[] emguImages = new EmguImage[images.Length];
@@ -356,7 +355,7 @@ namespace Ninoimager.Format
 				}
 			}
 
-			Npck npck = ChangeTextureImages(emguImages, names, frames, original);
+			Npck npck = ChangeTextureImages(emguImages, frames, original);
 
 			// Liberamos recursos
 			foreach (EmguImage img in emguImages)
@@ -365,8 +364,7 @@ namespace Ninoimager.Format
 			return npck;
 		}
 
-		public static Npck ChangeTextureImages(EmguImage[] images, string[] names, 
-			int[] frames, Npck original)
+		public static Npck ChangeTextureImages(EmguImage[] images, int[] frames, Npck original)
 		{
 			// Get an original texture file to get images and the texture to modify
 			long start = original[0].Position;
@@ -387,7 +385,7 @@ namespace Ninoimager.Format
 				importer.Quantization = new FixedPaletteQuantization(palette);
 
 				if (frames.Contains(i)) {
-					importer.AddImage(images[idx], names[idx]);
+					importer.AddImage(images[idx], oriTexture.GetTextureName(i));
 					idx++;
 				} else
 					importer.AddImage(oriTexture.CreateBitmap(i), oriTexture.GetTextureName(i));
