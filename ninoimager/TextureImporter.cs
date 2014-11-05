@@ -62,6 +62,19 @@ namespace Ninoimager
 			if (newImg == null)
 				throw new ArgumentNullException();
 
+			// First, let's be sure the dimension are power of 2.
+			if (!IsPowerOfTwo((uint)newImg.Width)) {
+				int width = 1 << (int)(Math.Log(newImg.Width, 2) + 1);
+				EmguImage blankVertical = new EmguImage(width - newImg.Width, newImg.Height);
+				newImg = newImg.ConcateHorizontal(blankVertical);
+			}
+
+			if (!IsPowerOfTwo((uint)newImg.Height)) {
+				int height = 1 << (int)(Math.Log(newImg.Height, 2) + 1);
+				EmguImage blankHorizontal = new EmguImage(newImg.Width, height - newImg.Height);
+				newImg = newImg.ConcateVertical(blankHorizontal);
+			}
+
 			// Quantizate image -> get pixels and palette
 			this.Quantization.Quantizate(newImg);
 			Pixel[] pixels = this.Quantization.GetPixels(PixelEncoding.Lineal);
@@ -87,6 +100,11 @@ namespace Ninoimager
 		public void RemoveImages()
 		{
 			this.Texture.RemoveImages();
+		}
+
+		private static bool IsPowerOfTwo(ulong x)
+		{
+			return (x != 0) && ((x & (x - 1)) == 0);
 		}
 	}
 }
