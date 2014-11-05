@@ -141,6 +141,11 @@ namespace Ninoimager.Format
 			return this.tex0.GetPalette(palIdx, numColors);
 		}
 
+		public Image GetImage(int texIdx)
+		{
+			return this.images[texIdx];
+		}
+
 		public void RemoveImages()
 		{
 			this.tex0.TextureData.Clear();
@@ -608,7 +613,7 @@ namespace Ninoimager.Format
 
 					this.TextureOffset = (uint)(br.ReadUInt16() << 3);
 					ushort parameters  = br.ReadUInt16();
-					this.Width    = br.ReadByte();
+					//this.Width    = br.ReadByte();
 					this.Unknown1 = br.ReadByte();
 					this.Unknown2 = br.ReadByte();
 					this.Unknown3 = br.ReadByte();
@@ -617,8 +622,8 @@ namespace Ninoimager.Format
 					this.CoordinateTransformation = (byte)(parameters >> 14);
 					this.Color0  = ((parameters >> 13) & 1) == 1;
 					this.Format  = (ColorFormat)((parameters >> 10) & 7);
-					this.Height  = (byte)(8 << ((parameters >> 7) & 7));
-					//this.Width2  = (byte)(8 << ((parameters >> 4) & 7));
+					this.Height  = (byte)(1 << (((parameters >> 7) & 7) + 3));
+					this.Width   = (byte)(1 << (((parameters >> 4) & 7) + 3));
 					this.FlipY   = (byte)((parameters >> 3) & 1) == 1;
 					this.FlipX   = (byte)((parameters >> 2) & 1) == 1;
 					this.RepeatY = (byte)((parameters >> 1) & 1) == 1;
@@ -650,8 +655,8 @@ namespace Ninoimager.Format
 					parameters |= (ushort)((this.CoordinateTransformation & 0x03) << 14);
 					parameters |= (ushort)((this.Color0 ? 1 : 0) << 13);
 					parameters |= (ushort)(((int)this.Format & 0x07) << 10);
-					parameters |= (ushort)(((int)Math.Log(this.Height / 8, 2) & 0x07) << 7);
-					parameters |= (ushort)(((int)Math.Log(this.Width / 8, 2) & 0x07) << 4);
+					parameters |= (ushort)(((int)(Math.Log(this.Height, 2) - 3) & 0x07) << 7);
+					parameters |= (ushort)(((int)(Math.Log(this.Width , 2) - 3) & 0x07) << 4);
 					parameters |= (ushort)((this.FlipY ? 1 : 0) << 3);
 					parameters |= (ushort)((this.FlipX ? 1 : 0) << 2);
 					parameters |= (ushort)((this.RepeatY ? 1 : 0) << 1);

@@ -383,6 +383,7 @@ namespace Ninoimager.Format
 			for (int i = 0, idx = 0; i < oriTexture.NumTextures; i++) {
 				Color[] palette = oriTexture.GetPalette(i).GetPalette(0);
 				importer.Quantization = new FixedPaletteQuantization(palette);
+				importer.Format = oriTexture.GetImage(i).Format;
 
 				if (frames.Contains(i)) {
 					importer.AddImage(images[idx], oriTexture.GetTextureName(i));
