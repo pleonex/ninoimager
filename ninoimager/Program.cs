@@ -39,14 +39,6 @@ namespace Ninoimager
 
 		public static void Main(string[] args)
 		{
-//			Npck original = new Npck("test/Industrial.n3d");
-//			string[] imgs = new string[] { "test/Industrialm[alt].png", "test/Industrialm[alt].png" };
-//			string[] names = new string[] { "industrial", "holi" };
-//			int[] frames = new int[] { 0, 1 };
-//			Npck modified = NpckFactory.ChangeTextureImages(imgs, names, frames, original);
-//			modified.Write("test/Industrial_new.n3d");
-//			return;
-
             Console.WriteLine("ninoimager ~~ Image importer and exporter for Ni no kuni DS");
 			Console.WriteLine("V {0} ~~ by pleoNeX ~~", Assembly.GetExecutingAssembly().GetName().Version);
 			Console.WriteLine();
@@ -106,6 +98,13 @@ namespace Ninoimager
 			Console.WriteLine();
 
 			List<ImageInfo> imported = new List<ImageInfo>();
+
+			// "Fix" paths
+			if (baseDir[baseDir.Length - 1] != Path.DirectorySeparatorChar)
+				baseDir += Path.DirectorySeparatorChar;
+
+			if (outDir[outDir.Length - 1] != Path.DirectorySeparatorChar)
+				outDir += Path.DirectorySeparatorChar;
 
 			// First import "special files" that share palette and images data with other N2D files
 			Console.WriteLine("## Starting MultiImport ##");
