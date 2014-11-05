@@ -67,12 +67,14 @@ namespace Ninoimager
 				int width = 1 << (int)(Math.Log(newImg.Width, 2) + 1);
 				EmguImage blankVertical = new EmguImage(width - newImg.Width, newImg.Height);
 				newImg = newImg.ConcateHorizontal(blankVertical);
+				Console.Write(" (Warning: Width not power of 2)");
 			}
 
 			if (!IsPowerOfTwo((uint)newImg.Height)) {
 				int height = 1 << (int)(Math.Log(newImg.Height, 2) + 1);
 				EmguImage blankHorizontal = new EmguImage(newImg.Width, height - newImg.Height);
 				newImg = newImg.ConcateVertical(blankHorizontal);
+				Console.Write(" (Warning: Height not power of 2)");
 			}
 
 			// Quantizate image -> get pixels and palette
