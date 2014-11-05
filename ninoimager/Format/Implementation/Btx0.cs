@@ -298,9 +298,12 @@ namespace Ninoimager.Format
 			public void AddPalette(Palette palette, string name)
 			{
 				// Get palette data and add it
-				// TODO: Check if they already exists and/or add them
-				int offset = this.PaletteData.Count;
-				byte[] palData = palette.GetPalette(0).ToBgr555();
+				List<byte> palData = new List<byte>(palette.GetPalette(0).ToBgr555());
+				int offset = SubArraySearch(this.PaletteData, palData);
+				int subOffset = palData.Count - (this.PaletteData.Count - offset);
+				if (subOffset > 0)
+					palData = palData.GetRange(this.PaletteData.Count - offset, subOffset);
+
 				this.PaletteData.AddRange(palData);
 				while (this.PaletteData.Count % 8 != 0)
 					this.PaletteData.Add(0x00);
@@ -312,13 +315,28 @@ namespace Ninoimager.Format
 				this.PaletteInfo.AddElement(palInfo);
 			}
 
+			private static int SubArraySearch(List<byte> array, List<byte> subarray)
+			{
+				for (int idx = 0; idx < array.Count; idx++) {
+					bool found = true;
+					for (int subIdx = 0; subIdx < subarray.Count &&
+						idx + subIdx < array.Count && found; subIdx++)
+					{
+						if (array[idx + subIdx] != subarray[subIdx])
+							found = false;
+					}
+
+					if (found)
+						return idx;
+				}
+
+				return array.Count;
+			}
+
 			public void AddImage(Image image, string name)
 			{
 				// Get image data and add it
-				int offset = this.TextureData.Sum(d => d.Length);
 				byte[] texData = image.GetData();
-				if (texData.Length % 8 != 0)
-					Array.Resize(ref texData, texData.Length + (8 - (texData.Length % 8)));
 				this.TextureData.Add(texData);
 
 				// Create texture info and add it
@@ -328,8 +346,33 @@ namespace Ninoimager.Format
 				texInfo.Color0 = true;
 				texInfo.Format = image.Format;
 				texInfo.Name   = name;
-				texInfo.TextureOffset = (uint)offset;
 				this.TextureInfo.AddElement(texInfo);
+			}
+
+			private byte[] CompressTextureData()
+			{
+				List<byte> data = new List<byte>();
+				for (int i = 0; i < this.TextureData.Count; i++) {
+					// Get offset
+					// MORE COMPRESSION:
+					//uint offset = (uint)SubArraySearch(data, this.TextureData[i].ToList());
+					// ORIGINAL COMPRESSION:
+					int idx = this.TextureData.FindIndex(d => d.SequenceEqual(this.TextureData[i]));
+					uint offset = (uint)data.Count;
+					if (idx != i)
+						offset = this.TextureInfo.Data[idx].TextureOffset;
+
+					this.TextureInfo.Data[i].TextureOffset = offset;
+
+					// If it is not present add it
+					if (offset == data.Count) {
+						data.AddRange(this.TextureData[i]);
+						while (data.Count % 8 != 0)
+							data.Add(0);
+					}
+				}
+
+				return data.ToArray();
 			}
 
 			protected override void WriteData(Stream strOut)
@@ -337,7 +380,8 @@ namespace Ninoimager.Format
 				// TODO: Texel support
 				BinaryWriter bw = new BinaryWriter(strOut);
 
-				uint textureDataSize = (uint)this.TextureData.Sum(d => d.Length);
+				byte[] textureData   = this.CompressTextureData();
+				uint textureDataSize = (uint)textureData.Length;
 				uint textureDataPadd = 8 - textureDataSize % 8;
 				if (textureDataPadd != 8)
 					textureDataSize += textureDataPadd;
@@ -381,8 +425,7 @@ namespace Ninoimager.Format
 				this.PaletteInfo.WriteData(strOut);
 
 				// Write texture data
-				foreach (byte[] tex in this.TextureData)
-					bw.Write(tex);
+				bw.Write(textureData);
 				for (int i = 0; i < textureDataPadd && textureDataPadd != 8; i++)
 					bw.Write((byte)0x00);
 
@@ -397,7 +440,7 @@ namespace Ninoimager.Format
 				this.Size = 8 + 0x34;
 				this.Size += this.TextureInfo.GetSize();
 				this.Size += this.PaletteInfo.GetSize();
-				this.Size += this.TextureData.Sum(d => d.Length);
+				this.Size += this.CompressTextureData().Length;	// I know...
 				this.Size += this.PaletteData.Count;
 			}
 
@@ -478,11 +521,13 @@ namespace Ninoimager.Format
 				public void AddElement(T element)
 				{
 					this.Data.Add(element);
+					this.NumObjects++;
 				}
 
 				public void Clear()
 				{
 					this.Data.Clear();
+					this.NumObjects = 0;
 				}
 
 				public int GetSize()
