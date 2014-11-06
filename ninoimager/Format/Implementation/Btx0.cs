@@ -613,7 +613,7 @@ namespace Ninoimager.Format
 
 					this.TextureOffset = (uint)(br.ReadUInt16() << 3);
 					ushort parameters  = br.ReadUInt16();
-					//this.Width    = br.ReadByte();
+					br.ReadByte();	// Width
 					this.Unknown1 = br.ReadByte();
 					this.Unknown2 = br.ReadByte();
 					this.Unknown3 = br.ReadByte();
