@@ -63,6 +63,12 @@ namespace Ninoimager.Format
 			get { return this.tex0.TextureInfo.NumObjects; }
 		}
 
+		public int NumPalettes {
+			get {
+				return this.tex0.TextureInfo.NumObjects;
+			}
+		}
+
 		public void Write(string fileOut)
 		{
 			this.nitro.Write(fileOut);
@@ -174,6 +180,40 @@ namespace Ninoimager.Format
 		public void AddPalette(Palette palette, string name)
 		{
 			this.tex0.AddPalette(palette, name);
+		}
+
+		public int[] GetTextureUnknowns(int id)
+		{
+			int[] unknowns = new int[5];
+			unknowns[0] = this.tex0.TextureInfo.Data[id].UnknownData1;
+			unknowns[1] = this.tex0.TextureInfo.Data[id].UnknownData2;
+			unknowns[2] = this.tex0.TextureInfo.Data[id].Unknown1;
+			unknowns[3] = this.tex0.TextureInfo.Data[id].Unknown2;
+			unknowns[4] = this.tex0.TextureInfo.Data[id].Unknown3;
+			return unknowns;
+		}
+
+		public int[] GetPaletteUnknowns(int id)
+		{
+			int[] unknowns = new int[2];
+			unknowns[0] = this.tex0.PaletteInfo.Data[id].UnknownData1;
+			unknowns[1] = this.tex0.PaletteInfo.Data[id].UnknownData2;
+			return unknowns;
+		}
+
+		public void SetTextureUnknowns(int id, int[] unknowns)
+		{
+			this.tex0.TextureInfo.Data[id].UnknownData1 = (ushort)unknowns[0];
+			this.tex0.TextureInfo.Data[id].UnknownData2 = (ushort)unknowns[1];
+			this.tex0.TextureInfo.Data[id].Unknown1 = (byte)unknowns[2];
+			this.tex0.TextureInfo.Data[id].Unknown2 = (byte)unknowns[3];
+			this.tex0.TextureInfo.Data[id].Unknown3 = (byte)unknowns[4];
+		}
+
+		public void SetPaletteUnknowns(int id, int[] unknowns)
+		{
+			this.tex0.PaletteInfo.Data[id].UnknownData1 = (ushort)unknowns[0];
+			this.tex0.PaletteInfo.Data[id].UnknownData2 = (ushort)unknowns[1];
 		}
 
 		private class Mdl0 : NitroBlock

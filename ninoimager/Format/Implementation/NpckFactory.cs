@@ -381,15 +381,23 @@ namespace Ninoimager.Format
 
 			// Add images from arguments or original texture if not presents.
 			for (int i = 0, idx = 0; i < oriTexture.NumTextures; i++) {
+				// Set quantization to original palette
 				Color[] palette = oriTexture.GetPalette(i).GetPalette(0);
 				importer.Quantization = new FixedPaletteQuantization(palette);
+
+				// Keep original color format and name
+				string name = oriTexture.GetTextureName(i);
 				importer.Format = oriTexture.GetImage(i).Format;
 
+				// Keep original unknown values
+				int[] texUnks = oriTexture.GetTextureUnknowns(i);
+				int[] palUnks = oriTexture.GetPaletteUnknowns(i);
+
 				if (frames.Contains(i)) {
-					importer.AddImage(images[idx], oriTexture.GetTextureName(i));
+					importer.AddImage(images[idx], name, texUnks, palUnks);
 					idx++;
 				} else
-					importer.AddImage(oriTexture.CreateBitmap(i), oriTexture.GetTextureName(i));
+					importer.AddImage(oriTexture.CreateBitmap(i), name, texUnks, palUnks);
 			}
 
 			// Write the new texture file

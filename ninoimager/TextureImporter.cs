@@ -99,6 +99,16 @@ namespace Ninoimager
 			this.Texture.AddImage(image, palette, name);
 		}
 
+		public void AddImage(EmguImage newImg, string name, int[] texUnk, int[] palUnk)
+		{
+			// Add image
+			this.AddImage(newImg, name);
+
+			// Set unknowns values
+			this.Texture.SetTextureUnknowns(this.Texture.NumTextures - 1, texUnk);
+			this.Texture.SetPaletteUnknowns(this.Texture.NumPalettes - 1, palUnk);
+		}
+			
 		public void RemoveImages()
 		{
 			this.Texture.RemoveImages();
