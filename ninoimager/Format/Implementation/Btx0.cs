@@ -388,7 +388,7 @@ namespace Ninoimager.Format
 				Tex0.TextureDataInfo texInfo = new Tex0.TextureDataInfo();
 				texInfo.Width  = image.Width;
 				texInfo.Height = image.Height;
-				texInfo.Color0 = true;
+				texInfo.Color0 = image.GetPixels().Any(p => p.Alpha == 0);
 				texInfo.Format = image.Format;
 				texInfo.Name   = name;
 				this.TextureInfo.AddElement(texInfo);
