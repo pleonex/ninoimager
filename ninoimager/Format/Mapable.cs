@@ -42,6 +42,8 @@ namespace Ninoimager.Format
 
 		public abstract void Map(Pixel[] image);
 
+		public abstract void Map(Pixel[] image, int[] palettes);
+
 		public Pixel[] GetMappedImage()
 		{
 			return this.mappedImage;

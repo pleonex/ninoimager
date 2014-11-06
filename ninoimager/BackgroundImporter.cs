@@ -24,9 +24,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Ninoimager.Format;
 using Ninoimager.ImageProcessing;
 using Size      = System.Drawing.Size;
+using Rectangle = System.Drawing.Rectangle;
 using Color     = Emgu.CV.Structure.Bgra;
 using LabColor  = Emgu.CV.Structure.Lab;
 using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Bgra, System.Byte>;
@@ -47,16 +49,16 @@ namespace Ninoimager
 				+ BG Mode will be "Text" (most used)
 				+ Transparent color will be magenta: (R:248, G:0, B:248) 
 			*/
-			this.IncludePcmp = false;
-			this.IncludeCpos = false;
-			this.DispCnt     = 0;
-			this.UnknownChar = 0;
-			this.BgMode      = BgMode.Text;
-			this.Format      = ColorFormat.Indexed_8bpp;
-			this.TileSize    = new Size(8, 8);
+			this.PartialImage  = false;
+			this.IncludePcmp   = false;
+			this.IncludeCpos   = false;
+			this.DispCnt       = 0;
+			this.UnknownChar   = 0;
+			this.BgMode        = BgMode.Text;
+			this.Format        = ColorFormat.Indexed_8bpp;
+			this.TileSize      = new Size(8, 8);
 			this.PixelEncoding = PixelEncoding.HorizontalTiles;
-
-			this.Quantization = new NdsQuantization();
+			this.Quantization  = new NdsQuantization();
 		}
 
 		#region Importer parameters
@@ -114,6 +116,11 @@ namespace Ninoimager
 			get;
 			set;
 		}
+
+		public bool PartialImage {
+			get;
+			set;
+		}
 		#endregion
 
 		public void SetOriginalSettings(Stream mapStr, Stream imgStr, Stream palStr)
@@ -164,13 +171,38 @@ namespace Ninoimager
 			int height = newImg.Height;
 			int maxColors = 1 << this.Format.Bpp();
 
-			// Quantizate image -> get pixels and palette
-			this.Quantization.Quantizate(newImg);
-            Pixel[] pixels  = this.Quantization.GetPixels(this.PixelEncoding);
-			Color[] palette = this.Quantization.Palette;
-			if (palette.Length > maxColors)
-				throw new FormatException(string.Format("The image has more than {0} colors", maxColors));
+			Pixel[] pixels;
+			Color[] palette;
+			List<int> mapPalette = new List<int>();
+			bool is16ColFixed = (Format == ColorFormat.Indexed_4bpp) &&
+				(PaletteMode == PaletteMode.Palette16_16) && (Quantization is FixedPaletteQuantization);
+			if (!is16ColFixed) {
+				// Quantizate image -> get pixels and palette
+				this.Quantization.Quantizate(newImg);
+				pixels  = this.Quantization.GetPixels(this.PixelEncoding);
+				palette = this.Quantization.Palette;
+				if (palette.Length > maxColors)
+					throw new FormatException(string.Format("The image has more than {0} colors", maxColors));
+			} else {
+				Console.Write("(16 Color fixed!) ");
+				palette = this.Quantization.Palette;
+				ManyFixedPaletteQuantization quant = new ManyFixedPaletteQuantization(
+					this.Quantization.Palette.Split(16).ToArray());
+					
+				List<Pixel> pixelList = new List<Pixel>();
+				for (int y = 0; y < newImg.Height; y += this.TileSize.Height) {
+					for (int x = 0; x < newImg.Width; x += this.TileSize.Width) {
+						Rectangle subArea  = new Rectangle(x, y, this.TileSize.Width, this.TileSize.Height);
+						EmguImage subImage = newImg.Copy(subArea);
+						quant.Quantizate(subImage);
+						mapPalette.Add(quant.SelectedPalette);
+						pixelList.AddRange(quant.GetPixels(PixelEncoding.Lineal));
+					}
+				}
 
+				pixels = pixelList.ToArray();
+			}
+				
 			// Create palette format
 			Nclr nclr = new Nclr() {
 				Extended = this.ExtendedPalette
@@ -185,9 +217,42 @@ namespace Ninoimager
 				BgMode      = this.BgMode,
 				PaletteMode = this.PaletteMode
 			};
-			nscr.PaletteMode = (this.Format == ColorFormat.Indexed_4bpp) ?
-				PaletteMode.Palette16_16 : PaletteMode.Palette256_1;
-			pixels = nscr.CreateMap(pixels);
+
+			if (!is16ColFixed) {
+				nscr.PaletteMode = (this.Format == ColorFormat.Indexed_4bpp) ?
+					PaletteMode.Palette16_16 : PaletteMode.Palette256_1;
+				pixels = nscr.CreateMap(pixels);
+			} else {
+				nscr.PaletteMode = PaletteMode.Palette16_16;
+				pixels = nscr.CreateMap(pixels, mapPalette.ToArray());
+			}
+
+			if (this.PartialImage) {
+				// As the image won't expand to all the screen,
+				// The first tile must be transparent
+				int tilesizeLength = this.TileSize.Width * this.TileSize.Height;
+				Pixel[] newPixels = new Pixel[pixels.Length + tilesizeLength];
+
+				// New transparent pixels
+				for (int i = 0; i < tilesizeLength; i++)
+					newPixels[i] = new Pixel(0, 255, true);
+
+				// Image pixels
+				Array.Copy(pixels, 0, newPixels, tilesizeLength, pixels.Length);
+				pixels = newPixels;
+
+				// Update map info
+				MapInfo[] mapInfo = nscr.GetMapInfo();
+				for (int i = 0; i < mapInfo.Length; i++) {
+					mapInfo[i] = new MapInfo(
+						mapInfo[i].TileIndex + 1,
+						mapInfo[i].PaletteIndex,
+						mapInfo[i].FlipX,
+						mapInfo[i].FlipY);
+				}
+				nscr.SetMapInfo(mapInfo);
+			}
+
 
 			// Create image format
 			Ncgr ncgr = new Ncgr() {
