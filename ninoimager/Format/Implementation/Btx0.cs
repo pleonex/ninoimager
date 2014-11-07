@@ -350,10 +350,13 @@ namespace Ninoimager.Format
 				// Get palette data and add it
 				List<byte> palData = new List<byte>(palette.GetPalette(0).ToBgr555());
 				int offset = SubArraySearch(this.PaletteData, palData);
+
+				// If not all colors are found... Add all
 				int subOffset = palData.Count - (this.PaletteData.Count - offset);
 				if (subOffset > 0)
-					palData = palData.GetRange(this.PaletteData.Count - offset, subOffset);
+					offset = this.PaletteData.Count;
 
+				// Add colors
 				this.PaletteData.AddRange(palData);
 				while (this.PaletteData.Count % 8 != 0)
 					this.PaletteData.Add(0x00);
