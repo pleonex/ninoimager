@@ -57,7 +57,7 @@ namespace Ninoimager
 			set;
 		}
 
-		public void AddImage(EmguImage newImg, string name)
+		public void AddImage(EmguImage newImg, string name, Color[] palOut = null)
 		{
 			if (newImg == null)
 				throw new ArgumentNullException();
@@ -80,7 +80,7 @@ namespace Ninoimager
 			// Quantizate image -> get pixels and palette
 			this.Quantization.Quantizate(newImg);
 			Pixel[] pixels = this.Quantization.GetPixels(PixelEncoding.Lineal);
-			Color[] colors = this.Quantization.Palette;
+			Color[] colors = (palOut == null) ? this.Quantization.Palette : palOut;
 
 			int maxColors = 1 << this.Format.Bpp();
 			if (colors.Length > maxColors)
@@ -99,10 +99,11 @@ namespace Ninoimager
 			this.Texture.AddImage(image, palette, name);
 		}
 
-		public void AddImage(EmguImage newImg, string name, int[] texUnk, int[] palUnk)
+		public void AddImage(EmguImage newImg, string name, int[] texUnk, int[] palUnk,
+			Color[] palOut = null)
 		{
 			// Add image
-			this.AddImage(newImg, name);
+			this.AddImage(newImg, name, palOut);
 
 			// Set unknowns values
 			this.Texture.SetTextureUnknowns(this.Texture.NumTextures - 1, texUnk);

@@ -20,6 +20,7 @@
 // <date>06/07/2014</date>
 // -----------------------------------------------------------------------
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Ninoimager.ImageProcessing;
@@ -345,6 +346,16 @@ namespace Ninoimager.Format
 
 		public static Npck ChangeTextureImages(string[] images, int[] frames, Npck original)
 		{
+			return ChangeTextureImages(images, frames, null, original);
+		}
+
+		public static Npck ChangeTextureImages(EmguImage[] images, int[] frames, Npck original)
+		{
+			return ChangeTextureImages(images, frames, null, original);
+		}
+
+		public static Npck ChangeTextureImages(string[] images, int[] frames, Palette palOut, Npck original)
+		{
 			// Creamos las imágenes
 			EmguImage[] emguImages = new EmguImage[images.Length];
 			for (int i = 0; i < images.Length; i++) {
@@ -355,7 +366,7 @@ namespace Ninoimager.Format
 				}
 			}
 
-			Npck npck = ChangeTextureImages(emguImages, frames, original);
+			Npck npck = ChangeTextureImages(emguImages, frames, palOut, original);
 
 			// Liberamos recursos
 			foreach (EmguImage img in emguImages)
@@ -364,7 +375,8 @@ namespace Ninoimager.Format
 			return npck;
 		}
 
-		public static Npck ChangeTextureImages(EmguImage[] images, int[] frames, Npck original)
+
+		public static Npck ChangeTextureImages(EmguImage[] images, int[] frames, Palette palOut, Npck original)
 		{
 			// Get an original texture file to get images and the texture to modify
 			long start = original[0].Position;
@@ -380,10 +392,16 @@ namespace Ninoimager.Format
 			importer.RemoveImages();
 
 			// Add images from arguments or original texture if not presents.
-			for (int i = 0, idx = 0; i < oriTexture.NumTextures; i++) {
-				// Set quantization to original palette
-				Color[] palette = oriTexture.GetPalette(i).GetPalette(0);
-				importer.Quantization = new FixedPaletteQuantization(palette);
+			List<int> frameList = frames.ToList();
+			for (int i = 0; i < oriTexture.NumTextures; i++) {
+				int idx = frameList.IndexOf(i);
+
+				// Set quantization to original palette or argument palette
+				Color[] originalPalette = oriTexture.GetPalette(i).GetPalette(0);
+				if (idx != -1 && palOut != null)
+					importer.Quantization = new FixedPaletteQuantization(palOut.GetPalette(idx));
+				else
+					importer.Quantization = new FixedPaletteQuantization(originalPalette);
 
 				// Keep original color format and name
 				string name = oriTexture.GetTextureName(i);
@@ -393,10 +411,10 @@ namespace Ninoimager.Format
 				int[] texUnks = oriTexture.GetTextureUnknowns(i);
 				int[] palUnks = oriTexture.GetPaletteUnknowns(i);
 
-				if (frames.Contains(i)) {
-					importer.AddImage(images[idx], name, texUnks, palUnks);
-					idx++;
-				} else
+				// Import :D
+				if (idx != -1)
+					importer.AddImage(images[idx], name, texUnks, palUnks, originalPalette);
+				else
 					importer.AddImage(oriTexture.CreateBitmap(i), name, texUnks, palUnks);
 			}
 

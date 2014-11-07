@@ -127,7 +127,11 @@ namespace Ninoimager.Format
 		{
 			// Get palette
 			Palette palette = this.GetPalette(texIdx);
+			return this.CreateBitmap(texIdx, palette);
+		}
 
+		public EmguImage CreateBitmap(int texIdx, Palette palette)
+		{
 			// Get image
 			EmguImage img = this.images[texIdx].CreateBitmap(palette, 0);
 
@@ -137,6 +141,7 @@ namespace Ninoimager.Format
 				var mask = img.InRange(transparent, transparent);
 				img.SetValue(0, mask);
 			}
+
 			return img;
 		}
 
