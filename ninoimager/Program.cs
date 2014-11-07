@@ -28,6 +28,7 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Ninoimager.Format;
+using Color = Emgu.CV.Structure.Bgra;
 
 namespace Ninoimager
 {
@@ -65,11 +66,8 @@ namespace Ninoimager
 			if (command == "-ebg" && args.Length == 3)
 				SearchAndExportBg(baseDir, outputDir);
 
-			if (command == "-etx" && args.Length == 3) {
-				Btx0 tex = new Btx0(args[1]);
-				for (int i = 0; i < tex.NumTextures; i++)
-					tex.CreateBitmap(i).Save(args[2] + i.ToString() + ".png");
-			}
+			if (command == "-etx" && args.Length == 3)
+				ExportTexture(baseDir, outputDir);
 
 			// Five argument commands
 			if (args.Length < 5)
@@ -502,6 +500,44 @@ namespace Ninoimager
 
 				Console.WriteLine("Exported {0} -> {1}", relativePath, imageName);
 			}
+		}
+
+		private static void ExportTexture(string n3dPath, string outPath)
+		{
+			string filename = Path.GetFileNameWithoutExtension(n3dPath);
+
+			// Get texture file
+			Npck pack = new Npck(n3dPath);
+			Btx0 texture = new Btx0(pack[0]);
+
+			// Export images and palettes
+			for (int i = 0; i < texture.NumTextures; i++) {
+				string name = filename + "_" + i.ToString();
+				string path = Path.Combine(outPath, name);
+
+				texture.CreateBitmap(i).Save(path + ".png");
+				texture.GetPalette(i).ToWinPaletteFormat(path + "_gimp.pal", 0, true);
+				texture.GetPalette(i).ToWinPaletteFormat(path + ".pal", 0, false);
+			}
+		}
+
+		private static void ExportTextureWithColors(string n3dPath, string outPath, int idx, string colors)
+		{
+			// Get texture file
+			Npck pack = new Npck(n3dPath);
+			Btx0 texture = new Btx0(pack[0]);
+
+			// Get palette
+			Palette palette = texture.GetPalette(idx);
+
+			// Parse colors
+			string[] strColors = colors.Split(' ');
+			Color[] newColors = new Color[strColors.Length];
+			// TODO:
+
+			// Set new palette and export image
+			palette.SetPalette(newColors);
+			texture.CreateBitmap(idx, palette).Save(outPath);
 		}
 
 		private struct ImageInfo
