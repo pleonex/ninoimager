@@ -51,7 +51,8 @@ namespace Ninoimager.Format
 		{
 			BinaryReader br = new BinaryReader(strIn);
 
-			if (new string(br.ReadChars(4).Reverse().ToArray()) != this.Name)
+			char[] blockName = br.ReadChars(4);
+			if (new string(blockName.Reverse().ToArray()) != this.Name && new string(blockName) != this.Name)
 				throw new FormatException("Block name does not match");
 
 			this.Size = br.ReadInt32();
@@ -71,7 +72,10 @@ namespace Ninoimager.Format
 			BinaryWriter bw = new BinaryWriter(strOut);
 			long startPos = strOut.Position;
 
-			bw.Write(this.Name.Reverse().ToArray());
+			if (this.Name[3] != '0')
+				bw.Write(this.Name.Reverse().ToArray());
+			else
+				bw.Write(this.Name.ToCharArray());
 			bw.Write(this.Size);
 
 			this.WriteData(strOut);

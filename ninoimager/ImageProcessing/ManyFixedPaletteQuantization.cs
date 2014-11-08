@@ -20,8 +20,11 @@
 // <date>28/06/2014</date>
 // -----------------------------------------------------------------------
 using System;
-using LabColor = Emgu.CV.Structure.Lab;
-using Color    = Emgu.CV.Structure.Bgra;
+using System.Linq;
+using Ninoimager.Format;
+using LabColor  = Emgu.CV.Structure.Lab;
+using Color     = Emgu.CV.Structure.Bgra;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Bgra, System.Byte>;
 
 namespace Ninoimager.ImageProcessing
 {
@@ -30,6 +33,7 @@ namespace Ninoimager.ImageProcessing
 		private ColorQuantization compareQuantization;
 		private Color[][] palettes;
 		private LabColor[][] labPalettes;
+		private EmguImage image;
 
 		public ManyFixedPaletteQuantization(Color[][] palettes)
 			: base(palettes[0])
@@ -51,21 +55,24 @@ namespace Ninoimager.ImageProcessing
 
 		protected override void PreQuantization(Emgu.CV.Image<Color, byte> image)
 		{
+			this.image = image;
+
 			// If only there is one, do nothing
 			if (this.palettes.Length == 1) {
 				base.PreQuantization(image);
 				return;
 			}
 
-			// Extract a palette from the image
+			// Extract a palette from the image removing transparent colors (not approximated)
 			this.compareQuantization.TileSize = this.TileSize;
 			this.compareQuantization.Quantizate(image);
-			Color[] comparePalette = this.compareQuantization.Palette;
+			Color[] comparePalette = this.compareQuantization.Palette.
+				Where(c => c.Alpha == 255).ToArray();
 			LabColor[] compareLabPalette = ColorConversion.ToLabPalette<Color>(comparePalette);
 
 			// Compare all possible palettes to get the similar one
 			double minDistance = Double.MaxValue;
-			for (int i = 0; i < palettes.Length; i++) {
+			for (int i = 0; i < palettes.Length && minDistance > 0; i++) {
 				double distance = PaletteDistance.CalculateDistance(
 					compareLabPalette, this.labPalettes[i]);
 				if (distance < minDistance) {
@@ -79,6 +86,14 @@ namespace Ninoimager.ImageProcessing
 
 			// ... and run the FixedPaletteQuantization
 			base.PreQuantization(image);
+		}
+
+		protected override Pixel QuantizatePixel(int x, int y) {
+			// If it's a transparent color, set the first palette color
+			if (this.image[y, x].Alpha == 0)
+				return new Pixel(0, (uint)this.Palette[0].Alpha, true);
+			else
+				return base.QuantizatePixel(x, y);
 		}
 	}
 }

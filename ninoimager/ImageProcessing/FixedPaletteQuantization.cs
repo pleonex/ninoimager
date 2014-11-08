@@ -30,6 +30,7 @@ namespace Ninoimager.ImageProcessing
 	public class FixedPaletteQuantization : ColorQuantization
 	{
 		private NearestNeighbour<LabColor> nearestNeighbour;
+		private EmguImage rgbImg;
         private Emgu.CV.Image<LabColor, byte> labImg;
         private LabColor[] labPalette;
 
@@ -42,6 +43,7 @@ namespace Ninoimager.ImageProcessing
         protected override void PreQuantization(EmguImage image)
         {
             // Convert image to Lab color space and get palette
+			this.rgbImg = image;
             this.labImg = image.Convert<LabColor, byte>();
             this.labPalette = ColorConversion.ToLabPalette<Color>(this.Palette);
             this.nearestNeighbour.Initialize(labPalette);
@@ -59,7 +61,11 @@ namespace Ninoimager.ImageProcessing
             this.Dithering.ApplyDithering(labImg.Data, x, y, 1, oldPixel.Y - newPixel.Y);
             this.Dithering.ApplyDithering(labImg.Data, x, y, 2, oldPixel.Z - newPixel.Z);
 
-            return new Pixel((uint)colorIndex, (uint)this.Palette[colorIndex].Alpha, true);
+			// If it's a transparent color, set the first palette color
+			if (this.rgbImg[y, x].Alpha == 0)
+				return new Pixel(0, (uint)this.rgbImg[y, x].Alpha, true);
+			else
+            	return new Pixel((uint)colorIndex, (uint)this.Palette[colorIndex].Alpha, true);
         }
 
         protected override void PostQuantization()

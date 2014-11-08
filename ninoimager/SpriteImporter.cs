@@ -60,10 +60,9 @@ namespace Ninoimager
 			this.ObjectMode  = ObjMode.Normal;
 			this.PaletteMode = PaletteMode.Palette16_16;
 			this.TileSize    = new System.Drawing.Size(64, 64);
-            this.TransparentColor   = new Color(248, 0, 248, 255);
 			this.UseRectangularArea = true;
 			this.Quantization     = new NdsQuantization() { 
-				BackdropColor = this.TransparentColor,
+				BackdropColor = new Color(248, 0, 248, 255),
                 Format = this.Format
 			};
 			this.Reducer       = new SimilarDistanceReducer();
@@ -117,11 +116,6 @@ namespace Ninoimager
 			set;
 		}
 
-		public Color TransparentColor {
-			get;
-			set;
-		}
-
 		public bool UseRectangularArea {
 			get;
 			set;
@@ -154,16 +148,17 @@ namespace Ninoimager
 			Frame frame    = this.Splitter.Split(image);
 			frame.TileSize = 128;//this.TileSize.Width * this.TileSize.Height;
 			this.frameData.Add(Tuple.Create(frame, image));
-
-			var mask = image.InRange(new Color(0, 0, 0, 0), new Color(255, 255, 255, 0));
-			image.SetValue(this.TransparentColor, mask);
 		}
 
         public void AddFrame(EmguImage image, Frame frame)
         {
             this.frameData.Add(Tuple.Create(frame, image));
-            var mask = image.InRange(new Color(0, 0, 0, 0), new Color(255, 255, 255, 0));
-            image.SetValue(this.TransparentColor, mask);
+
+			// Since flip it is not supported still, disable it
+			foreach (Obj obj in frame.GetObjects()) {
+				obj.VerticalFlip   = false;
+				obj.HorizontalFlip = false;
+			}
         }
 
         public void Generate(Stream paletteStr, Stream imgLinealStr, Stream imgTiledStr, Stream spriteStr)
