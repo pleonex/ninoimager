@@ -69,6 +69,13 @@ namespace Ninoimager
 			if (command == "-etx" && args.Length == 3)
 				ExportTexture(baseDir, outputDir);
 
+			// Four argument commands
+			if (args.Length < 4)
+				return;
+
+			if (command == "-etxcolor" && args.Length == 4)
+				ExportTextureWithColors(baseDir, outputDir, args[3]);
+
 			// Five argument commands
 			if (args.Length < 5)
 				return;
@@ -518,26 +525,40 @@ namespace Ninoimager
 				texture.CreateBitmap(i).Save(path + ".png");
 				texture.GetPalette(i).ToWinPaletteFormat(path + "_gimp.pal", 0, true);
 				texture.GetPalette(i).ToWinPaletteFormat(path + ".pal", 0, false);
+				texture.GetPalette(i).ToAcoFormat(path + ".aco", 0);
 			}
 		}
 
-		private static void ExportTextureWithColors(string n3dPath, string outPath, int idx, string colors)
+		private static void ExportTextureWithColors(string n3dPath, string outPath, string colors)
 		{
+			string name = Path.GetFileNameWithoutExtension(n3dPath);
+			string path = Path.Combine(outPath, name);
+
 			// Get texture file
 			Npck pack = new Npck(n3dPath);
 			Btx0 texture = new Btx0(pack[0]);
 
-			// Get palette
-			Palette palette = texture.GetPalette(idx);
-
 			// Parse colors
 			string[] strColors = colors.Split(' ');
 			Color[] newColors = new Color[strColors.Length];
-			// TODO:
+			for (int i = 0; i < strColors.Length; i++) {
+				int hexColor = Convert.ToInt32(strColors[i], 16);
+				newColors[i] = new Color();
+				newColors[i].Alpha = 255;
+				newColors[i].Red   = (hexColor >> 00) & 0xFF;
+				newColors[i].Green = (hexColor >> 08) & 0xFF;
+				newColors[i].Blue  = (hexColor >> 16) & 0xFF;
+			}
 
-			// Set new palette and export image
-			palette.SetPalette(newColors);
-			texture.CreateBitmap(idx, palette).Save(outPath);
+			// Create and export palette
+			Palette palette = new Palette(newColors);
+			palette.ToWinPaletteFormat(path + "_palGimp.pal", 0, true);
+			palette.ToWinPaletteFormat(path + "_pal.pal", 0, false);
+			palette.CreateBitmap(0).Save(path + "_pal.png");
+
+			// For each image, set new palette and export it
+			for (int i = 0; i < texture.NumTextures; i++)
+				texture.CreateBitmap(i, palette).Save(path + "_" + i.ToString() + ".png");
 		}
 
 		private struct ImageInfo
