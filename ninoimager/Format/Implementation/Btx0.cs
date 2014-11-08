@@ -296,11 +296,11 @@ namespace Ninoimager.Format
 				uint texDataOffset  = br.ReadUInt32();
 
 				this.Unknown3              = br.ReadUInt32();
-				uint texTexelDataSize       = (uint)(br.ReadUInt16() << 3);
-				uint texTexelInfoOffset     = br.ReadUInt16();
+				br.ReadUInt16();	// Texel Texture Data Size (must be multiplied by 8)
+				br.ReadUInt16();	// Texel Texture Info Offset
 				this.Unknown4               = br.ReadUInt32();
-				uint texTexelDataOffset     = br.ReadUInt32();
-				uint texTexelInfoDataOffset = br.ReadUInt32();
+				br.ReadUInt32();	// Texel Texture Data Offset
+				br.ReadUInt32();	// Texel Texture Info Data Offset
 
 				this.Unknown5      = br.ReadUInt32();
 				uint palDataSize   = br.ReadUInt32() << 3;
