@@ -141,10 +141,13 @@ namespace Ninoimager
 				List<string> images   = new List<string>();
 				List<ImageInfo> infos = new List<ImageInfo>();
 				foreach (XElement ximg in entry.Element("Images").Elements("Image")) {
+					string frame = (ximg.Attribute("frame") != null) ? 
+						"_" + ximg.Attribute("frame").Value : "" ;
+
 					ImageInfo info = new ImageInfo();
-					info.AbsoluteImage = Path.Combine(baseDir, ximg.Value) + "_6.nscr" + M + ".png";
+					info.AbsoluteImage = Path.Combine(baseDir, ximg.Value) + frame + M + ".png";
 					info.Filename      = Path.GetFileNameWithoutExtension(ximg.Value);
-					info.PackExtension = ".n2d";
+					info.PackExtension = (mode != "TextureWithPalette") ? ".n2d" : ".n3d";
 					info.RelativePath  = Path.GetDirectoryName(ximg.Value) + Path.DirectorySeparatorChar;
 					infos.Add(info);
 
@@ -156,22 +159,26 @@ namespace Ninoimager
 					}
 				}
 
-				// Images still not translated
-				if (!existImages)
-					continue;
-
-				// If don't match the filter, skip
-				if (filterDate) {
-					DateTime referenceDate = File.GetLastWriteTime(outputDir + infos[0].RelativeNewPack);
-					if (!images.Any(f => File.GetLastWriteTime(f) > referenceDate))
-						continue;
-				}
-
 				// Import
 				Console.Write("|-Importing {0,-45} | ", infos[0].RelativeImage);
 				for (int i = 1; i < infos.Count; i++) {
 					Console.WriteLine();
 					Console.Write("            {0,-45} | ", infos[i].RelativeImage);
+				}
+
+				// Images still not translated
+				if (!existImages) {
+					Console.WriteLine("Skipped: Images not found");
+					continue;
+				}
+
+				// If don't match the filter, skip
+				if (filterDate) {
+					DateTime referenceDate = File.GetLastWriteTime(outputDir + infos[0].RelativeNewPack);
+					if (!images.Any(f => File.GetLastWriteTime(f) > referenceDate)) {
+						Console.WriteLine("Skipped: date filter");
+						continue;
+					}
 				}
 
 				Npck originalPack = new Npck(outputDir + infos[0].RelativePack);
@@ -182,7 +189,26 @@ namespace Ninoimager
 					packs = NpckFactory.FromBackgroundImageShareImage(images.ToArray(), originalPack);
 				else if (mode == "SharePaletteChangeDepth")
 					packs = NpckFactory.FromBackgroundImageSharePaletteChangeDepth(images.ToArray(), originalPack, true);
-				else
+				else if (mode == "TextureWithPalette") {
+					// Get frames
+					string frame = entry.Element("Images").Elements("Image").First().Attribute("frame").Value;
+					List<int> frames = new List<int>() { Convert.ToInt32(frame) };
+
+					// Create palette
+					XElement[] xcolors = entry.Element("Palette").Elements("Color").ToArray();
+					Color[] colors = new Color[xcolors.Length];
+					Palette palette = new Palette(colors);
+					for (int i = 0; i < colors.Length; i++) {
+						colors[i] = new Color();
+						colors[i].Red   = Convert.ToInt32(xcolors[i].Attribute("red").Value);
+						colors[i].Green = Convert.ToInt32(xcolors[i].Attribute("green").Value);
+						colors[i].Blue  = Convert.ToInt32(xcolors[i].Attribute("blue").Value);
+					}
+
+					// Generate pack file
+					packs = new Npck[1];
+					packs[0] = NpckFactory.ChangeTextureImages(images.ToArray(), frames.ToArray(), palette, originalPack);
+				} else
 					throw new FormatException(string.Format("Unsopported mode \"{0}\"", mode)); 
 
 				// Write output
