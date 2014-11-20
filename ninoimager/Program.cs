@@ -201,13 +201,13 @@ namespace Ninoimager
 					// Create palette
 					XElement[] xcolors = entry.Element("Palette").Elements("Color").ToArray();
 					Color[] colors = new Color[xcolors.Length];
-					Palette palette = new Palette(colors);
 					for (int i = 0; i < colors.Length; i++) {
 						colors[i] = new Color();
 						colors[i].Red   = Convert.ToInt32(xcolors[i].Attribute("red").Value);
 						colors[i].Green = Convert.ToInt32(xcolors[i].Attribute("green").Value);
 						colors[i].Blue  = Convert.ToInt32(xcolors[i].Attribute("blue").Value);
 					}
+					Palette palette = new Palette(colors);
 
 					// Generate pack file
 					packs = new Npck[1];
