@@ -62,6 +62,11 @@ namespace Ninoimager.Format
 			}
 		}
 
+		public static int MaxColors(this ColorFormat format)
+		{
+			return 1 << format.Bpp();
+		}
+
 		public static bool IsIndexed(this ColorFormat format)
 		{
 			switch (format) {

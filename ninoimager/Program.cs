@@ -28,7 +28,8 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Ninoimager.Format;
-using Color = Emgu.CV.Structure.Bgra;
+using Color     = Emgu.CV.Structure.Bgra;
+using EmguImage = Emgu.CV.Image<Emgu.CV.Structure.Bgra, System.Byte>;
 
 namespace Ninoimager
 {
@@ -75,6 +76,9 @@ namespace Ninoimager
 
 			if (command == "-etxcolor" && args.Length == 4)
 				ExportTextureWithColors(baseDir, outputDir, args[3]);
+
+			if (command == "-stxpal" && args.Length == 4)
+				SearchPalette(args[1], args[2], Convert.ToInt32(args[3]));
 
 			// Five argument commands
 			if (args.Length < 5)
@@ -585,6 +589,47 @@ namespace Ninoimager
 			// For each image, set new palette and export it
 			for (int i = 0; i < texture.NumTextures; i++)
 				texture.CreateBitmap(i, palette).Save(path + "_" + i.ToString() + ".png");
+		}
+
+		private static void SearchPalette(string packPath, string imgPath, int idx)
+		{
+			// Get new image
+			EmguImage newImg = new EmguImage(imgPath);
+
+			// Get original image
+			Npck pack = new Npck(packPath);
+			Btx0 texture = new Btx0(pack[0]);
+			Image originalImg = texture.GetImage(idx);
+			Pixel[] pixels = originalImg.GetPixels();
+
+			// For each pixel, set palette color in the position given by original image
+			Color[] palette = new Color[originalImg.Format.MaxColors()];
+			for (int y = 0; y < newImg.Height; y++) {
+				for (int x = 0; x < newImg.Width; x++) {
+					// Get target color
+					Color px = newImg[y, x];
+
+					// Get palette color index
+					uint index = pixels[y * newImg.Width + x].Info;
+
+					// If we have already set this color, and it does not match with
+					// this pixel... Error!
+					if (palette[index].Alpha != 0 && !palette[index].Equals(px)) {
+						Console.WriteLine("Can not find a valid color combination");
+						return;
+					}
+
+					// If the color has not been set, set it!
+					if (palette[index].Alpha == 0)
+						palette[index] = px;
+				}
+			}
+
+			// Print palette
+			Console.WriteLine("Palette found");
+			string xmlColor = "          <Color red=\"{0}\" green=\"{1}\" blue=\"{2}\" />";
+			foreach (Color c in palette)
+				Console.WriteLine(xmlColor, c.Red, c.Green, c.Blue);
 		}
 
 		private struct ImageInfo
