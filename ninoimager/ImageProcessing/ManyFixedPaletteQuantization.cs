@@ -91,7 +91,7 @@ namespace Ninoimager.ImageProcessing
 		protected override Pixel QuantizatePixel(int x, int y) {
 			// If it's a transparent color, set the first palette color
 			if (this.image[y, x].Alpha == 0)
-				return new Pixel(0, (uint)this.Palette[0].Alpha, true);
+				return new Pixel(0, 0, true);
 			else
 				return base.QuantizatePixel(x, y);
 		}

@@ -62,10 +62,11 @@ namespace Ninoimager.ImageProcessing
             this.Dithering.ApplyDithering(labImg.Data, x, y, 2, oldPixel.Z - newPixel.Z);
 
 			// If it's a transparent color, set the first palette color
-			if (this.rgbImg[y, x].Alpha == 0)
-				return new Pixel(0, (uint)this.rgbImg[y, x].Alpha, true);
+			Color rgbColor = this.rgbImg[y, x];
+			if (rgbColor.Alpha == 0)
+				return new Pixel(0, 0, true);
 			else
-            	return new Pixel((uint)colorIndex, (uint)this.Palette[colorIndex].Alpha, true);
+				return new Pixel((uint)colorIndex, (uint)rgbColor.Alpha, true);
         }
 
         protected override void PostQuantization()
