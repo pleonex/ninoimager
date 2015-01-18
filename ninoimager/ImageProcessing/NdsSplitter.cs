@@ -128,7 +128,7 @@ namespace Ninoimager.ImageProcessing
 				// Get object width
 				width = 0;
 				for (int i = minWidthConstraint; i < this.splitMode.GetLength(0) && width == 0; i++) {
-					if (this.splitMode[i, 0] >= maxWidth - x)
+					if (this.splitMode[i, 1] > maxWidth - x)
 						continue;
 
 					int xRange = this.splitMode[i, 1] - this.splitMode[i, 0];
@@ -143,7 +143,7 @@ namespace Ninoimager.ImageProcessing
 				// Get object height
 				height = 0;
 				for (int i = 0; i < this.splitMode.GetLength(0) && height == 0; i++) {
-					if (this.splitMode[i, 0] >= maxHeight)
+					if (this.splitMode[i, 1] > maxHeight)
 						continue;
 
 					if (!Obj.IsValidSize(width, this.splitMode[i, 1]))
