@@ -73,19 +73,19 @@ namespace Ninoimager.ImageProcessing
 		private void CreateObjects(EmguImage frame, List<Obj> objList, int x, int y, int maxHeight)
 		{
 			// Go to first non-transparent pixel
-			int newX;
-			int incr = 0;
-			do {
-				newX = SearchNoTransparentPoint(frame, 1, x, y + incr); 
-				if (newX == -1)
-					incr++;
-			} while (newX == -1 && incr < maxHeight);
+			int newX = SearchNoTransparentPoint(frame, 1, x, y, yEnd: y + maxHeight);
+			int newY = SearchNoTransparentPoint(frame, 0, x, y, yEnd: y + maxHeight);
 
-			y += incr;
-			x = newX;
-
-			if (incr == maxHeight)
+			if (newY == -1 || newX == -1)
 				return;
+
+			int diffX = newX - x;
+			diffX -= diffX % 8;
+			x = diffX + x;
+
+			int diffY = newY - y;
+			diffY -= diffY % 8;
+			y = diffY + y;
 
 			int width  = 0;
 			int height = 0;
@@ -99,6 +99,10 @@ namespace Ninoimager.ImageProcessing
 				obj.CoordY = (sbyte)(y - 128);
 				obj.SetSize(width, height);
 				objList.Add(obj);
+			} else {
+				// If everything is transparent
+				width = this.splitMode[0, 1];  // Max width
+				height = this.splitMode[0, 1]; // Max height
 			}
 
 			// Go to right
@@ -106,8 +110,9 @@ namespace Ninoimager.ImageProcessing
 				this.CreateObjects(frame, objList, x + width, y, height);
 
 			// Go to down
-			if (maxHeight - height > 0)
-				this.CreateObjects(frame, objList, x, y + height, maxHeight - height);
+			int newMaxHeight = maxHeight - (height + diffY);
+			if (newMaxHeight > 0)
+				this.CreateObjects(frame, objList, x, y + height, newMaxHeight);
 		}
 
 		private void GetObjectSize(EmguImage frame, int x, int y, int maxWidth, int maxHeight,
@@ -175,16 +180,22 @@ namespace Ninoimager.ImageProcessing
 		}
 
 		private static int SearchNoTransparentPoint(EmguImage image, int direction,
-			int xStart = 0, int yStart = 0)
+			int xStart = 0, int yStart = 0, int xEnd = -1, int yEnd = -1)
 		{
+			if (xEnd == -1)
+				xEnd = image.Width;
+
+			if (yEnd == -1)
+				yEnd = image.Height;
+
 			int point = -1;
 			byte[,,] imageData = image.Data;
 			bool stop = false;
 
 				// Get top most
 			if (direction == 0) {
-				for (int y = yStart; y < image.Height && !stop; y++) {
-					for (int x = xStart; x < image.Width && !stop; x++) {
+				for (int y = yStart; y < yEnd && !stop; y++) {
+					for (int x = xStart; x < xEnd && !stop; x++) {
 						if (imageData[y, x, 3] == 0)
 							continue;
 
@@ -195,8 +206,8 @@ namespace Ninoimager.ImageProcessing
 
 				// Get left most
 			} else if (direction == 1) {
-				for (int x = xStart; x < image.Width && !stop; x++) {
-					for (int y = yStart; y < image.Height && !stop; y++) {
+				for (int x = xStart; x < xEnd && !stop; x++) {
+					for (int y = yStart; y < yEnd && !stop; y++) {
 						if (imageData[y, x, 3] == 0)
 							continue;
 
@@ -207,8 +218,8 @@ namespace Ninoimager.ImageProcessing
 
 				// Get right most
 			} else if (direction == 2) {
-				for (int x = image.Width - 1; x > 0 && !stop; x--) {
-					for (int y = yStart; y < image.Height && !stop; y++) {
+				for (int x = xEnd - 1; x > 0 && !stop; x--) {
+					for (int y = yStart; y < yEnd && !stop; y++) {
 						if (imageData[y, x, 3] == 0)
 							continue;
 
@@ -219,8 +230,8 @@ namespace Ninoimager.ImageProcessing
 
 				// Get bottom most
 			} else if (direction == 3) {
-				for (int y = image.Height - 1; y > 0 && !stop; y--) {
-					for (int x = xStart; x < image.Width && !stop; x++) {
+				for (int y = yEnd - 1; y > 0 && !stop; y--) {
+					for (int x = xStart; x < xEnd && !stop; x++) {
 						if (imageData[y, x, 3] == 0)
 							continue;
 
