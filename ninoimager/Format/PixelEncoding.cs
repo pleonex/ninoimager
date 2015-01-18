@@ -87,6 +87,9 @@ namespace Ninoimager.Format
 
 		public static int GetIndex(this PixelEncoding pxEnc, int x, int y, int width, int height, Size tileSize)
 		{
+			if (pxEnc == PixelEncoding.Lineal)
+				return y * width + x;
+
 			int tileLength = tileSize.Width * tileSize.Height;
 			int numTilesX = width / tileSize.Width;
 			int numTilesY = height / tileSize.Height;
