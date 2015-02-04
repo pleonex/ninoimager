@@ -44,7 +44,7 @@ namespace Ninoimager.ImageProcessing
 
 			// FUTURE: Implement "Approximate Nearest Neighbors in Non-Euclidean Spaces" algorithm or
 			// k-d tree if it's computing CIE76 color difference
-			for (int i = 0; i < this.vertex.Length; i++) {
+			for (int i = 0; i < this.vertex.Length && minDistance > 0; i++) {
 				// Since we only want the value to compare, it is faster to not computer the squared root
 				double distance = color.GetDistanceSquared(this.vertex[i]);
 				if (distance < minDistance) {
