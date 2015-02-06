@@ -64,7 +64,15 @@ namespace Ninoimager.Format
 
 		public static int MaxColors(this ColorFormat format)
 		{
-			return 1 << format.Bpp();
+			// We are calculating the max colors for the palette,
+			// and palette has no info about alpha, so just return in that case index
+			switch (format) {
+				case ColorFormat.Indexed_A3I5:  return 1 << 5;
+				case ColorFormat.Indexed_A4I4:  return 1 << 4;
+				case ColorFormat.Indexed_A5I3:  return 1 << 3;
+
+				default: return 1 << format.Bpp();
+			}
 		}
 
 		public static bool IsIndexed(this ColorFormat format)
