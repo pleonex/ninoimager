@@ -109,18 +109,18 @@ namespace Ninoimager.Format
 				return (0xFFu << 24) | info;
 
 				case ColorFormat.Indexed_A3I5:
-				return (((info >> 5) * 0xFF / 0x07) << 24) | (info & 0x1F);
+				return (Map(info >> 5, 0x07, 0xFF) << 24) | (info & 0x1F);
 				case ColorFormat.Indexed_A4I4:
-				return (((info >> 4) * 0xFF / 0x0F) << 24) | (info & 0x0F);
+				return (Map(info >> 4, 0x0F, 0xFF) << 24) | (info & 0x0F);
 				case ColorFormat.Indexed_A5I3:
-				return (((info >> 3) * 0xFF / 0x1F) << 24) | (info & 0x07);
+				return (Map(info >> 3, 0x1F, 0xFF) << 24) | (info & 0x07);
 
 				case ColorFormat.ABGR555_16bpp:
 				return 
-					((((info >> 15) & 0x01) * 0xFF / 0x01) << 24) |	// alpha, 1 bit
-						((((info >> 10) & 0x1F) * 0xFF / 0x1F) << 16) | // blue,  5 bits
-						((((info >> 05) & 0x1F) * 0xFF / 0x1F) << 08) | // green, 5 bits
-						((((info >> 00) & 0x1F) * 0xFF / 0x1F) << 00);	// red,   5 bits
+					(Map(info >> 15, 0x01, 0xFF) << 24) |	  // alpha, 1 bit
+						(Map(info >> 10, 0x1F, 0xFF) << 16) | // blue,  5 bits
+						(Map(info >> 05, 0x1F, 0xFF) << 08) | // green, 5 bits
+						(Map(info >> 00, 0x1F, 0xFF) << 00);  // red,   5 bits
 				case ColorFormat.ABGR_32bpp:
 				return info;
 				case ColorFormat.BGRA_32bpp:
@@ -142,18 +142,18 @@ namespace Ninoimager.Format
 				return pxInfo & 0x00FFFFFF;
 
 				case ColorFormat.Indexed_A3I5:
-				return (((pxInfo >> 24) * 0x07 / 0xFF) << 5) | (pxInfo & 0x1F);
+				return (Map(pxInfo >> 24, 0xFF, 0x07) << 5) | (pxInfo & 0x1F);
 				case ColorFormat.Indexed_A4I4:
-				return (((pxInfo >> 24) * 0x0F / 0xFF) << 4) | (pxInfo & 0x0F);
+				return (Map(pxInfo >> 24, 0xFF, 0x0F) << 4) | (pxInfo & 0x0F);
 				case ColorFormat.Indexed_A5I3:
-				return (((pxInfo >> 24) * 0x1F / 0xFF) << 3) | (pxInfo & 0x07);
+				return (Map(pxInfo >> 24, 0xFF, 0x1F) << 3) | (pxInfo & 0x07);
 
 				case ColorFormat.ABGR555_16bpp:
 				return
-					((((pxInfo >> 24) & 0xFF) * 0x01 / 0xFF) << 15) |	// alpha, 1 bit
-						((((pxInfo >> 16) & 0xFF) * 0x1F / 0xFF) << 10) |	// blue,  5 bits
-						((((pxInfo >> 08) & 0xFF) * 0x1F / 0xFF) << 05) |	// green, 5 bits
-						((((pxInfo >> 00) & 0xFF) * 0x1F / 0xFF) << 00);	// red,   5 bits
+					(Map(pxInfo >> 24, 0xFF, 0x01) << 15) |	    // alpha, 1 bit
+						(Map(pxInfo >> 16, 0xFF, 0x1F) << 10) |	// blue,  5 bits
+						(Map(pxInfo >> 08, 0xFF, 0x1F) << 05) |	// green, 5 bits
+						(Map(pxInfo >> 00, 0xFF, 0x1F) << 00);	// red,   5 bits
 				case ColorFormat.ABGR_32bpp:
 				return pxInfo;
 				case ColorFormat.BGRA_32bpp:
@@ -162,6 +162,13 @@ namespace Ninoimager.Format
 				default:
 				throw new NotSupportedException();
 			}
+		}
+
+		private static uint Map(uint num, uint maxRange1, uint maxRange2)
+		{
+			num &= maxRange1;
+			double result = (num * maxRange2) / (double)maxRange1;
+			return (uint)Math.Round(result);
 		}
 	}
 }
