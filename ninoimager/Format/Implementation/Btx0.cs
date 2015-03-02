@@ -148,7 +148,7 @@ namespace Ninoimager.Format
 		public Palette GetPalette(int texIdx)
 		{
 			int palIdx = this.SearchPaletteIdx(texIdx);
-			int numColors = 1 << this.tex0.TextureInfo.Data[texIdx].Format.Bpp();
+			int numColors = this.tex0.TextureInfo.Data[texIdx].Format.MaxColors();
 			return this.tex0.GetPalette(palIdx, numColors);
 		}
 

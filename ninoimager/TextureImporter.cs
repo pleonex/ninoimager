@@ -82,7 +82,7 @@ namespace Ninoimager
 			Pixel[] pixels = this.Quantization.GetPixels(PixelEncoding.Lineal);
 			Color[] colors = (palOut == null) ? this.Quantization.Palette : palOut;
 
-			int maxColors = 1 << this.Format.Bpp();
+			int maxColors = this.Format.MaxColors();
 			if (colors.Length > maxColors)
 				throw new FormatException(string.Format("The image has more than {0} colors", maxColors));
 

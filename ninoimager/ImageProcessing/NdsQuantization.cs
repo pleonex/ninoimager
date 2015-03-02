@@ -64,7 +64,7 @@ namespace Ninoimager.ImageProcessing
 			get { return this.format; }
 			set {
 				this.format = value;
-				this.MaxColors = (1 << this.format.Bpp()) - 1;	// Reserve space for BackdropColor
+				this.MaxColors = this.format.MaxColors() - 1;	// Reserve space for BackdropColor
 			}
 		}
 
@@ -129,7 +129,7 @@ namespace Ninoimager.ImageProcessing
 		{
 			// Default color is black, so we only need to resize the palette.
             Color[] palette = this.Palette;
-			Array.Resize(ref palette, 1 << this.Format.Bpp());
+			Array.Resize(ref palette, this.Format.MaxColors());
             this.Palette = palette;
 		}
 	}

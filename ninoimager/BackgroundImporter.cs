@@ -169,7 +169,7 @@ namespace Ninoimager
 
 			int width  = newImg.Width;
 			int height = newImg.Height;
-			int maxColors = 1 << this.Format.Bpp();
+			int maxColors = this.Format.MaxColors();
 
 			Pixel[] pixels;
 			Color[] palette;
@@ -281,7 +281,7 @@ namespace Ninoimager
 
 			int width  = newImg.Width;
 			int height = newImg.Height;
-			int maxColors = 1 << this.Format.Bpp();
+			int maxColors = this.Format.MaxColors();
 
 			// Quantizate image -> get pixels
 			this.Quantization.Quantizate(newImg);

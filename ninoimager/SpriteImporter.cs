@@ -228,7 +228,7 @@ namespace Ninoimager
 		{
 			int tileSize = 128;
             int fullTileSize = (this.PaletteMode == PaletteMode.Palette16_16) ? tileSize * 2 : tileSize;
-            int maxColors   = 1 << this.Format.Bpp();
+			int maxColors   = this.Format.MaxColors();
             int numPalettes = (maxColors <= 16) ? 16 : 1;
 
 			// Create the ObjData. Quantizate images.
