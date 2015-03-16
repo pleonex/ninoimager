@@ -123,13 +123,15 @@ namespace Ninoimager
 		}
 		#endregion
 
-		public void SetOriginalSettings(Stream mapStr, Stream imgStr, Stream palStr)
+		public void SetOriginalSettings(Stream mapStr, Stream imgStr, Stream palStr,
+			bool changePalette = false)
 		{
 			// Set original palette settings
 			if (palStr != null) {
 				Nclr nclr = new Nclr(palStr);
-				this.Quantization = new FixedPaletteQuantization(nclr.GetPalette(0));
 				this.ExtendedPalette = nclr.Extended;
+				if (!changePalette)
+					this.Quantization = new FixedPaletteQuantization(nclr.GetPalette(0));
 			}
 
 			// Set original image settings if the file is not compressed

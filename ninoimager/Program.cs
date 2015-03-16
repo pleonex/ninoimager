@@ -189,6 +189,8 @@ namespace Ninoimager
 				Npck[] packs = null;
 				if (mode == "SharePalette")
 					packs = NpckFactory.FromBackgroundImageSharePalette(images.ToArray(), originalPack);
+				else if (mode == "ChangePalette")
+					packs = new Npck[1] { NpckFactory.FromBackgroundImage(images[0], originalPack, true) };
 				else if (mode == "ShareImage")
 					packs = NpckFactory.FromBackgroundImageShareImage(images.ToArray(), originalPack);
 				else if (mode == "SharePaletteChangeDepth")
@@ -551,6 +553,8 @@ namespace Ninoimager
 			for (int i = 0; i < texture.NumTextures; i++) {
 				string name = filename + "_" + i.ToString();
 				string path = Path.Combine(outPath, name);
+				if (File.Exists(path + ".png"))
+					path += Path.GetRandomFileName();
 
 				texture.CreateBitmap(i).Save(path + ".png");
 				texture.GetPalette(i).ToWinPaletteFormat(path + "_gimp.pal", 0, true);

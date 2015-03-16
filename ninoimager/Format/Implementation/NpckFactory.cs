@@ -50,13 +50,15 @@ namespace Ninoimager.Format
 			return Npck.FromBackgroundStreams(nscrStr, ncgrStr, nclrStr);
 		}
 
-		public static Npck FromBackgroundImage(string image, Npck original)
+		public static Npck FromBackgroundImage(string image, Npck original,
+			bool changePalette = false)
 		{
 			using (EmguImage emgu = new EmguImage(image))
-				return FromBackgroundImage(emgu, original);
+				return FromBackgroundImage(emgu, original, changePalette);
 		}
 
-		public static Npck FromBackgroundImage(EmguImage image, Npck original)
+		public static Npck FromBackgroundImage(EmguImage image, Npck original, 
+			bool changePalette = false)
 		{
 			if (original[0] == null || original[1] == null)
 				throw new FormatException(
@@ -70,7 +72,7 @@ namespace Ninoimager.Format
 
 			// Import image
 			BackgroundImporter importer = new BackgroundImporter();
-			importer.SetOriginalSettings(original[2], original[1], original[0]);
+			importer.SetOriginalSettings(original[2], original[1], original[0], changePalette);
 			importer.ImportBackground(image, nscrStr, ncgrStr, nclrStr);
 
 			nclrStr.Position = ncgrStr.Position = nscrStr.Position = 0;
