@@ -192,9 +192,6 @@ namespace Ninoimager.Format
 			int[] unknowns = new int[5];
 			unknowns[0] = this.tex0.TextureInfo.Data[id].UnknownData1;
 			unknowns[1] = this.tex0.TextureInfo.Data[id].UnknownData2;
-			unknowns[2] = this.tex0.TextureInfo.Data[id].Unknown1;
-			unknowns[3] = this.tex0.TextureInfo.Data[id].Unknown2;
-			unknowns[4] = this.tex0.TextureInfo.Data[id].Unknown3;
 			return unknowns;
 		}
 
@@ -210,9 +207,6 @@ namespace Ninoimager.Format
 		{
 			this.tex0.TextureInfo.Data[id].UnknownData1 = (ushort)unknowns[0];
 			this.tex0.TextureInfo.Data[id].UnknownData2 = (ushort)unknowns[1];
-			this.tex0.TextureInfo.Data[id].Unknown1 = (byte)unknowns[2];
-			this.tex0.TextureInfo.Data[id].Unknown2 = (byte)unknowns[3];
-			this.tex0.TextureInfo.Data[id].Unknown3 = (byte)unknowns[4];
 		}
 
 		public void SetPaletteUnknowns(int id, int[] unknowns)
@@ -635,9 +629,6 @@ namespace Ninoimager.Format
 			{
 				public uint TextureOffset { get; set; }
 				public int Width    { get; set; }
-				public byte Unknown1 { get; set; }
-				public byte Unknown2 { get; set; }
-				public byte Unknown3 { get; set; }
 
 				public byte CoordinateTransformation { get; set; }
 				public bool Color0 { get; set; }
@@ -661,10 +652,7 @@ namespace Ninoimager.Format
 
 					this.TextureOffset = (uint)(br.ReadUInt16() << 3);
 					ushort parameters  = br.ReadUInt16();
-					br.ReadByte();	// Width
-					this.Unknown1 = br.ReadByte();
-					this.Unknown2 = br.ReadByte();
-					this.Unknown3 = br.ReadByte();
+					uint sizeParam = br.ReadUInt32();	// Size for TEXTIMAGE_PARAM cmd
 
 					// Now let's get the information inside Parameters
 					this.CoordinateTransformation = (byte)(parameters >> 14);
@@ -677,21 +665,17 @@ namespace Ninoimager.Format
 					this.RepeatY = (byte)((parameters >> 1) & 1) == 1;
 					this.RepeatX = (byte)(parameters & 1) == 1;
 
-					// In the case of width is zero
+					// In the case of width is zero take from the TEXIMAGE_PARAM info
 					if (this.Width == 0x00) {
-						switch (this.Unknown1 & 0x3) {
-							case 2:  this.Width = 0x200; break;
-							default: this.Width = 0x100; break;
-						}
+						int bitsWidth = ((sizeParam & 0x7FF) >> 4).CountBits();
+						this.Width = 1 << (3 + bitsWidth);
 					}
 
-					// In the case of the height is zero
+					// In the case of height is zero take from the TEXIMAGE_PARAM info
 					if (this.Height == 0x00) {
-						switch ((this.Unknown1 >> 4) & 0x3) {
-							case 2:  this.Height = 0x200; break;
-							default: this.Height = 0x100; break;
-						}
-					}    
+						int bitsHeight = (((sizeParam >> 11) & 0x7FF) >> 4).CountBits();
+						this.Height = 1 << (3 + bitsHeight);
+					}
 				}
 
 				public override void WriteInfo(Stream strOut)
@@ -700,11 +684,14 @@ namespace Ninoimager.Format
 					
 					// Now let's set the information inside Parameters
 					ushort parameters = 0;
+					int heightShift = (int)(Math.Log(this.Height, 2) - 3);
+					int widthShift  = (int)(Math.Log(this.Width, 2)  - 3);
+
 					parameters |= (ushort)((this.CoordinateTransformation & 0x03) << 14);
 					parameters |= (ushort)((this.Color0 ? 1 : 0) << 13);
 					parameters |= (ushort)(((int)this.Format & 0x07) << 10);
-					parameters |= (ushort)(((int)(Math.Log(this.Height, 2) - 3) & 0x07) << 7);
-					parameters |= (ushort)(((int)(Math.Log(this.Width , 2) - 3) & 0x07) << 4);
+					parameters |= (ushort)((heightShift & 0x07) << 7);
+					parameters |= (ushort)((widthShift  & 0x07) << 4);
 					parameters |= (ushort)((this.FlipY ? 1 : 0) << 3);
 					parameters |= (ushort)((this.FlipX ? 1 : 0) << 2);
 					parameters |= (ushort)((this.RepeatY ? 1 : 0) << 1);
@@ -712,10 +699,11 @@ namespace Ninoimager.Format
 
 					bw.Write((ushort)(this.TextureOffset >> 3));
 					bw.Write(parameters);
-					bw.Write((byte)this.Width);
-					bw.Write(this.Unknown1);
-					bw.Write(this.Unknown2);
-					bw.Write(this.Unknown3);
+
+					uint bitsWidth = (widthShift.SetCountBits()   << 4) & 0x7FF;
+					uint bitsHeight = (heightShift.SetCountBits() << 4) & 0x7FF;
+					uint textimageParam = bitsWidth | (bitsHeight << 11);
+					bw.Write(textimageParam);
 				}
 
 				public override int GetInfoSize()
