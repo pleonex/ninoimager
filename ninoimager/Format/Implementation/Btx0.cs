@@ -189,9 +189,10 @@ namespace Ninoimager.Format
 
 		public int[] GetTextureUnknowns(int id)
 		{
-			int[] unknowns = new int[5];
+			int[] unknowns = new int[3];
 			unknowns[0] = this.tex0.TextureInfo.Data[id].UnknownData1;
 			unknowns[1] = this.tex0.TextureInfo.Data[id].UnknownData2;
+			unknowns[2] = this.tex0.TextureInfo.Data[id].Unknown;
 			return unknowns;
 		}
 
@@ -207,6 +208,7 @@ namespace Ninoimager.Format
 		{
 			this.tex0.TextureInfo.Data[id].UnknownData1 = (ushort)unknowns[0];
 			this.tex0.TextureInfo.Data[id].UnknownData2 = (ushort)unknowns[1];
+			this.tex0.TextureInfo.Data[id].Unknown = (ushort)unknowns[2];
 		}
 
 		public void SetPaletteUnknowns(int id, int[] unknowns)
@@ -634,7 +636,7 @@ namespace Ninoimager.Format
 				public bool Color0 { get; set; }
 				public ColorFormat Format { get; set; }
 				public int Height { get; set; }
-				//public int Width2 { get; set; }
+				public ushort Unknown { get; set; }
 				public bool FlipY { get; set; }
 				public bool FlipX { get; set; }
 				public bool RepeatY { get; set; }
@@ -653,6 +655,7 @@ namespace Ninoimager.Format
 					this.TextureOffset = (uint)(br.ReadUInt16() << 3);
 					ushort parameters  = br.ReadUInt16();
 					uint sizeParam = br.ReadUInt32();	// Size for TEXTIMAGE_PARAM cmd
+					this.Unknown = (ushort)(sizeParam >> 22);
 
 					// Now let's get the information inside Parameters
 					this.CoordinateTransformation = (byte)(parameters >> 14);
@@ -700,9 +703,10 @@ namespace Ninoimager.Format
 					bw.Write((ushort)(this.TextureOffset >> 3));
 					bw.Write(parameters);
 
-					uint bitsWidth = (widthShift.SetCountBits()   << 4) & 0x7FF;
+					uint bitsWidth  = (widthShift.SetCountBits()  << 4) & 0x7FF;
 					uint bitsHeight = (heightShift.SetCountBits() << 4) & 0x7FF;
 					uint textimageParam = bitsWidth | (bitsHeight << 11);
+					textimageParam |= (uint)(this.Unknown << 22);
 					bw.Write(textimageParam);
 				}
 
