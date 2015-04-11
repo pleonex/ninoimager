@@ -36,8 +36,8 @@ namespace Ninoimager
 		public static uint SetCountBits(this int value)
 		{
 			uint bits;
-			for (bits = 0; value != 0; value--)
-				bits = (bits << 1) | 1;
+			for (bits = 1; value != 1 && value != 0; value--)
+				bits <<= 1;
 			return bits;
 		}
 	}
