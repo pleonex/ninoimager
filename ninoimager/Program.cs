@@ -35,7 +35,7 @@ namespace Ninoimager
 {
 	public static class MainClass
 	{
-		private static readonly string M = "m";
+		private static readonly string M = "";
 		private static readonly Regex RegexLin = new Regex(@"(.+)\/(.+)" + M + @"\.png$", RegexOptions.Compiled);
 		private static readonly Regex RegexWin = new Regex(@"(.+)\\(.+)" + M + @"\.png$", RegexOptions.Compiled);
 
