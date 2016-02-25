@@ -509,7 +509,7 @@ namespace Ninoimager
 				}
 
 				// If it's not there, add it
-				if (editRoot.Elements().Count(e => e.Element("Path").Value == path) == 0) {
+				if (editRoot.Elements().Count(e => e.Element("Path")?.Value == path) == 0) {
 					XElement xgame = new XElement("File");
 					xgame.Add(new XElement("Path", path));
 					xgame.Add(new XElement("Import", "{$ImagePath}/" + info.RelativeNewPack.Replace("\\", "/")));
