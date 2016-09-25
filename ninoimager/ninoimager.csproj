@@ -37,11 +37,8 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Xml" />
-    <Reference Include="Emgu.CV">
-      <HintPath>..\lib\emgucv\bin\Emgu.CV.dll</HintPath>
-    </Reference>
-    <Reference Include="Emgu.Util">
-      <HintPath>..\lib\emgucv\bin\Emgu.Util.dll</HintPath>
+    <Reference Include="Emgu.CV.World">
+      <HintPath>..\lib\emgucv\bin\Emgu.CV.World.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

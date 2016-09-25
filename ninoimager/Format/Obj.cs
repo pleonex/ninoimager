@@ -492,9 +492,9 @@ namespace Ninoimager.Format
 				bitmap = objImage.CreateBitmap(palette, this.PaletteIndex);
 
 			if (!this.RotSca && this.HorizontalFlip)
-				bitmap = bitmap.Flip(Emgu.CV.CvEnum.FLIP.HORIZONTAL);
+                bitmap = bitmap.Flip(Emgu.CV.CvEnum.FlipType.Horizontal);
 			if (!this.RotSca && this.VerticalFlip)
-				bitmap = bitmap.Flip(Emgu.CV.CvEnum.FLIP.VERTICAL);
+                bitmap = bitmap.Flip(Emgu.CV.CvEnum.FlipType.Vertical);
 
 			return bitmap;
 		}
