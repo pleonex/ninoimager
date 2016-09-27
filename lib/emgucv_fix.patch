@@ -1,0 +1,67 @@
+diff --git a/Emgu.CV.Contrib/Text/ERFilter.cs b/Emgu.CV.Contrib/Text/ERFilter.cs
+index c7d3152..9833cb2 100644
+--- a/Emgu.CV.Contrib/Text/ERFilter.cs
++++ b/Emgu.CV.Contrib/Text/ERFilter.cs
+@@ -165,17 +165,6 @@ namespace Emgu.CV.Text
+       }
+ 
+       /// <summary>
+-      /// Takes image on input and returns the selected regions in a vector of ERStat only distinctive ERs which correspond to characters are selected by a sequential classifier
+-      /// </summary>
+-      /// <param name="image">Sinle channel image CV_8UC1</param>
+-      /// <param name="regions">Output for the 1st stage and Input/Output for the 2nd. The selected Extremal Regions are stored here.</param>
+-      public void Run(IInputArray image, VectorOfERStat regions)
+-      {
+-         using (InputArray iaImage = image.GetInputArray())
+-            CvERFilterRun(_ptr, iaImage, regions);
+-      }
+-      
+-      /// <summary>
+       /// The grouping method
+       /// </summary>
+       public enum GroupingMethod
+@@ -190,44 +179,6 @@ namespace Emgu.CV.Text
+          OrientationAny
+       }
+ 
+-      /// <summary>
+-      /// Find groups of Extremal Regions that are organized as text blocks.
+-      /// </summary>
+-      /// <param name="image">The image where ER grouping is to be perform on</param>
+-      /// <param name="channels">Array of single channel images from which the regions were extracted</param>
+-      /// <param name="erstats">Vector of ER’s retrieved from the ERFilter algorithm from each channel</param>
+-      /// <param name="groupingTrainedFileName">The XML or YAML file with the classifier model (e.g. trained_classifier_erGrouping.xml)</param>
+-      /// <param name="minProbability">The minimum probability for accepting a group.</param>
+-      /// <param name="groupMethods">The grouping methods</param>
+-      /// <returns>The output of the algorithm that indicates the text regions</returns>
+-      public static System.Drawing.Rectangle[] ERGrouping(IInputArray image, IInputArrayOfArrays channels, VectorOfERStat[] erstats, GroupingMethod groupMethods = GroupingMethod.OrientationHoriz, String groupingTrainedFileName = null, float minProbability = 0.5f)
+-      {
+-         IntPtr[] erstatPtrs = new IntPtr[erstats.Length];
+-
+-         for (int i = 0; i < erstatPtrs.Length; i++)
+-         {
+-            erstatPtrs[i] = erstats[i].Ptr;
+-         }
+-
+-         using (VectorOfVectorOfPoint regionGroups = new VectorOfVectorOfPoint())
+-         using (VectorOfRect groupsBoxes = new VectorOfRect())
+-         using (InputArray iaImage = image.GetInputArray())
+-         using (InputArray iaChannels = channels.GetInputArray())
+-         using (CvString s = (groupingTrainedFileName == null ? new CvString() : new CvString(groupingTrainedFileName)))
+-         {
+-            GCHandle erstatsHandle = GCHandle.Alloc(erstatPtrs, GCHandleType.Pinned);
+-            CvERGrouping(
+-               iaImage, iaChannels,
+-               erstatsHandle.AddrOfPinnedObject(), erstatPtrs.Length,
+-               regionGroups, groupsBoxes,
+-               groupMethods,
+-               s, minProbability);
+-
+-            erstatsHandle.Free();
+-            return groupsBoxes.ToArray();
+-         }
+-      }
+-
+       [DllImport(CvInvoke.ExternLibrary, CallingConvention = CvInvoke.CvCallingConvention)]
+       internal static extern void CvERFilterRelease(ref IntPtr filter);
+ 

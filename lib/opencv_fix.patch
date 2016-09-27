@@ -1,0 +1,13 @@
+diff --git a/cmake/OpenCVPCHSupport.cmake b/cmake/OpenCVPCHSupport.cmake
+index 243fb4c..2933929 100644
+--- a/cmake/OpenCVPCHSupport.cmake
++++ b/cmake/OpenCVPCHSupport.cmake
+@@ -24,7 +24,7 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
+     ENDIF()
+ 
+     SET(_PCH_include_prefix "-I")
+-    SET(_PCH_isystem_prefix "-isystem")
++    SET(_PCH_isystem_prefix "-I")
+     SET(_PCH_define_prefix "-D")
+ 
+ ELSEIF(CMAKE_GENERATOR MATCHES "^Visual.*$")
