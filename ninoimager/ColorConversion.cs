@@ -57,7 +57,7 @@ namespace Ninoimager
 			int dimensionDst = new ColorDst().Dimension;
 			Emgu.CV.Matrix<byte> matSrc = new Emgu.CV.Matrix<byte>(1, colors.Length, dimensionSrc);
 			Emgu.CV.Matrix<byte> matDst = new Emgu.CV.Matrix<byte>(1, colors.Length, dimensionDst);
-			Emgu.CV.CvEnum.COLOR_CONVERSION code = Emgu.CV.Util.CvToolbox.GetColorCvtCode(
+			Emgu.CV.CvEnum.ColorConversion code = Emgu.CV.Util.CvToolbox.GetColorCvtCode(
 				typeof(ColorSrc),
 				typeof(ColorDst)
 			);
@@ -66,29 +66,29 @@ namespace Ninoimager
 			for (int i = 0; i < colors.Length; i++) {
 				Emgu.CV.Structure.MCvScalar colorComp = colors[i].MCvScalar;
 				if (typeof(Rgba).IsAssignableFrom(typeof(ColorSrc))) {
-					double swap  = colorComp.v0;
-					colorComp.v0 = colorComp.v2;
-					colorComp.v2 = swap;
+					double swap  = colorComp.V0;
+					colorComp.V0 = colorComp.V2;
+					colorComp.V2 = swap;
 				}
 
-				if (dimensionSrc > 0) matSrc.Data[0, i * dimensionSrc + 0] = (byte)colorComp.v0;
-				if (dimensionSrc > 1) matSrc.Data[0, i * dimensionSrc + 1] = (byte)colorComp.v1;
-				if (dimensionSrc > 2) matSrc.Data[0, i * dimensionSrc + 2] = (byte)colorComp.v2;
-				if (dimensionSrc > 3) matSrc.Data[0, i * dimensionSrc + 3] = (byte)colorComp.v3;
+				if (dimensionSrc > 0) matSrc.Data[0, i * dimensionSrc + 0] = (byte)colorComp.V0;
+				if (dimensionSrc > 1) matSrc.Data[0, i * dimensionSrc + 1] = (byte)colorComp.V1;
+				if (dimensionSrc > 2) matSrc.Data[0, i * dimensionSrc + 2] = (byte)colorComp.V2;
+				if (dimensionSrc > 3) matSrc.Data[0, i * dimensionSrc + 3] = (byte)colorComp.V3;
 			}
 
 			// Convert colors
-			Emgu.CV.CvInvoke.cvCvtColor(matSrc, matDst, code);
+			Emgu.CV.CvInvoke.CvtColor(matSrc, matDst, code);
 
 			// Copy matDst into new color array
 			ColorDst[] newColors = new ColorDst[colors.Length];
 			for (int i = 0; i < colors.Length; i++) {
 				newColors[i] = new ColorDst();
 				Emgu.CV.Structure.MCvScalar colorComp = new Emgu.CV.Structure.MCvScalar();
-				if (dimensionDst > 0) colorComp.v0 = matDst.Data[0, i * dimensionDst + 0];
-				if (dimensionDst > 1) colorComp.v1 = matDst.Data[0, i * dimensionDst + 1];
-				if (dimensionDst > 2) colorComp.v2 = matDst.Data[0, i * dimensionDst + 2];
-				if (dimensionDst > 3) colorComp.v3 = matDst.Data[0, i * dimensionDst + 3];
+				if (dimensionDst > 0) colorComp.V0 = matDst.Data[0, i * dimensionDst + 0];
+				if (dimensionDst > 1) colorComp.V1 = matDst.Data[0, i * dimensionDst + 1];
+				if (dimensionDst > 2) colorComp.V2 = matDst.Data[0, i * dimensionDst + 2];
+				if (dimensionDst > 3) colorComp.V3 = matDst.Data[0, i * dimensionDst + 3];
 				newColors[i].MCvScalar = colorComp;
 			}
 

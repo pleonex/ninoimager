@@ -1,111 +1,22 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{70F94E6B-0E3B-4EB5-B86A-E88204E1BD58}</ProjectGuid>
     <OutputType>Exe</OutputType>
+    <AssemblyName>NinoImager</AssemblyName>
+    <Version>1.0.0</Version>
+
+    <Product>Ninoimager</Product>
+    <Authors>pleonex</Authors>
+    <Copyright>Copyright (c) 2015 pleonex</Copyright>
+    <RepositoryUrl>https://github.com/pleonex/ninoimager</RepositoryUrl>
+    <License>GPL-3.0-or-later</License>
+
+    <TargetFramework>net461</TargetFramework>
     <RootNamespace>Ninoimager</RootNamespace>
-    <AssemblyName>ninoimager</AssemblyName>
-    <ReleaseVersion>0.4</ReleaseVersion>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug</OutputPath>
-    <DefineConstants>DEBUG;</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <PlatformTarget>x86</PlatformTarget>
-    <ConsolePause>false</ConsolePause>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
-    <DebugType>full</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release</OutputPath>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Externalconsole>true</Externalconsole>
-    <PlatformTarget>x86</PlatformTarget>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Xml" />
-    <Reference Include="Emgu.CV">
-      <HintPath>..\lib\emgucv\bin\Emgu.CV.dll</HintPath>
-    </Reference>
-    <Reference Include="Emgu.Util">
-      <HintPath>..\lib\emgucv\bin\Emgu.Util.dll</HintPath>
-    </Reference>
+    <PackageReference Include="emgu.cv" Version="4.0.1.3373" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Format\Palette.cs" />
-    <Compile Include="Format\NitroFile.cs" />
-    <Compile Include="Format\NitroBlock.cs" />
-    <Compile Include="Format\Image.cs" />
-    <Compile Include="Format\Map.cs" />
-    <Compile Include="Format\ColorFormat.cs" />
-    <Compile Include="Format\PixelEncoding.cs" />
-    <Compile Include="Format\Pixel.cs" />
-    <Compile Include="Format\MapInfo.cs" />
-    <Compile Include="Format\BgMode.cs" />
-    <Compile Include="Format\Pack.cs" />
-    <Compile Include="Tests.cs" />
-    <Compile Include="Format\Implementation\Ncgr.cs" />
-    <Compile Include="Format\Implementation\Nclr.cs" />
-    <Compile Include="Format\Implementation\Npck.cs" />
-    <Compile Include="Format\Implementation\Nscr.cs" />
-    <Compile Include="Extensions\ByteArrayExtension.cs" />
-    <Compile Include="Extensions\EmguImageExtension.cs" />
-    <Compile Include="Extensions\ColorExtension.cs" />
-    <Compile Include="ColorConversion.cs" />
-    <Compile Include="ImageProcessing\ColorQuantization.cs" />
-    <Compile Include="ImageProcessing\Dithering.cs" />
-    <Compile Include="ImageProcessing\NoDithering.cs" />
-    <Compile Include="ImageProcessing\FloydSteinbergDithering.cs" />
-    <Compile Include="ImageProcessing\FixedPaletteQuantization.cs" />
-    <Compile Include="ImageProcessing\BasicQuantization.cs" />
-    <Compile Include="ImageProcessing\NdsQuantization.cs" />
-    <Compile Include="ImageProcessing\NearestNeighbour.cs" />
-    <Compile Include="ImageProcessing\ExhaustiveSearch.cs" />
-    <Compile Include="Format\Mapable.cs" />
-    <Compile Include="Format\Implementation\MatchMapping.cs" />
-    <Compile Include="Format\PaletteMode.cs" />
-    <Compile Include="Format\Obj.cs" />
-    <Compile Include="Format\Frame.cs" />
-    <Compile Include="Format\Sprite.cs" />
-    <Compile Include="Format\Implementation\Ncer.cs" />
-    <Compile Include="Format\Implementation\Labl.cs" />
-    <Compile Include="Format\Implementation\Uext.cs" />
-    <Compile Include="BackgroundImporter.cs" />
-    <Compile Include="SpriteImporter.cs" />
-    <Compile Include="ImageProcessing\ISplitable.cs" />
-    <Compile Include="ImageProcessing\PaletteReducer.cs" />
-    <Compile Include="ImageProcessing\NdsSplitter.cs" />
-    <Compile Include="ImageProcessing\SimilarDistanceReducer.cs" />
-    <Compile Include="Format\Implementation\Lzx.cs" />
-    <Compile Include="ImageProcessing\ManyFixedPaletteQuantization.cs" />
-    <Compile Include="ImageProcessing\PaletteDistance.cs" />
-    <Compile Include="Format\Implementation\Btx0.cs" />
-    <Compile Include="Format\Implementation\NpckFactory.cs" />
-    <Compile Include="Extensions\ArrayExtension.cs" />
-    <Compile Include="Format\Implementation\CompressMapping.cs" />
-    <Compile Include="TextureImporter.cs" />
-    <Compile Include="Extensions\IntegerExtension.cs" />
-  </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
-  <ItemGroup>
-    <Folder Include="Format\" />
-    <Folder Include="Format\Implementation\" />
-    <Folder Include="Extensions\" />
-    <Folder Include="ImageProcessing\" />
-  </ItemGroup>
+
 </Project>
