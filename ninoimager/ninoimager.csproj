@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <PackageReference Include="emgu.cv" Version="4.0.1.3373" />
+    <PackageReference Include="YamlDotNet" Version="6.0.0" />
   </ItemGroup>
 
 </Project>

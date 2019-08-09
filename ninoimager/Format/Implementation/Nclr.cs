@@ -61,7 +61,7 @@ namespace Ninoimager.Format
 		}
 
 		public bool Extended {
-			get { return this.pltt.ExtendedPalette == 0; }
+			get { return this.pltt.ExtendedPalette == 1; }
 			set { this.pltt.ExtendedPalette = (value ? 1u : 0u); }
 		}
 
